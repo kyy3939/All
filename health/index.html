@@ -347,6 +347,7 @@ select.inp{cursor:pointer;font-size:14px;}
     <button class="pc-tab" onclick="switchTab('body')"><span class="pc-tab-icon">⚖️</span> 체성분</button>
     <button class="pc-tab" onclick="switchTab('ex')"><span class="pc-tab-icon">🏋️</span> 운동</button>
     <button class="pc-tab" onclick="switchTab('meal')"><span class="pc-tab-icon">🥗</span> 식사</button>
+    <button class="pc-tab" onclick="switchTab('sleep')"><span class="pc-tab-icon">😴</span> 수면</button>
     <button class="pc-tab" onclick="switchTab('chat')"><span class="pc-tab-icon">💬</span> 코치</button>
   </div>
 </div>
@@ -560,6 +561,67 @@ select.inp{cursor:pointer;font-size:14px;}
     </div>
   </div>
 
+  <!-- 수면 -->
+  <div class="page" id="page-sleep">
+    <div class="page-inner">
+      <div class="hdr"><div class="hdr-eyebrow">Sleep Log</div><div class="hdr-title">수면 <span class="hl">기록</span></div></div>
+
+      <!-- 오늘 수면 요약 -->
+      <div class="last-rec" id="sl-summary">
+        <div class="lr-label">마지막 수면 기록</div>
+        <div id="sl-last-content"><span style="font-size:12px;color:var(--muted);">기록 없음</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">😴 수면 입력 <div class="ct-line"></div></div>
+        <div class="inp-grid">
+          <div class="inp-group">
+            <div class="ig-label">날짜</div>
+            <input type="date" class="inp" id="sl-date" style="font-size:13px;">
+          </div>
+          <div class="inp-group">
+            <div class="ig-label">수면 품질 <span class="ig-unit">1~5점</span></div>
+            <select class="inp" id="sl-quality">
+              <option value="">선택</option>
+              <option value="5">😊 5 — 매우 좋음</option>
+              <option value="4">🙂 4 — 좋음</option>
+              <option value="3">😐 3 — 보통</option>
+              <option value="2">😑 2 — 나쁨</option>
+              <option value="1">😩 1 — 매우 나쁨</option>
+            </select>
+          </div>
+          <div class="inp-group">
+            <div class="ig-label">취침 시간</div>
+            <input type="time" class="inp" id="sl-bedtime" style="font-size:15px;">
+          </div>
+          <div class="inp-group">
+            <div class="ig-label">기상 시간</div>
+            <input type="time" class="inp" id="sl-waketime" style="font-size:15px;">
+          </div>
+          <div class="inp-group full">
+            <div class="ig-label">수면 시간 <span class="ig-unit">자동 계산</span></div>
+            <div style="background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+              <span id="sl-duration-display" style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--coach);">—</span>
+              <span style="font-size:13px;color:var(--muted);">시간</span>
+              <span id="sl-quality-badge" style="margin-left:auto;font-size:13px;"></span>
+            </div>
+          </div>
+          <div class="inp-group full">
+            <div class="ig-label">메모 <span class="ig-unit">선택</span></div>
+            <input type="text" class="inp" id="sl-memo" placeholder="예: 중간에 깼음, 꿈 많이 꿈" style="font-size:13px;">
+          </div>
+        </div>
+      </div>
+      <button class="save-btn primary" onclick="saveSleep()">💾 수면 저장</button>
+
+      <!-- 히스토리 -->
+      <div class="hist-card">
+        <div class="hc-header"><div class="hc-title">📋 수면 히스토리</div><div class="hc-count" id="sl-hist-count">0건</div></div>
+        <div class="hist-list" id="sl-hist-list"><div class="empty-state">기록 없음</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 코치 채팅 -->
   <div class="page chat-page" id="page-chat">
     <div class="ctx-bar">
@@ -596,13 +658,17 @@ select.inp{cursor:pointer;font-size:14px;}
   <button class="mob-tab" onclick="switchTab('body')"><div class="mob-tab-icon">⚖️</div><div class="mob-tab-label">체성분</div></button>
   <button class="mob-tab" onclick="switchTab('ex')"><div class="mob-tab-icon">🏋️</div><div class="mob-tab-label">운동</div></button>
   <button class="mob-tab" onclick="switchTab('meal')"><div class="mob-tab-icon">🥗</div><div class="mob-tab-label">식사</div></button>
+  <button class="mob-tab" onclick="switchTab('sleep')"><div class="mob-tab-icon">😴</div><div class="mob-tab-label">수면</div></button>
   <button class="mob-tab" onclick="switchTab('chat')"><div class="mob-tab-icon">💬</div><div class="mob-tab-label">코치</div></button>
 </div>
+
+<!-- 버전 배지 -->
+<div style="position:fixed;bottom:12px;right:12px;z-index:999;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;pointer-events:none;">v1.0.0</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbxk_m1dzWb0n85T48ohGZ0VN0UK53C5TC52r80ABKACj8Nv7wuC0ReXsSOW2yZxCOl4mA/exec';
+const GAS_URL='https://script.google.com/macros/s/AKfycbw1U1kDI9Dj8nEVQHO6of7_wYxs1tmhRZdC2rToPd3mFwd_ZZRQoc64Ae8exOVQ0DxC7A/exec';
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 function parseSheetData(raw){
@@ -637,7 +703,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 function initDates(){
   const now=new Date();const ds=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;const ts=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  ['b-date','ex-date','m-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
+  ['b-date','ex-date','m-date','sl-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
   ['b-time','ex-time','m-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ts;});
   const days=['일','월','화','수','목','금','토'];
   document.getElementById('navDate').textContent=`${ds} ${days[now.getDay()]}요일`;
@@ -648,11 +714,12 @@ function switchTab(tab){
   document.querySelectorAll('.mob-tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.pc-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
-  const idx=['dash','body','ex','meal','chat'].indexOf(tab);
+  const idx=['dash','body','ex','meal','sleep','chat'].indexOf(tab);
   document.querySelectorAll('.mob-tab')[idx].classList.add('active');
   document.querySelectorAll('.pc-tab')[idx].classList.add('active');
   if(tab==='dash')renderDashboard();
   if(tab==='chat')loadChatContext();
+  if(tab==='sleep')renderSleepHist();
 }
 
 // ══ 대시보드 ══
@@ -854,7 +921,17 @@ function loadChatContext(){
   if(tm.length){document.getElementById('ctx-meal-val').textContent=`${tc}kcal`;document.getElementById('ctx-meal-val').classList.remove('no-data');document.getElementById('ctx-meal-sub').textContent=tm.map(m=>m.mealType).join('·');}
   const tex=(er.run?.filter(r=>r.date===today).length||0)+(er.bike?.filter(r=>r.date===today).length||0)+(er.bodyweight?.filter(r=>r.date===today).length||0);
   if(tex){document.getElementById('ctx-ex-val').textContent=`${tex}회`;document.getElementById('ctx-ex-val').classList.remove('no-data');}
-  const lastMeal=[...tm].sort((a,b)=>b.time.localeCompare(a.time))[0];
+  // 수면 컨텍스트 추가
+  const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+  const lastSleep=sr[sr.length-1];
+  if(lastSleep){
+    document.getElementById('ctx-fast-val').textContent=`${lastSleep.durationHours}h`;
+    document.getElementById('ctx-fast-val').classList.remove('no-data');
+    const sleepColor=lastSleep.durationHours>=7?'var(--run)':lastSleep.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
+    document.getElementById('ctx-fast-val').style.color=sleepColor;
+    document.getElementById('ctx-fast-sub').textContent=lastSleep.durationHours>=7?'회복 충분':lastSleep.durationHours>=6?'수면 부족':' 심각한 부족';
+    document.querySelector('.ctx-card:last-child .cc-label').textContent='수면';
+  }
   if(lastMeal){const[h,m]=lastMeal.time.split(':').map(Number);const fh=(Date.now()-new Date().setHours(h,m,0,0))/3600000;if(fh>=0){document.getElementById('ctx-fast-val').textContent=`${fh.toFixed(1)}h`;document.getElementById('ctx-fast-val').classList.remove('no-data');document.getElementById('ctx-fast-sub').textContent=fh>8?'글리코겐↓':fh>4?'보통':'식후';}}
   document.getElementById('chat-status').textContent='4 에이전트 준비 완료';
   if(document.getElementById('messages').children.length===0){
@@ -866,7 +943,11 @@ function buildChatContext(){
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
   const latest=br[br.length-1];const tm=mr.filter(m=>m.date===today);
   const tRun=(er.run||[]).filter(r=>r.date===today);const tBike=(er.bike||[]).filter(r=>r.date===today);const tBW=(er.bodyweight||[]).filter(r=>r.date===today);
+  const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+  const lastSleep=sr[sr.length-1];
   let ctx=`[오늘 ${today} ${nowTime()}]\n[사용자] 남성 만39세 175cm / 목표: 체중2-3kg↓+근육↑ / 목표섭취~2100kcal / 단백질150g\n`;
+  if(lastSleep)ctx+=`[수면(${lastSleep.date})] 취침${lastSleep.bedtime} 기상${lastSleep.waketime} 수면시간${lastSleep.durationHours}h${lastSleep.quality?' 품질'+lastSleep.quality+'점':''}\n`;
+  else ctx+=`[수면] 기록 없음\n`;
   if(latest)ctx+=`[체성분(${latest.date})] 체중${latest.weight}kg 골격근${latest.skeletal}kg 체지방량${latest.fatMass}kg 체지방률${latest.fatRate}% BMI${latest.bmi} 기초대사량${latest.bmr}kcal\n`;
   else ctx+=`[체성분] 없음\n`;
   if(tm.length){const t=tm.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),prot:a.prot+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0)}),{cal:0,prot:0,carb:0});ctx+=`[식사] ${tm.map(m=>`${m.mealType}(${m.time}):${m.foodText}`).join(' / ')} / 총${Math.round(t.cal)}kcal 단백질${Math.round(t.prot)}g\n`;}
@@ -913,6 +994,98 @@ async function sendChat(){
   chatLoading=false;document.getElementById('send-btn').disabled=false;
 }
 
+// ══ 수면 ══
+let sleepRecs=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+
+function initSleepListeners(){
+  const bed=document.getElementById('sl-bedtime');
+  const wake=document.getElementById('sl-waketime');
+  if(bed) bed.addEventListener('change',calcSleepDuration);
+  if(wake) wake.addEventListener('change',calcSleepDuration);
+}
+function calcSleepDuration(){
+  const bed=document.getElementById('sl-bedtime').value;
+  const wake=document.getElementById('sl-waketime').value;
+  if(!bed||!wake){document.getElementById('sl-duration-display').textContent='—';return;}
+  const[bh,bm]=bed.split(':').map(Number);
+  const[wh,wm]=wake.split(':').map(Number);
+  let bedMins=bh*60+bm;let wakeMins=wh*60+wm;
+  if(wakeMins<=bedMins)wakeMins+=1440;
+  const total=wakeMins-bedMins;
+  const h=Math.floor(total/60);const m=total%60;
+  document.getElementById('sl-duration-display').textContent=`${h}시간 ${m>0?m+'분':''}`.trim();
+  // 수면 시간별 색상
+  const hours=total/60;
+  const disp=document.getElementById('sl-duration-display');
+  if(hours>=7)disp.style.color='var(--run)';
+  else if(hours>=6)disp.style.color='var(--fatrate)';
+  else disp.style.color='var(--fat-c)';
+}
+
+function saveSleep(){
+  const date=document.getElementById('sl-date').value;
+  const bedtime=document.getElementById('sl-bedtime').value;
+  const waketime=document.getElementById('sl-waketime').value;
+  const quality=document.getElementById('sl-quality').value;
+  const memo=document.getElementById('sl-memo').value;
+  if(!date||!bedtime||!waketime){showToast('⚠️ 날짜, 취침, 기상 시간을 입력해주세요');return;}
+  // 수면 시간 계산
+  const[bh,bm]=bedtime.split(':').map(Number);
+  const[wh,wm]=waketime.split(':').map(Number);
+  let bedMins=bh*60+bm;let wakeMins=wh*60+wm;
+  if(wakeMins<=bedMins)wakeMins+=1440;
+  const durationHours=Math.round((wakeMins-bedMins)/60*10)/10;
+  const rec={date,bedtime,waketime,durationHours,quality:quality?parseInt(quality):null,memo:memo||null};
+  const idx=sleepRecs.findIndex(r=>r.date===date);
+  if(idx>=0)sleepRecs[idx]={...sleepRecs[idx],...rec};else sleepRecs.push(rec);
+  sleepRecs.sort((a,b)=>a.date.localeCompare(b.date));
+  localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
+  sheetSave({type:'sleep',...rec});
+  // 초기화
+  document.getElementById('sl-bedtime').value='';
+  document.getElementById('sl-waketime').value='';
+  document.getElementById('sl-quality').value='';
+  document.getElementById('sl-memo').value='';
+  document.getElementById('sl-duration-display').textContent='—';
+  renderSleepHist();showLastSleepRec();showToast('😴 수면 기록 저장됐어요!');
+}
+
+function showLastSleepRec(){
+  const el=document.getElementById('sl-last-content');
+  if(!sleepRecs.length){el.innerHTML='<span style="font-size:12px;color:var(--muted);">기록 없음</span>';return;}
+  const l=sleepRecs[sleepRecs.length-1];
+  const qEmoji={5:'😊',4:'🙂',3:'😐',2:'😑',1:'😩'};
+  const sleepColor=l.durationHours>=7?'var(--run)':l.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
+  el.innerHTML=`<div class="lr-vals">
+    <div class="lr-item"><div class="lr-item-label">취침</div><div class="lr-item-val">${l.bedtime||'—'}</div></div>
+    <div class="lr-item"><div class="lr-item-label">기상</div><div class="lr-item-val">${l.waketime||'—'}</div></div>
+    <div class="lr-item"><div class="lr-item-label">수면 시간</div><div class="lr-item-val" style="color:${sleepColor}">${l.durationHours}h</div></div>
+    ${l.quality?`<div class="lr-item"><div class="lr-item-label">품질</div><div class="lr-item-val">${qEmoji[l.quality]} ${l.quality}점</div></div>`:''}
+  </div>
+  <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'DM Mono',monospace;">${l.date}</div>`;
+}
+
+function renderSleepHist(){
+  const list=document.getElementById('sl-hist-list');
+  document.getElementById('sl-hist-count').textContent=`${sleepRecs.length}건`;
+  showLastSleepRec();
+  if(!sleepRecs.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
+  const qEmoji={5:'😊',4:'🙂',3:'😐',2:'😑',1:'😩'};
+  list.innerHTML=[...sleepRecs].reverse().map((r,ri)=>{
+    const i=sleepRecs.length-1-ri;
+    const sleepColor=r.durationHours>=7?'var(--run)':r.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
+    return`<div class="hi-item">
+      <div class="hi-date">${r.date?.slice(5)||''}</div>
+      <div class="hi-body">
+        <div class="hi-main" style="color:${sleepColor}">${r.durationHours}h ${r.quality?qEmoji[r.quality]:''}</div>
+        <div class="hi-sub">취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'}${r.memo?' · '+r.memo:''}</div>
+      </div>
+      <button class="hi-del" onclick="delSleep(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+function delSleep(i){if(!confirm('삭제?'))return;sleepRecs.splice(i,1);localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));renderSleepHist();}
+
 function applyDashLayout(){
   const isPC=window.innerWidth>=769;const cols=document.querySelector('.dash-cols');
   if(!cols)return;
@@ -923,9 +1096,11 @@ window.addEventListener('resize',applyDashLayout);
 
 initDates();
 initBodyPage();
+initSleepListeners();
 renderExHist('run');
 updateMealSummary();
 renderMealHist();
+renderSleepHist();
 renderDashboard();
 applyDashLayout();
 syncFromSheet();
