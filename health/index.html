@@ -669,7 +669,7 @@ select.inp{cursor:pointer;font-size:14px;}
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbw1U1kDI9Dj8nEVQHO6of7_wYxs1tmhRZdC2rToPd3mFwd_ZZRQoc64Ae8exOVQ0DxC7A/exec';
+const GAS_URL='https://script.google.com/macros/s/AKfycbwYktKueXhJFukryR974Jj2SSQpLf_DTojQ7yx5cW87MFOXScoCt2y3uHEZ-PgFL3casA/exec';
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 function parseSheetData(raw){
@@ -858,8 +858,12 @@ async function analyzeFood(){
   const btn=document.getElementById('analyze-btn');btn.disabled=true;btn.textContent='분석 중...';
   document.getElementById('analysis-result').classList.remove('show');
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`영양사입니다. 음식 영양소를 분석해 JSON만 응답(마크다운 없이):{"foods":[{"name":"음식명","kcal":숫자,"protein":숫자,"carb":숫자,"fat":숫자}],"total":{"kcal":숫자,"protein":숫자,"carb":숫자,"fat":숫자}}. 한국 음식 기준, 수량 미표기시 1인분 기준.`,messages:[{role:'user',content:food}]})});
-    const data=await resp.json();const raw=data.content?.[0]?.text||'{}';
+    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+      type:'ai',
+      system:`영양사입니다. 음식 영양소를 분석해 JSON만 응답(마크다운 없이):{"foods":[{"name":"음식명","kcal":숫자,"protein":숫자,"carb":숫자,"fat":숫자}],"total":{"kcal":숫자,"protein":숫자,"carb":숫자,"fat":숫자}}. 한국 음식 기준, 수량 미표기시 1인분 기준.`,
+      messages:[{role:'user',content:food}]
+    })});
+    const data=await resp.json();const raw=data.result||'{}';
     let parsed;try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){throw new Error('파싱 오류');}
     pendingAnalysis={...parsed,foodText:food};
     document.getElementById('ar-foods').innerHTML=parsed.foods.map(f=>`<div class="ar-food-item"><div class="ar-food-name">${f.name}</div><div class="ar-food-kcal">${f.kcal}kcal</div></div>`).join('');
@@ -984,8 +988,12 @@ async function sendChat(){
   const ctx=buildChatContext();chatHistory.push({role:'user',content:`${ctx}\n[질문] ${text}`});
   showTyping();
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:CHAT_SYSTEM,messages:chatHistory})});
-    const data=await resp.json();const raw=data.content?.[0]?.text||'{}';
+    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+      type:'ai',
+      system:CHAT_SYSTEM,
+      messages:chatHistory
+    })});
+    const data=await resp.json();const raw=data.result||'{}';
     hideTyping();
     let result;try{result=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){result={overall:raw};}
     chatHistory.push({role:'assistant',content:raw});addAiChatMsg(result);
