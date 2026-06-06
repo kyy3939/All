@@ -139,7 +139,7 @@ select.inp{cursor:pointer;font-size:14px;}
 .hi-item{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;transition:background .15s;}
 .hi-item:last-child{border-bottom:none;}
 .hi-item:hover{background:var(--s2);}
-.hi-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);width:46px;flex-shrink:0;line-height:1.5;}
+.hi-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);width:52px;min-width:52px;flex-shrink:0;line-height:1.5;word-break:keep-all;}
 .hi-body{flex:1;}
 .hi-main{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
 .hi-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.6;}
@@ -339,7 +339,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.1</span>
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.2</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -673,23 +673,52 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0e
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 function parseSheetData(raw){
-  const bodyRecs=(raw.body||[]).map(r=>({date:r['날짜'],time:r['시간'],weight:parseFloat(r['체중'])||null,skeletal:parseFloat(r['골격근량'])||null,fatMass:parseFloat(r['체지방량'])||null,water:parseFloat(r['체수분'])||null,fatRate:parseFloat(r['체지방률'])||null,bmi:parseFloat(r['BMI'])||null,bmr:parseFloat(r['기초대사량'])||null})).filter(r=>r.date);
-  const mealRecs=(raw.meal||[]).map((r,i)=>({id:i+1,date:r['날짜'],time:r['시간'],mealType:r['구분'],foodText:r['음식내용'],total:{kcal:parseFloat(r['칼로리'])||0,protein:parseFloat(r['단백질'])||0,carb:parseFloat(r['탄수화물'])||0,fat:parseFloat(r['지방'])||0}})).filter(r=>r.date);
+  // 구글 시트에서 날짜가 Date객체나 ISO문자열로 오는 경우 YYYY-MM-DD로 정규화
+  function normalizeDate(v){
+    if(!v)return'';
+    if(typeof v==='string'){
+      // ISO 형식 2026-06-06T15:00:00.000Z → 2026-06-06
+      const m=v.match(/^(\d{4}-\d{2}-\d{2})/);
+      return m?m[1]:v;
+    }
+    if(v instanceof Date||Object.prototype.toString.call(v)==='[object Date]'){
+      const d=new Date(v);
+      return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    // 숫자(시리얼)인 경우 — 구글 시트 날짜 시리얼
+    if(typeof v==='number'){
+      const d=new Date((v-25569)*86400000);
+      return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+    }
+    return String(v).slice(0,10);
+  }
+  function normalizeTime(v){
+    if(!v)return'';
+    const s=String(v);
+    // HH:MM:SS → HH:MM
+    const m=s.match(/(\d{1,2}:\d{2})/);
+    return m?m[1]:s.slice(0,5);
+  }
+  const bodyRecs=(raw.body||[]).map(r=>({date:normalizeDate(r['날짜']),time:normalizeTime(r['시간']),weight:parseFloat(r['체중'])||null,skeletal:parseFloat(r['골격근량'])||null,fatMass:parseFloat(r['체지방량'])||null,water:parseFloat(r['체수분'])||null,fatRate:parseFloat(r['체지방률'])||null,bmi:parseFloat(r['BMI'])||null,bmr:parseFloat(r['기초대사량'])||null})).filter(r=>r.date);
+  const mealRecs=(raw.meal||[]).map((r,i)=>({id:i+1,date:normalizeDate(r['날짜']),time:normalizeTime(r['시간']),mealType:r['구분'],foodText:r['음식내용'],total:{kcal:parseFloat(r['칼로리'])||0,protein:parseFloat(r['단백질'])||0,carb:parseFloat(r['탄수화물'])||0,fat:parseFloat(r['지방'])||0}})).filter(r=>r.date);
   const exRecs={run:[],bike:[],bodyweight:[]};
-  (raw.exercise||[]).forEach(r=>{const t=r['종류'];if(t==='런닝'){exRecs.run.push({date:r['날짜'],time:r['시간'],duration:r['시간(분)'],distance:parseFloat(r['거리(km)'])||null,pace:r['페이스'],hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null});}else if(t==='자전거'){exRecs.bike.push({date:r['날짜'],time:r['시간'],duration:parseInt(r['시간(분)'])||null,hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null,memo:r['세부내용']});}else if(t==='복합운동'){const exercises=(r['세부내용']||'').split(',').map(s=>{const m=s.trim().match(/(.+)\s(\d+)회×(\d+)세트/);return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};}).filter(e=>e.name);exRecs.bodyweight.push({date:r['날짜'],time:r['시간'],exercises});}});
-  return{bodyRecs,mealRecs,exRecs};
+  (raw.exercise||[]).forEach(r=>{const t=r['종류'];const d=normalizeDate(r['날짜']);const tm=normalizeTime(r['시간']);if(t==='런닝'){exRecs.run.push({date:d,time:tm,duration:r['시간(분)'],distance:parseFloat(r['거리(km)'])||null,pace:r['페이스'],hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null});}else if(t==='자전거'){exRecs.bike.push({date:d,time:tm,duration:parseInt(r['시간(분)'])||null,hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null,memo:r['세부내용']});}else if(t==='복합운동'){const exercises=(r['세부내용']||'').split(',').map(s=>{const m=s.trim().match(/(.+)\s(\d+)회×(\d+)세트/);return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};}).filter(e=>e.name);exRecs.bodyweight.push({date:d,time:tm,exercises});}});
+  const sleepRecs=(raw.sleep||[]).map(r=>({date:normalizeDate(r['날짜']),bedtime:normalizeTime(r['취침시간']),waketime:normalizeTime(r['기상시간']),durationHours:parseFloat(r['수면시간(h)'])||null,quality:r['품질(1-5)']?parseInt(r['품질(1-5)']):null,memo:r['메모']||null})).filter(r=>r.date);
+  return{bodyRecs,mealRecs,exRecs,sleepRecs};
 }
 async function syncFromSheet(){
   const raw=await sheetLoad();
   if(!raw){return;}
-  const{bodyRecs,mealRecs,exRecs}=parseSheetData(raw);
+  const{bodyRecs,mealRecs,exRecs,sleepRecs}=parseSheetData(raw);
   localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
+  localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
   window.bodyRecs=bodyRecs; window.mealRecs=mealRecs; window.exRecs=exRecs;
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
+  renderSleepHist();
   renderDashboard();
 }
 
