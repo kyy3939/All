@@ -44,7 +44,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   background:var(--s1);border-bottom:1px solid var(--border);
   padding:0 20px;flex-shrink:0;z-index:100;
 }
-.pc-nav-inner{display:flex;gap:2px;max-width:1200px;margin:0 auto;}
+.pc-nav-inner{display:flex;gap:2px;max-width:1100px;margin:0 auto;padding:0 32px;}
 .pc-tab{
   padding:15px 22px;border:none;background:none;
   color:var(--muted);font-family:'Noto Sans KR',sans-serif;
@@ -63,8 +63,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .page.active{display:block;}
 .page::-webkit-scrollbar{width:4px;}
 .page::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.page.chat-page{padding:0;display:none;flex-direction:column;}
-.page.chat-page.active{display:flex;}
+.page.chat-page{padding:24px 16px 80px;}
 
 /* ══ 모바일 하단 탭 ══ */
 .mobile-nav{
@@ -100,12 +99,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   /* 대시보드 2열 */
   .dash-cols{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
   .dash-cols-full{grid-column:1/-1;}
-  /* 채팅 최대폭 */
-  .chat-page{padding:0;}
-  .chat-page .messages{max-width:900px;margin:12px auto;width:calc(100% - 48px);border:1px solid var(--border);border-radius:16px;padding:20px;}
-  .chat-page .input-row{max-width:900px;margin:0 auto;width:100%;padding:14px 20px;}
-  .chat-page .quick-area{max-width:900px;margin:0 auto;width:100%;padding:8px 20px 4px;}
-  .chat-page .ctx-bar .ctx-cards{max-width:900px;margin:0 auto;}
+  .dash-left{order:1;}
+  .dash-right{order:2;}
+  /* 채팅 */
+  .chat-frame{height:500px;}
   /* 토스트 위치 */
   .toast{bottom:24px;top:auto;}
 }
@@ -183,6 +180,8 @@ select.inp{cursor:pointer;font-size:14px;}
 .pb-btn{padding:4px 10px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s;}
 .pb-btn.active{background:var(--s3);color:var(--text);border-color:var(--dim);}
 .dash-cols{display:flex;flex-direction:column;gap:12px;}
+.dash-left{order:2;}
+.dash-right{order:1;}
 .chart-2col{display:grid;grid-template-columns:1fr 1fr;gap:0;}
 @media(max-width:500px){.chart-2col{grid-template-columns:1fr;}}
 .chart-2col .chart-wrap:first-child{border-right:1px solid var(--border);}
@@ -300,13 +299,10 @@ select.inp{cursor:pointer;font-size:14px;}
 .cc-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;line-height:1.3;}
 .cc-sub{font-size:9px;color:var(--muted);margin-top:2px;line-height:1.3;}
 .no-data{color:var(--muted);}
-.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.chat-frame{border:1px solid var(--border);border-radius:16px;background:var(--s1);overflow:hidden;display:flex;flex-direction:column;height:420px;}
+.messages{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:14px;}
 .messages::-webkit-scrollbar{width:3px;}
 .messages::-webkit-scrollbar-thumb{background:var(--border);}
-@media(min-width:769px){
-  .messages{margin:0 0;border-left:none;border-right:none;}
-  .chat-page .messages{border:1px solid var(--border);border-radius:0;margin:0;}
-}
 .msg{display:flex;flex-direction:column;max-width:88%;animation:fadeIn .25s ease;}
 .msg.user{align-self:flex-end;align-items:flex-end;}
 .msg.ai{align-self:flex-start;align-items:flex-start;}
@@ -351,7 +347,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.0.7</span>
+  <span class="nav-ver">v1.1.2</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -383,6 +379,7 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="sum-card cc"><div class="sc-label">오늘 섭취</div><div class="sc-val" id="d-cal" style="color:var(--cal)">—<span class="sc-unit">kcal</span></div><div class="sc-sub" id="d-cal-sub"></div></div>
       </div>
       <div class="dash-cols">
+        <!-- 왼쪽: 체성분 4개 그래프 (PC에서만 왼쪽 고정) -->
         <div class="dash-left">
           <div class="section">
             <div class="sec-hdr">
@@ -393,25 +390,43 @@ select.inp{cursor:pointer;font-size:14px;}
                 <button class="pb-btn" onclick="setPeriod(0,this)">전체</button>
               </div>
             </div>
-            <!-- 최신 수치 카드 -->
-            <div id="d-body-stat-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 18px 8px;"></div>
-            <!-- 체중·골격근 차트 -->
-            <div class="chart-wrap" style="padding-bottom:4px;">
-              <div class="sc-label" style="margin-bottom:8px;">체중 · 골격근 (kg)</div>
-              <div class="chart-container" style="height:160px;"><canvas id="chartBody"></canvas></div>
+            <!-- 수치 카드 6개 3열 2행 -->
+            <div id="d-body-stat-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 18px 4px;"></div>
+            <!-- 그래프 2열 3행 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);margin-top:12px;">
+              <div class="chart-wrap" style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+                <div class="sc-label" style="margin-bottom:6px;color:var(--weight);">⚖ 체중 (kg)</div>
+                <div class="chart-container" style="height:120px;"><canvas id="chartWeight"></canvas></div>
+              </div>
+              <div class="chart-wrap" style="border-bottom:1px solid var(--border);">
+                <div class="sc-label" style="margin-bottom:6px;color:var(--skeletal);">💪 골격근량 (kg)</div>
+                <div class="chart-container" style="height:120px;"><canvas id="chartSkeletal"></canvas></div>
+              </div>
+              <div class="chart-wrap" style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+                <div class="sc-label" style="margin-bottom:6px;color:var(--fat-c);">🔥 체지방률 (%)</div>
+                <div class="chart-container" style="height:120px;"><canvas id="chartFatRate"></canvas></div>
+              </div>
+              <div class="chart-wrap" style="border-bottom:1px solid var(--border);">
+                <div class="sc-label" style="margin-bottom:6px;color:#ff6e8a;">📉 체지방량 (kg)</div>
+                <div class="chart-container" style="height:120px;"><canvas id="chartFatMass"></canvas></div>
+              </div>
+              <div class="chart-wrap" style="border-right:1px solid var(--border);">
+                <div class="sc-label" style="margin-bottom:6px;color:var(--coach);">💧 체수분 (kg)</div>
+                <div class="chart-container" style="height:120px;"><canvas id="chartWater"></canvas></div>
+              </div>
+              <div class="chart-wrap">
+                <div class="sc-label" style="margin-bottom:6px;color:var(--fatrate);">📊 BMI</div>
+                <div class="chart-container" style="height:120px;"><canvas id="chartBMI"></canvas></div>
+              </div>
             </div>
-            <!-- 체지방률·BMI 차트 -->
-            <div class="chart-wrap" style="padding-top:4px;">
-              <div class="sc-label" style="margin-bottom:8px;">체지방률 · BMI</div>
-              <div class="chart-container" style="height:160px;"><canvas id="chartFat"></canvas></div>
-            </div>
-          </div>
-          <div class="section">
-            <div class="sec-hdr"><div class="sec-title">🏆 개인 최고 기록</div><div class="sec-meta">PB</div></div>
-            <div id="d-pb-grid" style="padding:14px 18px;"></div>
           </div>
         </div>
+        <!-- 오른쪽: 수면→식사→운동→PB (모바일도 이 순서) -->
         <div class="dash-right">
+          <div class="section">
+            <div class="sec-hdr"><div class="sec-title">😴 수면</div><div class="sec-meta" id="d-sleep-meta"></div></div>
+            <div id="d-sleep-content" style="padding:14px 18px;"></div>
+          </div>
           <div class="section">
             <div class="sec-hdr"><div class="sec-title">🥗 오늘 식사</div><div class="sec-meta" id="d-meal-meta"></div></div>
             <div class="nutrition-bars" id="d-nutrition-bars"></div>
@@ -427,8 +442,8 @@ select.inp{cursor:pointer;font-size:14px;}
             <div class="ex-list-dash hist-list" id="d-ex-list"></div>
           </div>
           <div class="section">
-            <div class="sec-hdr"><div class="sec-title">😴 수면</div><div class="sec-meta" id="d-sleep-meta"></div></div>
-            <div id="d-sleep-content" style="padding:14px 18px;"></div>
+            <div class="sec-hdr"><div class="sec-title">🏆 개인 최고 기록</div><div class="sec-meta">PB</div></div>
+            <div id="d-pb-grid" style="padding:14px 18px;"></div>
           </div>
         </div>
       </div>
@@ -649,31 +664,39 @@ select.inp{cursor:pointer;font-size:14px;}
   </div>
 
   <!-- 코치 채팅 -->
-  <div class="page chat-page" id="page-chat">
-    <div class="ctx-bar">
-      <div class="ctx-top">
-        <div class="ctx-logo">AI COACH</div>
-        <div class="ctx-status"><div class="nav-dot"></div><span id="chat-status">준비 중...</span></div>
-      </div>
-      <div class="ctx-cards">
+  <div class="page" id="page-chat">
+    <div class="page-inner">
+      <div class="hdr"><div class="hdr-eyebrow">AI Coaching</div><div class="hdr-title">AI <span class="hl">코치</span></div></div>
+      <!-- 컨텍스트 카드 -->
+      <div class="ctx-cards" style="margin-bottom:16px;">
         <div class="ctx-card"><div class="cc-label">체성분</div><div class="cc-val no-data" id="ctx-body-val">—</div><div class="cc-sub" id="ctx-body-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">오늘 식사</div><div class="cc-val no-data" id="ctx-meal-val">—</div><div class="cc-sub" id="ctx-meal-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">오늘 운동</div><div class="cc-val no-data" id="ctx-ex-val">—</div><div class="cc-sub" id="ctx-ex-sub"></div></div>
-        <div class="ctx-card"><div class="cc-label">공복</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub"></div></div>
+        <div class="ctx-card"><div class="cc-label">공복/수면</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub"></div></div>
       </div>
-    </div>
-    <div class="messages" id="messages"></div>
-    <div class="quick-area">
-      <button class="qb" onclick="qs('지금 운동 전인데 뭘 먹고 뭐부터 해야 해?')">⚡ 운동 전 코칭</button>
-      <button class="qb" onclick="qs('운동 끝났어. 지금 뭐 먹어야 해?')">🍽️ 운동 후 식사</button>
-      <button class="qb" onclick="qs('오늘 몸 상태 분석해줘')">🧬 상태 분석</button>
-      <button class="qb" onclick="qs('운동 순서 추천해줘')">🏋️ 순서 추천</button>
-      <button class="qb" onclick="qs('지금 뭐 먹을까?')">🥗 식사 추천</button>
-      <button class="qb" onclick="qs('오늘 목표 대비 어때?')">📊 진행 상황</button>
-    </div>
-    <div class="input-row">
-      <textarea class="chat-inp" id="chat-inp" placeholder="질문하거나 기록하세요..." onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
-      <button class="send-btn" id="send-btn" onclick="sendChat()">↑</button>
+      <!-- 상태 표시 -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+        <div class="nav-dot"></div>
+        <span id="chat-status" style="font-size:11px;color:var(--run);font-family:'DM Mono',monospace;">준비 중...</span>
+      </div>
+      <!-- 채팅 프레임 -->
+      <div class="chat-frame">
+        <div class="messages" id="messages"></div>
+      </div>
+      <!-- 빠른 질문 -->
+      <div class="quick-area" style="padding:12px 0 8px;border:none;background:none;">
+        <button class="qb" onclick="qs('지금 운동 전인데 뭘 먹고 뭐부터 해야 해?')">⚡ 운동 전 코칭</button>
+        <button class="qb" onclick="qs('운동 끝났어. 지금 뭐 먹어야 해?')">🍽️ 운동 후 식사</button>
+        <button class="qb" onclick="qs('오늘 몸 상태 분석해줘')">🧬 상태 분석</button>
+        <button class="qb" onclick="qs('운동 순서 추천해줘')">🏋️ 순서 추천</button>
+        <button class="qb" onclick="qs('지금 뭐 먹을까?')">🥗 식사 추천</button>
+        <button class="qb" onclick="qs('오늘 목표 대비 어때?')">📊 진행 상황</button>
+      </div>
+      <!-- 입력창 -->
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <textarea class="chat-inp" id="chat-inp" placeholder="질문하거나 기록하세요..." onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendChat()">↑</button>
+      </div>
     </div>
   </div>
 </div>
@@ -780,7 +803,7 @@ function switchTab(tab){
 }
 
 // ══ 대시보드 ══
-let chartBody=null,chartFat=null,currentPeriod=7,currentDashEx='run';
+let currentPeriod=7,currentDashEx='run';
 function renderDashboard(){
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
   const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
@@ -799,8 +822,10 @@ function renderDashboard(){
     const chg=(cur,prv,bad)=>{if(cur==null||prv==null)return'';const d=(cur-prv).toFixed(1);const up=d>0;const cls=(bad?up:!up)?'color:var(--fat-c)':'color:var(--run)';const arr=up?'▲':'▼';return`<div style="font-size:10px;${cls};margin-top:3px;">${arr}${Math.abs(d)}</div>`;};
     bsc.innerHTML=`
       <div class="pb-card"><div class="pb-card-label">체중</div><div class="pb-card-val" style="color:var(--weight)">${latest.weight||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.weight,prev.weight,true):''}</div></div>
-      <div class="pb-card"><div class="pb-card-label">골격근</div><div class="pb-card-val" style="color:var(--skeletal)">${latest.skeletal||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.skeletal,prev.skeletal,false):''}</div></div>
+      <div class="pb-card"><div class="pb-card-label">골격근량</div><div class="pb-card-val" style="color:var(--skeletal)">${latest.skeletal||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.skeletal,prev.skeletal,false):''}</div></div>
       <div class="pb-card"><div class="pb-card-label">체지방률</div><div class="pb-card-val" style="color:var(--fat-c)">${latest.fatRate||'—'}</div><div class="pb-card-sub">%${prev?chg(latest.fatRate,prev.fatRate,true):''}</div></div>
+      <div class="pb-card"><div class="pb-card-label">체지방량</div><div class="pb-card-val" style="color:#ff6e8a">${latest.fatMass||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.fatMass,prev.fatMass,true):''}</div></div>
+      <div class="pb-card"><div class="pb-card-label">체수분</div><div class="pb-card-val" style="color:var(--coach)">${latest.water||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.water,prev.water,false):''}</div></div>
       <div class="pb-card"><div class="pb-card-label">BMI</div><div class="pb-card-val" style="color:var(--fatrate)">${latest.bmi||'—'}</div><div class="pb-card-sub">${prev?chg(latest.bmi,prev.bmi,true):''}</div></div>`;
   } else {
     bsc.innerHTML='<div style="grid-column:1/-1;padding:8px 0;font-size:12px;color:var(--muted);text-align:center;">체성분 기록 없음</div>';
@@ -835,14 +860,19 @@ function renderDashboard(){
     sleepEl.innerHTML='<div class="empty-state">수면 기록 없음</div>';
   }
 }
+let chartWeight=null,chartSkeletal=null,chartFatRate=null,chartBMI=null,chartFatMass=null,chartWater=null;
 function renderBodyCharts(br,days){
   let data=days===0?br:br.filter(r=>{const cut=new Date();cut.setDate(cut.getDate()-days);return r.date>=cut.toISOString().slice(0,10);});
   const labels=data.map(r=>r.date.slice(5));
-  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8890b5',font:{size:10,family:'DM Mono'},boxWidth:10}}},scales:{x:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:6},grid:{color:'#232b45'}},y:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'}},grid:{color:'#232b45'}}}};
-  if(chartBody)chartBody.destroy();
-  chartBody=new Chart(document.getElementById('chartBody'),{type:'line',data:{labels,datasets:[{label:'체중',data:data.map(r=>r.weight),borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,0.07)',borderWidth:2,pointRadius:3,tension:0.3,fill:true},{label:'골격근',data:data.map(r=>r.skeletal),borderColor:'#69f0ae',backgroundColor:'rgba(105,240,174,0.05)',borderWidth:2,pointRadius:3,tension:0.3}]},options:opts});
-  if(chartFat)chartFat.destroy();
-  chartFat=new Chart(document.getElementById('chartFat'),{type:'line',data:{labels,datasets:[{label:'체지방률',data:data.map(r=>r.fatRate),borderColor:'#ff4081',backgroundColor:'rgba(255,64,129,0.07)',borderWidth:2,pointRadius:3,tension:0.3,fill:true},{label:'BMI',data:data.map(r=>r.bmi),borderColor:'#ffd740',borderWidth:2,pointRadius:3,tension:0.3}]},options:opts});
+  const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}},y:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}}}});
+  const mk=(label,vals,color)=>({label,data:vals,borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:2,tension:0.35,fill:true});
+  const make=(ref,id,label,vals,color)=>{if(ref)ref.destroy();return new Chart(document.getElementById(id),{type:'line',data:{labels,datasets:[mk(label,vals,color)]},options:baseOpts()});};
+  chartWeight  =make(chartWeight,  'chartWeight',  '체중',   data.map(r=>r.weight),  '#00e5ff');
+  chartSkeletal=make(chartSkeletal,'chartSkeletal','골격근', data.map(r=>r.skeletal),'#69f0ae');
+  chartFatRate =make(chartFatRate, 'chartFatRate', '체지방률',data.map(r=>r.fatRate), '#ff4081');
+  chartFatMass =make(chartFatMass, 'chartFatMass', '체지방량',data.map(r=>r.fatMass), '#ff6e8a');
+  chartWater   =make(chartWater,   'chartWater',   '체수분',  data.map(r=>r.water),   '#4fc3f7');
+  chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#ffd740');
 }
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
 function switchDashEx(type,btn){currentDashEx=type;document.querySelectorAll('.ex-tab-dash').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');renderDashEx(er,type);}
