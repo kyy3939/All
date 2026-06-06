@@ -139,7 +139,9 @@ select.inp{cursor:pointer;font-size:14px;}
 .hi-item{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;transition:background .15s;}
 .hi-item:last-child{border-bottom:none;}
 .hi-item:hover{background:var(--s2);}
-.hi-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);width:52px;min-width:52px;flex-shrink:0;line-height:1.5;word-break:keep-all;}
+.hi-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);width:56px;min-width:56px;flex-shrink:0;line-height:1.6;display:flex;flex-direction:column;gap:1px;}
+.hi-date-d{font-size:11px;color:var(--muted);}
+.hi-date-t{font-size:10px;color:var(--border);}
 .hi-body{flex:1;}
 .hi-main{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
 .hi-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.6;}
@@ -339,7 +341,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.2</span>
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.3</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -707,19 +709,24 @@ function parseSheetData(raw){
   return{bodyRecs,mealRecs,exRecs,sleepRecs};
 }
 async function syncFromSheet(){
+  showToast('☁️ 동기화 중...');
   const raw=await sheetLoad();
-  if(!raw){return;}
-  const{bodyRecs,mealRecs,exRecs,sleepRecs}=parseSheetData(raw);
-  localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));
-  localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
-  localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
-  localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
-  window.bodyRecs=bodyRecs; window.mealRecs=mealRecs; window.exRecs=exRecs;
+  if(!raw){showToast('⚠️ 동기화 실패. 네트워크를 확인해주세요.');return;}
+  const{bodyRecs:br,mealRecs:mr,exRecs:er,sleepRecs:sr}=parseSheetData(raw);
+  // localStorage 갱신
+  localStorage.setItem('bodyRecords',JSON.stringify(br));
+  localStorage.setItem('mealRecords',JSON.stringify(mr));
+  localStorage.setItem('exerciseRecords',JSON.stringify(er));
+  localStorage.setItem('sleepRecords',JSON.stringify(sr));
+  // 전역변수 갱신 (화면 반영에 필수)
+  bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=sr;
+  // UI 갱신
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
   renderSleepHist();
   renderDashboard();
+  showToast('✅ 동기화 완료!');
 }
 
 const today=new Date().toISOString().slice(0,10);
@@ -827,7 +834,7 @@ function renderBodyHist(){
   const list=document.getElementById('b-hist-list');
   document.getElementById('b-hist-count').textContent=`${bodyRecs.length}건`;
   if(!bodyRecs.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
-  list.innerHTML=[...bodyRecs].reverse().map((r,ri)=>{const i=bodyRecs.length-1-ri;return`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}<br>${r.time||''}</div><div class="hi-body"><div class="hi-main">${r.weight||'—'}kg</div><div class="hi-sub">골격근 ${r.skeletal||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div><button class="hi-del" onclick="delBodyRec(${i})">×</button></div>`;}).join('');
+  list.innerHTML=[...bodyRecs].reverse().map((r,ri)=>{const i=bodyRecs.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main">${r.weight||'—'}kg</div><div class="hi-sub">골격근 ${r.skeletal||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div><button class="hi-del" onclick="delBodyRec(${i})">×</button></div>`;}).join('');
 }
 function delBodyRec(i){if(!confirm('삭제할까요?'))return;bodyRecs.splice(i,1);localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));showPrevHints();showLastBodyRec();renderBodyHist();}
 
@@ -872,9 +879,9 @@ function renderExHist(type){
   const total=(exRecs.run?.length||0)+(exRecs.bike?.length||0)+(exRecs.bodyweight?.length||0);
   document.getElementById('ex-hist-count').textContent=`총 ${total}회`;
   if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
-  if(type==='run')list.innerHTML=data.map((r,ri)=>{const i=exRecs.run.length-1-ri;return`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--run)">${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('run',${i})">×</button></div>`;}).join('');
-  else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;return`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
-  else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;return`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
+  if(type==='run')list.innerHTML=data.map((r,ri)=>{const i=exRecs.run.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--run)">${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('run',${i})">×</button></div>`;}).join('');
+  else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
+  else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
 }
 function delEx(type,i){if(!confirm('삭제?'))return;exRecs[type].splice(i,1);localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));renderExHist(type);}
 
