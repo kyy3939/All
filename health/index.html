@@ -935,6 +935,7 @@ function loadChatContext(){
     document.getElementById('ctx-fast-sub').textContent=lastSleep.durationHours>=7?'회복 충분':lastSleep.durationHours>=6?'수면 부족':' 심각한 부족';
     document.querySelector('.ctx-card:last-child .cc-label').textContent='수면';
   }
+  const lastMeal=[...tm].sort((a,b)=>b.time.localeCompare(a.time))[0];
   if(lastMeal){const[h,m]=lastMeal.time.split(':').map(Number);const fh=(Date.now()-new Date().setHours(h,m,0,0))/3600000;if(fh>=0){document.getElementById('ctx-fast-val').textContent=`${fh.toFixed(1)}h`;document.getElementById('ctx-fast-val').classList.remove('no-data');document.getElementById('ctx-fast-sub').textContent=fh>8?'글리코겐↓':fh>4?'보통':'식후';}}
   document.getElementById('chat-status').textContent='4 에이전트 준비 완료';
   if(document.getElementById('messages').children.length===0){
