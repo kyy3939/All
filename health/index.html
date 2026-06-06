@@ -669,7 +669,7 @@ select.inp{cursor:pointer;font-size:14px;}
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbwYktKueXhJFukryR974Jj2SSQpLf_DTojQ7yx5cW87MFOXScoCt2y3uHEZ-PgFL3casA/exec';
+const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0eDJa-fT_CCD15hq0vPooyIFZIXyYuqSA8Zwq0_pHVoKgA/exec';
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 function parseSheetData(raw){
