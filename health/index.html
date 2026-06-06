@@ -338,6 +338,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.0</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -662,8 +663,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <button class="mob-tab" onclick="switchTab('chat')"><div class="mob-tab-icon">💬</div><div class="mob-tab-label">코치</div></button>
 </div>
 
-<!-- 버전 배지 -->
-<div style="position:fixed;bottom:12px;right:12px;z-index:999;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;pointer-events:none;">v1.0.0</div>
+<!-- 버전은 상단 네비에 표시 -->
 
 <div class="toast" id="toast"></div>
 
@@ -679,15 +679,13 @@ function parseSheetData(raw){
   return{bodyRecs,mealRecs,exRecs};
 }
 async function syncFromSheet(){
-  showToast('☁️ 동기화 중...');
   const raw=await sheetLoad();
-  if(!raw){showToast('⚠️ 동기화 실패');return;}
+  if(!raw){return;}
   const{bodyRecs,mealRecs,exRecs}=parseSheetData(raw);
   localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
   window.bodyRecs=bodyRecs; window.mealRecs=mealRecs; window.exRecs=exRecs;
-  showToast('✅ 동기화 완료!');
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
