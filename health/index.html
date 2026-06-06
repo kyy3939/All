@@ -305,18 +305,18 @@ select.inp{cursor:pointer;font-size:14px;}
 .msg.user .bubble{background:var(--accent);color:#fff;border-bottom-right-radius:3px;}
 .msg.ai .bubble{background:var(--s2);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:3px;}
 .msg-time{font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;}
-.coaching-sections{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
-.cs-section{background:var(--s3);border-radius:12px;padding:12px 14px;border-left:3px solid;}
+.coaching-sections{display:flex;flex-direction:column;gap:14px;margin-top:4px;}
+.cs-section{background:var(--s3);border-radius:12px;padding:16px 18px;border-left:3px solid;}
 .cs-section.bio{border-color:var(--bio);}
 .cs-section.exercise{border-color:var(--run);}
 .cs-section.nutrition{border-color:var(--eat);}
 .cs-section.overall{border-color:var(--coach);}
-.cs-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'DM Mono',monospace;}
+.cs-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;}
 .cs-section.bio .cs-title{color:var(--bio);}
 .cs-section.exercise .cs-title{color:var(--run);}
 .cs-section.nutrition .cs-title{color:var(--eat);}
 .cs-section.overall .cs-title{color:var(--coach);}
-.cs-content{font-size:13px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:keep-all;}
+.cs-content{font-size:13px;line-height:2;color:var(--text);word-break:keep-all;}
 .typing-wrap{align-self:flex-start;display:flex;gap:5px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:3px;padding:13px 18px;}
 .td{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:td 1.2s infinite;}
 .td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
@@ -341,7 +341,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.4</span>
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -407,6 +407,10 @@ select.inp{cursor:pointer;font-size:14px;}
               <button class="ex-tab-dash" onclick="switchDashEx('bodyweight',this)">💪 복합</button>
             </div>
             <div class="ex-list-dash hist-list" id="d-ex-list"></div>
+          </div>
+          <div class="section">
+            <div class="sec-hdr"><div class="sec-title">😴 수면</div><div class="sec-meta" id="d-sleep-meta"></div></div>
+            <div id="d-sleep-content" style="padding:14px 18px;"></div>
           </div>
         </div>
       </div>
@@ -780,6 +784,26 @@ function renderDashboard(){
   document.getElementById('d-ex-meta').textContent=`총 ${tex}회`;
   renderDashEx(er,currentDashEx);
   renderPBs(er.run||[]);
+  // 수면 대시보드
+  const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+  const lastSleep=sr[sr.length-1];
+  const sleepEl=document.getElementById('d-sleep-content');
+  if(lastSleep){
+    const sc=lastSleep.durationHours>=7?'var(--run)':lastSleep.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
+    const sq={5:'😊 최고',4:'🙂 좋음',3:'😐 보통',2:'😑 나쁨',1:'😩 최악'};
+    document.getElementById('d-sleep-meta').textContent=lastSleep.date?.slice(5)||'';
+    sleepEl.innerHTML=`<div class="lr-vals" style="gap:20px;">
+      <div class="lr-item"><div class="lr-item-label">수면 시간</div><div class="lr-item-val" style="font-size:22px;color:${sc}">${lastSleep.durationHours}h</div></div>
+      <div class="lr-item"><div class="lr-item-label">취침</div><div class="lr-item-val">${lastSleep.bedtime||'—'}</div></div>
+      <div class="lr-item"><div class="lr-item-label">기상</div><div class="lr-item-val">${lastSleep.waketime||'—'}</div></div>
+      ${lastSleep.quality?`<div class="lr-item"><div class="lr-item-label">품질</div><div class="lr-item-val">${sq[lastSleep.quality]||lastSleep.quality+'점'}</div></div>`:''}
+    </div>
+    <div style="margin-top:12px;"><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${Math.min(100,Math.round(lastSleep.durationHours/8*100))}%;background:${sc};"></div></div></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;">권장 수면 8시간 기준 ${Math.round(lastSleep.durationHours/8*100)}%</div>`;
+  } else {
+    document.getElementById('d-sleep-meta').textContent='';
+    sleepEl.innerHTML='<div class="empty-state">수면 기록 없음</div>';
+  }
 }
 function renderBodyCharts(br,days){
   let data=days===0?br:br.filter(r=>{const cut=new Date();cut.setDate(cut.getDate()-days);return r.date>=cut.toISOString().slice(0,10);});
@@ -926,10 +950,15 @@ function updateMealSummary(){
   document.getElementById('m-bar-cal-val').textContent=`${Math.round(t.cal)}/${GOALS.cal}`;document.getElementById('m-bar-prot-val').textContent=`${Math.round(t.prot)}/${GOALS.protein}g`;
 }
 function renderMealHist(){
-  const td=document.getElementById('m-date').value||today;const tm=[...mealRecs.filter(m=>m.date===td)].reverse();
-  const list=document.getElementById('m-hist-list');document.getElementById('m-hist-count').textContent=`${tm.length}건`;
-  if(!tm.length){list.innerHTML='<div class="empty-state">오늘 식사 기록 없음</div>';return;}
-  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="meal-badge badge-${m.mealType}" style="flex-shrink:0;margin-top:2px;">${m.mealType}</div><div class="hi-body"><div class="hi-main" style="font-size:13px;">${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g</div></div><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
+  const td=document.getElementById('m-date').value||today;
+  // 선택 날짜 기록 우선, 없으면 전체 최근 10건 표시
+  let tm=[...mealRecs.filter(m=>m.date===td)].reverse();
+  const showingToday=tm.length>0;
+  if(!showingToday) tm=[...mealRecs].reverse().slice(0,10);
+  const list=document.getElementById('m-hist-list');
+  document.getElementById('m-hist-count').textContent=showingToday?`${tm.length}건`:`최근 ${tm.length}건`;
+  if(!tm.length){list.innerHTML='<div class="empty-state">식사 기록 없음</div>';return;}
+  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g</div></div><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
 }
 function delMeal(id){if(!confirm('삭제?'))return;mealRecs=mealRecs.filter(m=>m.id!==id);localStorage.setItem('mealRecords',JSON.stringify(mealRecs));updateMealSummary();renderMealHist();}
 
@@ -1002,10 +1031,10 @@ function buildChatContext(){
 function escChat(s){
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\\n/g,'\n')          // 리터럴 \n → 실제 줄바꿈
+    .replace(/\n{3,}/g,'\n\n')     // 3줄 이상 공백 → 2줄로
     .replace(/\n/g,'<br>')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/• /g,'<br>• ')
-    .replace(/(\d+\.) /g,'<br>$1 ');
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
 }
 function addAiChatMsg(result){
   const area=document.getElementById('messages');const div=document.createElement('div');div.className='msg ai';
