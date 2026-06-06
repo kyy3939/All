@@ -339,7 +339,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.0</span>
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.1</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -994,11 +994,20 @@ async function sendChat(){
       system:CHAT_SYSTEM,
       messages:chatHistory
     })});
-    const data=await resp.json();const raw=data.result||'{}';
+    const data=await resp.json();
     hideTyping();
-    let result;try{result=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){result={overall:raw};}
-    chatHistory.push({role:'assistant',content:raw});addAiChatMsg(result);
-  }catch(e){hideTyping();addAiChatMsg({overall:'⚠️ 연결 오류. 다시 시도해주세요.'});}
+    if(data.status!=='ok'){throw new Error(data.message||'GAS 오류');}
+    const raw=data.result||'{}';
+    let result;
+    try{result=JSON.parse(raw.replace(/```json\n?|```/g,'').trim());}
+    catch(e){result={overall:raw};}
+    chatHistory.push({role:'assistant',content:raw});
+    addAiChatMsg(result);
+  }catch(e){
+    hideTyping();
+    console.error('코치 오류:',e);
+    addAiChatMsg({overall:`⚠️ 연결 오류가 발생했어요. (${e.message})\n잠시 후 다시 시도해주세요.`});
+  }
   chatLoading=false;document.getElementById('send-btn').disabled=false;
 }
 
