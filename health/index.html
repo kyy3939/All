@@ -316,7 +316,7 @@ select.inp{cursor:pointer;font-size:14px;}
 .cs-section.exercise .cs-title{color:var(--run);}
 .cs-section.nutrition .cs-title{color:var(--eat);}
 .cs-section.overall .cs-title{color:var(--coach);}
-.cs-content{font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap;}
+.cs-content{font-size:13px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:keep-all;}
 .typing-wrap{align-self:flex-start;display:flex;gap:5px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:3px;padding:13px 18px;}
 .td{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:td 1.2s infinite;}
 .td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
@@ -341,7 +341,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.3</span>
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;letter-spacing:1px;margin-left:4px;">v1.0.4</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -999,14 +999,22 @@ function buildChatContext(){
   if(lm){const[h,m]=lm.time.split(':').map(Number);const fh=(Date.now()-new Date().setHours(h,m,0,0))/3600000;if(fh>=0)ctx+=`[공복] 마지막식사(${lm.mealType} ${lm.time}) 이후 ${fh.toFixed(1)}h\n`;}
   return ctx;
 }
+function escChat(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/• /g,'<br>• ')
+    .replace(/(\d+\.) /g,'<br>$1 ');
+}
 function addAiChatMsg(result){
   const area=document.getElementById('messages');const div=document.createElement('div');div.className='msg ai';
   const hasMulti=result.bio||result.exercise||result.nutrition;
   let s='';
-  if(result.bio)s+=`<div class="cs-section bio"><div class="cs-title">🧬 신체 상태</div><div class="cs-content">${esc(result.bio)}</div></div>`;
-  if(result.exercise)s+=`<div class="cs-section exercise"><div class="cs-title">🏋️ 운동 코칭</div><div class="cs-content">${esc(result.exercise)}</div></div>`;
-  if(result.nutrition)s+=`<div class="cs-section nutrition"><div class="cs-title">🥗 영양 코칭</div><div class="cs-content">${esc(result.nutrition)}</div></div>`;
-  if(result.overall)s+=`<div class="cs-section overall"><div class="cs-title">⚡ 종합 조언</div><div class="cs-content">${esc(result.overall)}</div></div>`;
+  if(result.bio)s+=`<div class="cs-section bio"><div class="cs-title">🧬 신체 상태</div><div class="cs-content">${escChat(result.bio)}</div></div>`;
+  if(result.exercise)s+=`<div class="cs-section exercise"><div class="cs-title">🏋️ 운동 코칭</div><div class="cs-content">${escChat(result.exercise)}</div></div>`;
+  if(result.nutrition)s+=`<div class="cs-section nutrition"><div class="cs-title">🥗 영양 코칭</div><div class="cs-content">${escChat(result.nutrition)}</div></div>`;
+  if(result.overall)s+=`<div class="cs-section overall"><div class="cs-title">⚡ 종합 조언</div><div class="cs-content">${escChat(result.overall)}</div></div>`;
   div.innerHTML=`<div class="msg-meta">🤖 헬스코치 · ${nowTime()}</div><div class="bubble">${hasMulti?`<div class="coaching-sections">${s}</div>`:s}</div>`;
   area.appendChild(div);scrollChat();
 }
@@ -1035,8 +1043,17 @@ async function sendChat(){
     if(data.status!=='ok'){throw new Error(data.message||'GAS 오류');}
     const raw=data.result||'{}';
     let result;
-    try{result=JSON.parse(raw.replace(/```json\n?|```/g,'').trim());}
-    catch(e){result={overall:raw};}
+    try{
+      // 마크다운 코드블록 제거 후 파싱 시도
+      const cleaned=raw.replace(/```json\n?|```/g,'').trim();
+      result=JSON.parse(cleaned);
+    }catch(e){
+      // JSON 파싱 실패 시 텍스트 안에서 {} 블록 추출 시도
+      try{
+        const m=raw.match(/\{[\s\S]*\}/);
+        result=m?JSON.parse(m[0]):{overall:raw};
+      }catch(e2){result={overall:raw};}
+    }
     chatHistory.push({role:'assistant',content:raw});
     addAiChatMsg(result);
   }catch(e){
