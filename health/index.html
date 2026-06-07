@@ -357,7 +357,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.1.3</span>
+  <span class="nav-ver">v1.1.4</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -822,7 +822,9 @@ function renderDashboard(){
   function setV(id,val,unit=''){document.getElementById(id).innerHTML=val!=null?`${val}<span class="sc-unit">${unit}</span>`:`—<span class="sc-unit">${unit}</span>`;}
   function setC(id,cur,prv,bad){if(cur==null||prv==null)return;const d=(cur-prv).toFixed(1);const up=d>0;const cls=(bad?up:!up)?'up':'dn';const arr=up?'▲':'▼';document.getElementById(id).innerHTML=`<span class="${cls}">${arr}${Math.abs(d)}</span> 전일`;}
   if(latest){setV('d-weight',latest.weight,'kg');setV('d-skeletal',latest.skeletal,'kg');setV('d-fatrate',latest.fatRate,'%');if(prev){setC('d-weight-chg',latest.weight,prev.weight,true);setC('d-skeletal-chg',latest.skeletal,prev.skeletal,false);setC('d-fatrate-chg',latest.fatRate,prev.fatRate,true);}}
-  const tm=mr.filter(m=>m.date===today);const tc=Math.round(tm.reduce((a,m)=>a+(m.total?.kcal||0),0));
+  const tm=mr.filter(m=>m.date===today);
+  const tmDisplay=tm.length?tm:[...mr].reverse().slice(0,3);
+  const tc=Math.round(tmDisplay.reduce((a,m)=>a+(m.total?.kcal||0),0));
   document.getElementById('d-cal').innerHTML=tc?`${tc}<span class="sc-unit">kcal</span>`:`—<span class="sc-unit">kcal</span>`;
   document.getElementById('d-cal-sub').textContent=tc?`목표 ${GOALS.cal}의 ${Math.round(tc/GOALS.cal*100)}%`:'기록 없음';
   renderBodyCharts(br,currentPeriod);
@@ -840,11 +842,11 @@ function renderDashboard(){
   } else {
     bsc.innerHTML='<div style="grid-column:1/-1;padding:8px 0;font-size:12px;color:var(--muted);text-align:center;">체성분 기록 없음</div>';
   }
-  const totals=tm.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),protein:a.protein+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0)}),{cal:0,protein:0,carb:0});
-  document.getElementById('d-meal-meta').textContent=tm.length?`${Math.round(totals.cal)}kcal / ${tm.length}끼`:'기록 없음';
+  const totals=tmDisplay.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),protein:a.protein+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0)}),{cal:0,protein:0,carb:0});
+  document.getElementById('d-meal-meta').textContent=tmDisplay.length?`${Math.round(totals.cal)}kcal / ${tmDisplay.length}끼`:'기록 없음';
   const pct=(v,g)=>Math.min(100,Math.round(v/g*100));
   document.getElementById('d-nutrition-bars').innerHTML=`<div class="nb-row"><div class="nb-label">칼로리</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.cal,GOALS.cal)}%;background:var(--cal);"></div></div><div class="nb-vals">${Math.round(totals.cal)}/${GOALS.cal}</div></div><div class="nb-row"><div class="nb-label">단백질</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.protein,GOALS.protein)}%;background:var(--protein);"></div></div><div class="nb-vals">${Math.round(totals.protein)}g/${GOALS.protein}g</div></div><div class="nb-row"><div class="nb-label">탄수화물</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.carb,GOALS.carb)}%;background:var(--carb);"></div></div><div class="nb-vals">${Math.round(totals.carb)}g/${GOALS.carb}g</div></div>`;
-  document.getElementById('d-meal-list').innerHTML=tm.length?tm.map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${m.total?.kcal||0}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
+  document.getElementById('d-meal-list').innerHTML=tmDisplay.length?tmDisplay.map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${m.total?.kcal||0}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
   const tex=(er.run?.length||0)+(er.bike?.length||0)+(er.bodyweight?.length||0);
   document.getElementById('d-ex-meta').textContent=`총 ${tex}회`;
   renderDashEx(er,currentDashEx);
@@ -1061,9 +1063,29 @@ function renderMealHist(){
   const list=document.getElementById('m-hist-list');
   document.getElementById('m-hist-count').textContent=showingToday?`${tm.length}건`:`최근 ${tm.length}건`;
   if(!tm.length){list.innerHTML='<div class="empty-state">식사 기록 없음</div>';return;}
-  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g</div></div><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
+  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g</div></div><button class="hi-del" onclick="editMeal(${m.id})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
 }
 function delMeal(id){if(!confirm('삭제?'))return;mealRecs=mealRecs.filter(m=>m.id!==id);localStorage.setItem('mealRecords',JSON.stringify(mealRecs));updateMealSummary();renderMealHist();}
+function editMeal(id){
+  const m=mealRecs.find(m=>m.id===id);if(!m)return;
+  selectMeal(m.mealType);
+  document.getElementById('m-date').value=m.date||'';
+  document.getElementById('m-time').value=m.time||'';
+  document.getElementById('food-input').value=m.foodText||'';
+  // 분석 결과 채우기
+  pendingAnalysis={foods:[],total:m.total,foodText:m.foodText};
+  document.getElementById('ar-cal').textContent=m.total?.kcal||0;
+  document.getElementById('ar-prot').textContent=(m.total?.protein||0)+'g';
+  document.getElementById('ar-carb').textContent=(m.total?.carb||0)+'g';
+  document.getElementById('ar-fat').textContent=(m.total?.fat||0)+'g';
+  document.getElementById('ar-foods').innerHTML='';
+  document.getElementById('analysis-result').classList.add('show');
+  document.getElementById('meal-save-btn').disabled=false;
+  mealRecs=mealRecs.filter(m2=>m2.id!==id);
+  localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
+  updateMealSummary();renderMealHist();
+  showToast('✏️ 수정할 내용을 변경 후 저장하세요');
+}
 
 // ══ 채팅 ══
 let chatHistory=[],chatLoading=false;
@@ -1231,19 +1253,17 @@ function saveSleep(){
   const quality=document.getElementById('sl-quality').value;
   const memo=document.getElementById('sl-memo').value;
   if(!date||!bedtime||!waketime){showToast('⚠️ 날짜, 취침, 기상 시간을 입력해주세요');return;}
-  // 수면 시간 계산
   const[bh,bm]=bedtime.split(':').map(Number);
   const[wh,wm]=waketime.split(':').map(Number);
   let bedMins=bh*60+bm;let wakeMins=wh*60+wm;
   if(wakeMins<=bedMins)wakeMins+=1440;
-  const durationHours=Math.round((wakeMins-bedMins)/60*10)/10;
-  const rec={date,bedtime,waketime,durationHours,quality:quality?parseInt(quality):null,memo:memo||null};
-  const idx=sleepRecs.findIndex(r=>r.date===date);
-  if(idx>=0)sleepRecs[idx]={...sleepRecs[idx],...rec};else sleepRecs.push(rec);
+  const totalMins=wakeMins-bedMins;
+  const durationHours=Math.round(totalMins/60*10)/10;
+  const rec={id:Date.now(),date,bedtime,waketime,durationHours,quality:quality?parseInt(quality):null,memo:memo||null};
+  sleepRecs.push(rec);
   sleepRecs.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
   sheetSave({type:'sleep',...rec});
-  // 초기화
   document.getElementById('sl-bedtime').value='';
   document.getElementById('sl-waketime').value='';
   document.getElementById('sl-quality').value='';
@@ -1273,20 +1293,42 @@ function renderSleepHist(){
   showLastSleepRec();
   if(!sleepRecs.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
   const qEmoji={5:'😊',4:'🙂',3:'😐',2:'😑',1:'😩'};
-  list.innerHTML=[...sleepRecs].reverse().map((r,ri)=>{
-    const i=sleepRecs.length-1-ri;
+  list.innerHTML=[...sleepRecs].reverse().map(r=>{
     const sleepColor=r.durationHours>=7?'var(--run)':r.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
+    const rid=r.id||r.date;
     return`<div class="hi-item">
-      <div class="hi-date">${r.date?.slice(5)||''}</div>
+      <div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div></div>
       <div class="hi-body">
         <div class="hi-main" style="color:${sleepColor}">${r.durationHours}h ${r.quality?qEmoji[r.quality]:''}</div>
         <div class="hi-sub">취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'}${r.memo?' · '+r.memo:''}</div>
       </div>
-      <button class="hi-del" onclick="delSleep(${i})">×</button>
+      <button class="hi-del" onclick="editSleep('${rid}')" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button>
+      <button class="hi-del" onclick="delSleep('${rid}')">×</button>
     </div>`;
   }).join('');
 }
-function delSleep(i){if(!confirm('삭제?'))return;sleepRecs.splice(i,1);localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));renderSleepHist();}
+function delSleep(rid){
+  if(!confirm('삭제?'))return;
+  sleepRecs=sleepRecs.filter(r=>(r.id||r.date)!=rid);
+  localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
+  renderSleepHist();
+}
+function editSleep(rid){
+  const r=sleepRecs.find(r=>(r.id||r.date)==rid);
+  if(!r)return;
+  document.getElementById('sl-date').value=r.date||'';
+  document.getElementById('sl-bedtime').value=r.bedtime||'';
+  document.getElementById('sl-waketime').value=r.waketime||'';
+  document.getElementById('sl-quality').value=r.quality||'';
+  document.getElementById('sl-memo').value=r.memo||'';
+  calcSleepDuration();
+  // 기존 기록 삭제 후 수정 저장
+  sleepRecs=sleepRecs.filter(r2=>(r2.id||r2.date)!=rid);
+  localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
+  renderSleepHist();
+  showToast('✏️ 수정할 내용을 변경 후 저장하세요');
+  document.getElementById('sl-bedtime').focus();
+}
 
 function applyDashLayout(){
   const isPC=window.innerWidth>=769;const cols=document.querySelector('.dash-cols');
