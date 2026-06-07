@@ -239,6 +239,13 @@ select.inp{cursor:pointer;font-size:14px;}
 .type-tab.active[data-type="run"]{border-color:var(--run);background:rgba(0,229,160,.08);}
 .type-tab.active[data-type="bike"]{border-color:var(--coach);background:rgba(79,195,247,.08);}
 .type-tab.active[data-type="bodyweight"]{border-color:var(--cal);background:rgba(255,112,67,.08);}
+/* 측정 시점 버튼 */
+.type-tab.active[data-timing="일반"]{border-color:var(--accent);background:rgba(108,99,255,.12);}
+.type-tab.active[data-timing="운동 전"]{border-color:var(--run);background:rgba(0,229,160,.1);}
+.type-tab.active[data-timing="운동 후"]{border-color:var(--cal);background:rgba(255,112,67,.1);}
+/* 수면 타입 버튼 */
+.type-tab.active[data-sleeptype="밤잠"]{border-color:var(--accent);background:rgba(108,99,255,.12);}
+.type-tab.active[data-sleeptype="낮잠"]{border-color:var(--coach);background:rgba(79,195,247,.1);}
 .tt-icon{font-size:24px;}
 .tt-label{font-size:11px;font-weight:700;color:var(--muted);}
 .type-tab.active .tt-label{color:var(--text);}
@@ -357,7 +364,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.2.0</span>
+  <span class="nav-ver">v1.2.2</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -755,22 +762,18 @@ function parseSheetData(raw){
   function normalizeDate(v){
     if(!v)return'';
     if(typeof v==='string'){
-      const m=v.match(/^(\d{4}-\d{2}-\d{2})/);
-      return m?m[1]:v;
-    }
-    if(v instanceof Date||Object.prototype.toString.call(v)==='[object Date]'){
-      // 한국 시간대 기준으로 변환
-      const s=new Date(v).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
-      // "2026. 06. 07." → "2026-06-07"
-      const parts=s.replace(/\.\s*/g,'-').replace(/-$/,'').split('-');
-      return parts.length===3?`${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`:String(v).slice(0,10);
+      // ISO 문자열 "2026-06-07T..." → "2026-06-07" (직접 슬라이스, 타임존 영향 없음)
+      const m=v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(m)return`${m[1]}-${m[2]}-${m[3]}`;
+      // "2026. 06. 07." 형태 처리
+      const k=v.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+      if(k)return`${k[1]}-${k[2].padStart(2,'0')}-${k[3].padStart(2,'0')}`;
+      return v.slice(0,10);
     }
     if(typeof v==='number'){
-      // 구글 시트 날짜 시리얼 → 한국 날짜
-      const d=new Date((v-25569)*86400000);
-      const s=d.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
-      const parts=s.replace(/\.\s*/g,'-').replace(/-$/,'').split('-');
-      return parts.length===3?`${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`:String(v).slice(0,10);
+      // 구글 시트 날짜 시리얼 → UTC 기준 날짜 (시리얼은 UTC 자정 기준)
+      const d=new Date(Math.round((v-25569)*86400)*1000);
+      return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
     }
     return String(v).slice(0,10);
   }
@@ -799,12 +802,15 @@ async function syncFromSheet(){
   const raw=await sheetLoad();
   if(!raw){showToast('⚠️ 동기화 실패. 네트워크를 확인해주세요.');return;}
   const{bodyRecs:br,mealRecs:mr,exRecs:er,sleepRecs:sr}=parseSheetData(raw);
+  // 수면: 날짜+타입 기준 중복 제거 (같은 날짜+타입이면 마지막 것만 유지)
+  const srDeduped=[];const srSeen=new Set();
+  [...sr].reverse().forEach(r=>{const key=`${r.date}_${r.sleepType||'밤잠'}`;if(!srSeen.has(key)){srSeen.add(key);srDeduped.unshift(r);}});
   // 시트 데이터로 전면 교체 (시트가 정보 원본)
   localStorage.setItem('bodyRecords',JSON.stringify(br));
   localStorage.setItem('mealRecords',JSON.stringify(mr));
   localStorage.setItem('exerciseRecords',JSON.stringify(er));
-  localStorage.setItem('sleepRecords',JSON.stringify(sr));
-  bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=sr;
+  localStorage.setItem('sleepRecords',JSON.stringify(srDeduped));
+  bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=srDeduped;
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
@@ -813,7 +819,8 @@ async function syncFromSheet(){
   showToast('✅ 동기화 완료!');
 }
 
-const _d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));const today=`${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+// KST(UTC+9) 기준 오늘 날짜 — toLocaleString 대신 offset 직접 계산
+const _kst=new Date(Date.now()+9*3600*1000);const today=_kst.toISOString().slice(0,10);
 const pad=n=>String(n).padStart(2,'0');
 const GOALS={cal:2100,protein:150,carb:250,fat:60};
 function nowTime(){const n=new Date();return`${pad(n.getHours())}:${pad(n.getMinutes())}`;}
@@ -821,13 +828,13 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
 function initDates(){
-  const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-  const ds=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const ts=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const now=new Date(Date.now()+9*3600*1000);
+  const ds=now.toISOString().slice(0,10);
+  const ts=`${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
   ['b-date','ex-date','m-date','sl-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
   ['b-time','ex-time','m-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ts;});
   const days=['일','월','화','수','목','금','토'];
-  document.getElementById('navDate').textContent=`${ds} ${days[now.getDay()]}요일`;
+  document.getElementById('navDate').textContent=`${ds} ${days[now.getUTCDay()]}요일`;
 }
 
 function switchTab(tab){
@@ -1336,7 +1343,9 @@ function saveSleep(){
   const totalMins=wakeMins-bedMins;
   const durationHours=Math.round(totalMins/60*10)/10;
   const rec={id:Date.now(),date,sleepType:currentSleepType,bedtime,waketime,durationHours,quality:quality?parseInt(quality):null,memo:memo||null};
-  sleepRecs.push(rec);
+  // 같은 날짜+수면타입이면 덮어쓰기
+  const idx=sleepRecs.findIndex(r=>r.date===date&&(r.sleepType||'밤잠')===(currentSleepType||'밤잠'));
+  if(idx>=0)sleepRecs[idx]={...sleepRecs[idx],...rec};else sleepRecs.push(rec);
   sleepRecs.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
   sheetSave({type:'sleep',sleepType:currentSleepType,...rec});
