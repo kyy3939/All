@@ -357,7 +357,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.1.4</span>
+  <span class="nav-ver">v1.1.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -750,9 +750,15 @@ function parseSheetData(raw){
     return String(v).slice(0,10);
   }
   function normalizeTime(v){
-    if(!v)return'';
+    if(!v&&v!==0)return'';
+    // 구글 시트 시간은 소수(0~1)로 옴: 0.5 = 12:00
+    if(typeof v==='number'){
+      const totalMins=Math.round(v*1440);
+      const h=Math.floor(totalMins/60)%24;
+      const m=totalMins%60;
+      return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
     const s=String(v);
-    // HH:MM:SS → HH:MM
     const m=s.match(/(\d{1,2}:\d{2})/);
     return m?m[1]:s.slice(0,5);
   }
@@ -768,14 +774,12 @@ async function syncFromSheet(){
   const raw=await sheetLoad();
   if(!raw){showToast('⚠️ 동기화 실패. 네트워크를 확인해주세요.');return;}
   const{bodyRecs:br,mealRecs:mr,exRecs:er,sleepRecs:sr}=parseSheetData(raw);
-  // localStorage 갱신
+  // 시트 데이터로 전면 교체 (시트가 정보 원본)
   localStorage.setItem('bodyRecords',JSON.stringify(br));
   localStorage.setItem('mealRecords',JSON.stringify(mr));
   localStorage.setItem('exerciseRecords',JSON.stringify(er));
   localStorage.setItem('sleepRecords',JSON.stringify(sr));
-  // 전역변수 갱신 (화면 반영에 필수)
   bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=sr;
-  // UI 갱신
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
@@ -784,7 +788,7 @@ async function syncFromSheet(){
   showToast('✅ 동기화 완료!');
 }
 
-const today=new Date().toISOString().slice(0,10);
+const _d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));const today=`${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 const pad=n=>String(n).padStart(2,'0');
 const GOALS={cal:2100,protein:150,carb:250};
 function nowTime(){const n=new Date();return`${pad(n.getHours())}:${pad(n.getMinutes())}`;}
@@ -877,8 +881,8 @@ function renderBodyCharts(br,days){
   let data=days===0?br:br.filter(r=>{const cut=new Date();cut.setDate(cut.getDate()-days);return r.date>=cut.toISOString().slice(0,10);});
   const labels=data.map(r=>r.date.slice(5));
   const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}},y:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}}}});
-  const mk=(label,vals,color)=>({label,data:vals,borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:2,tension:0.35,fill:true});
-  const make=(ref,id,label,vals,color)=>{if(ref)ref.destroy();return new Chart(document.getElementById(id),{type:'line',data:{labels,datasets:[mk(label,vals,color)]},options:baseOpts()});};
+  const mk=(label,vals,color)=>({label,data:vals,backgroundColor:color+'99',borderColor:color,borderWidth:1,borderRadius:4});
+  const make=(ref,id,label,vals,color)=>{if(ref)ref.destroy();return new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[mk(label,vals,color)]},options:baseOpts()});};
   chartWeight  =make(chartWeight,  'chartWeight',  '체중',   data.map(r=>r.weight),  '#00e5ff');
   chartSkeletal=make(chartSkeletal,'chartSkeletal','골격근', data.map(r=>r.skeletal),'#69f0ae');
   chartFatRate =make(chartFatRate, 'chartFatRate', '체지방률',data.map(r=>r.fatRate), '#ff4081');
@@ -1037,14 +1041,20 @@ async function analyzeFood(){
   }catch(e){showToast('⚠️ 분석 실패. 다시 시도해주세요.');}
   btn.disabled=false;btn.innerHTML='🔍 영양소 자동 분석';
 }
+let mealSaving=false;
 function saveMeal(){
   if(!pendingAnalysis){showToast('⚠️ 먼저 분석해주세요');return;}
+  if(mealSaving){showToast('⚠️ 저장 중입니다...');return;}
+  mealSaving=true;
+  const btn=document.getElementById('meal-save-btn');btn.disabled=true;btn.textContent='💾 저장 중...';
   const rec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
   mealRecs.push(rec);mealRecs.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
   sheetSave({type:'meal',date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,total:rec.total});
-  document.getElementById('food-input').value='';document.getElementById('analysis-result').classList.remove('show');document.getElementById('meal-save-btn').disabled=true;pendingAnalysis=null;
+  document.getElementById('food-input').value='';document.getElementById('analysis-result').classList.remove('show');
+  pendingAnalysis=null;
   updateMealSummary();renderMealHist();showToast('✅ 식사 저장됐어요!');
+  setTimeout(()=>{mealSaving=false;btn.disabled=false;btn.textContent='💾 식사 저장';},2000);
 }
 function updateMealSummary(){
   const td=document.getElementById('m-date').value||today;const tm=mealRecs.filter(m=>m.date===td);
