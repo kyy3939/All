@@ -185,6 +185,16 @@ select.inp{cursor:pointer;font-size:14px;}
 .chart-2col{display:grid;grid-template-columns:1fr 1fr;gap:0;}
 @media(max-width:500px){.chart-2col{grid-template-columns:1fr;}}
 .chart-2col .chart-wrap:first-child{border-right:1px solid var(--border);}
+/* 체성분 그래프 반응형 */
+.body-chart-grid{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--border);margin-top:12px;}
+.body-chart-grid .chart-wrap{border-bottom:1px solid var(--border);}
+.body-chart-grid .chart-wrap:last-child{border-bottom:none;}
+@media(min-width:500px){
+  .body-chart-grid{grid-template-columns:1fr 1fr;}
+  .body-chart-grid .chart-wrap:nth-child(odd){border-right:1px solid var(--border);}
+  .body-chart-grid .chart-wrap:nth-last-child(-n+2){border-bottom:none;}
+  #d-body-stat-cards{grid-template-columns:repeat(3,1fr)!important;}
+}
 .chart-wrap{padding:16px 18px;}
 .chart-container{position:relative;height:200px;}
 .nb-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
@@ -347,7 +357,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.1.2</span>
+  <span class="nav-ver">v1.1.3</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -391,26 +401,26 @@ select.inp{cursor:pointer;font-size:14px;}
               </div>
             </div>
             <!-- 수치 카드 6개 3열 2행 -->
-            <div id="d-body-stat-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 18px 4px;"></div>
-            <!-- 그래프 2열 3행 -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);margin-top:12px;">
-              <div class="chart-wrap" style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+            <div id="d-body-stat-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:14px 18px 4px;"></div>
+            <!-- 그래프 2열 3행 (모바일 1열) -->
+            <div class="body-chart-grid">
+              <div class="chart-wrap">
                 <div class="sc-label" style="margin-bottom:6px;color:var(--weight);">⚖ 체중 (kg)</div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartWeight"></canvas></div>
               </div>
-              <div class="chart-wrap" style="border-bottom:1px solid var(--border);">
+              <div class="chart-wrap">
                 <div class="sc-label" style="margin-bottom:6px;color:var(--skeletal);">💪 골격근량 (kg)</div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartSkeletal"></canvas></div>
               </div>
-              <div class="chart-wrap" style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+              <div class="chart-wrap">
                 <div class="sc-label" style="margin-bottom:6px;color:var(--fat-c);">🔥 체지방률 (%)</div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartFatRate"></canvas></div>
               </div>
-              <div class="chart-wrap" style="border-bottom:1px solid var(--border);">
+              <div class="chart-wrap">
                 <div class="sc-label" style="margin-bottom:6px;color:#ff6e8a;">📉 체지방량 (kg)</div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartFatMass"></canvas></div>
               </div>
-              <div class="chart-wrap" style="border-right:1px solid var(--border);">
+              <div class="chart-wrap">
                 <div class="sc-label" style="margin-bottom:6px;color:var(--coach);">💧 체수분 (kg)</div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartWater"></canvas></div>
               </div>
