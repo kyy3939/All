@@ -364,7 +364,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.2.2</span>
+  <span class="nav-ver">v1.2.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -462,6 +462,34 @@ select.inp{cursor:pointer;font-size:14px;}
             <div class="sec-hdr"><div class="sec-title">🏆 개인 최고 기록</div><div class="sec-meta">PB</div></div>
             <div id="d-pb-grid" style="padding:14px 18px;"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- ══ 기록 히스토리 섹션 ══ -->
+      <div style="margin-top:16px;">
+        <div class="section">
+          <div class="sec-hdr">
+            <div class="sec-title">📋 기록 히스토리</div>
+            <div class="period-btns" id="hist-period-btns">
+              <button class="pb-btn active" onclick="setHistPeriod(7,this)">7일</button>
+              <button class="pb-btn" onclick="setHistPeriod(30,this)">30일</button>
+              <button class="pb-btn" onclick="setHistPeriod(0,this)">전체</button>
+            </div>
+          </div>
+          <!-- 날짜 선택 -->
+          <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;">날짜 선택</span>
+            <input type="date" id="hist-date-pick" class="inp" style="font-size:12px;flex:1;max-width:160px;" onchange="renderHistDay(this.value)">
+            <button onclick="clearHistDate()" style="background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;padding:5px 10px;cursor:pointer;white-space:nowrap;">전체 보기</button>
+          </div>
+          <!-- 히스토리 탭 -->
+          <div style="display:flex;gap:6px;padding:12px 18px 0;">
+            <button class="ex-tab-dash active" onclick="switchHistTab('day',this)">📅 날짜별</button>
+            <button class="ex-tab-dash" onclick="switchHistTab('sleep',this)">😴 수면</button>
+            <button class="ex-tab-dash" onclick="switchHistTab('meal',this)">🥗 식사</button>
+            <button class="ex-tab-dash" onclick="switchHistTab('exercise',this)">🏋️ 운동</button>
+          </div>
+          <div id="hist-content" style="padding:8px 18px 16px;max-height:600px;overflow-y:auto;"></div>
         </div>
       </div>
     </div>
@@ -790,11 +818,13 @@ function parseSheetData(raw){
     const m=s.match(/(\d{1,2}:\d{2})/);
     return m?m[1]:s.slice(0,5);
   }
-  const bodyRecs=(raw.body||[]).map(r=>({date:normalizeDate(r['날짜']),time:normalizeTime(r['시간']),timing:r['측정시점']||'일반',weight:parseFloat(r['체중'])||null,skeletal:parseFloat(r['골격근량'])||null,fatMass:parseFloat(r['체지방량'])||null,water:parseFloat(r['체수분'])||null,fatRate:parseFloat(r['체지방률'])||null,bmi:parseFloat(r['BMI'])||null,bmr:parseFloat(r['기초대사량'])||null})).filter(r=>r.date);
+  // 체성분 시트 실제 컬럼: 날짜|시간|체중|골격근량|체지방량|체수분|체지방률|BMI|기초대사량 (측정시점 컬럼 없음)
+  const bodyRecs=(raw.body||[]).map(r=>({date:normalizeDate(r['날짜']),time:r['시간']||'',weight:parseFloat(r['체중'])||null,skeletal:parseFloat(r['골격근량'])||null,fatMass:parseFloat(r['체지방량'])||null,water:parseFloat(r['체수분'])||null,fatRate:parseFloat(r['체지방률'])||null,bmi:parseFloat(r['BMI'])||null,bmr:parseFloat(r['기초대사량'])||null})).filter(r=>r.date);
   const mealRecs=(raw.meal||[]).map((r,i)=>({id:i+1,date:normalizeDate(r['날짜']),time:normalizeTime(r['시간']),mealType:r['구분'],foodText:r['음식내용'],total:{kcal:parseFloat(r['칼로리'])||0,protein:parseFloat(r['단백질'])||0,carb:parseFloat(r['탄수화물'])||0,fat:parseFloat(r['지방'])||0}})).filter(r=>r.date);
   const exRecs={run:[],bike:[],bodyweight:[]};
   (raw.exercise||[]).forEach(r=>{const t=r['종류'];const d=normalizeDate(r['날짜']);const tm=normalizeTime(r['시간']);if(t==='런닝'){exRecs.run.push({date:d,time:tm,duration:r['시간(분)'],distance:parseFloat(r['거리(km)'])||null,pace:r['페이스'],hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null});}else if(t==='자전거'){exRecs.bike.push({date:d,time:tm,duration:parseInt(r['시간(분)'])||null,hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null,memo:r['세부내용']});}else if(t==='복합운동'){const exercises=(r['세부내용']||'').split(',').map(s=>{const m=s.trim().match(/(.+)\s(\d+)회×(\d+)세트/);return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};}).filter(e=>e.name);exRecs.bodyweight.push({date:d,time:tm,exercises});}});
-  const sleepRecs=(raw.sleep||[]).map(r=>({date:normalizeDate(r['날짜']),sleepType:r['구분']||'밤잠',bedtime:normalizeTime(r['취침시간']),waketime:normalizeTime(r['기상시간']),durationHours:parseFloat(r['수면시간(h)'])||null,quality:r['품질(1-5)']?parseInt(r['품질(1-5)']):null,memo:r['메모']||null})).filter(r=>r.date);
+  // 수면 시트 실제 컬럼: 날짜|취침시간|기상시간|수면시간(h)|품질(1-5)|메모 (구분 컬럼 없음)
+  const sleepRecs=(raw.sleep||[]).map(r=>({date:normalizeDate(r['날짜']),sleepType:'밤잠',bedtime:r['취침시간']||'',waketime:r['기상시간']||'',durationHours:parseFloat(r['수면시간(h)'])||null,quality:r['품질(1-5)']?parseInt(r['품질(1-5)']):null,memo:r['메모']||null})).filter(r=>r.date);
   return{bodyRecs,mealRecs,exRecs,sleepRecs};
 }
 async function syncFromSheet(){
@@ -893,6 +923,7 @@ function renderDashboard(){
   document.getElementById('d-ex-meta').textContent=`총 ${tex}회`;
   renderDashEx(er,currentDashEx);
   renderAllPBs(er);
+  renderHistPanel();
   // 수면 대시보드
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
   const lastSleep=sr[sr.length-1];
@@ -937,6 +968,310 @@ function renderDashEx(er,type){
   else if(type==='bike')list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`).join('');
   else list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div></div>`).join('');
 }
+// ══ 기록 히스토리 패널 ══
+let currentHistTab='day', currentHistPeriod=7, currentHistDate=null;
+
+function setHistPeriod(d,btn){
+  currentHistPeriod=d; currentHistDate=null;
+  document.getElementById('hist-date-pick').value='';
+  document.querySelectorAll('#hist-period-btns .pb-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistPanel();
+}
+function switchHistTab(tab,btn){
+  currentHistTab=tab;
+  document.querySelectorAll('#hist-content').forEach(()=>{});
+  document.querySelectorAll('.ex-tab-dash').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistPanel();
+}
+function renderHistDay(date){
+  currentHistDate=date; currentHistTab='day';
+  document.querySelectorAll('.ex-tab-dash').forEach((b,i)=>{b.classList.toggle('active',i===0);});
+  renderHistPanel();
+}
+function clearHistDate(){
+  currentHistDate=null;
+  document.getElementById('hist-date-pick').value='';
+  renderHistPanel();
+}
+
+function filterByPeriod(arr, dateKey){
+  if(currentHistDate) return arr.filter(r=>r[dateKey]===currentHistDate);
+  if(currentHistPeriod===0) return arr;
+  const cut=new Date(Date.now()+9*3600*1000);
+  cut.setDate(cut.getDate()-currentHistPeriod);
+  const cutStr=cut.toISOString().slice(0,10);
+  return arr.filter(r=>r[dateKey]>=cutStr);
+}
+
+function renderHistPanel(){
+  const el=document.getElementById('hist-content');
+  if(!el)return;
+  const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
+  const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+
+  if(currentHistTab==='day'){
+    // 날짜별 통합 뷰 — 모든 날짜 수집
+    let dates=new Set();
+    filterByPeriod(sr,'date').forEach(r=>dates.add(r.date));
+    filterByPeriod(mr,'date').forEach(r=>dates.add(r.date));
+    filterByPeriod(er.run||[],'date').forEach(r=>dates.add(r.date));
+    filterByPeriod(er.bike||[],'date').forEach(r=>dates.add(r.date));
+    filterByPeriod(er.bodyweight||[],'date').forEach(r=>dates.add(r.date));
+    dates=[...dates].sort((a,b)=>b.localeCompare(a));
+    if(!dates.length){el.innerHTML='<div class="empty-state">기록 없음</div>';return;}
+    el.innerHTML=dates.map(date=>{
+      const sleeps=sr.filter(r=>r.date===date);
+      const meals=mr.filter(r=>r.date===date);
+      const runs=(er.run||[]).filter(r=>r.date===date);
+      const bikes=(er.bike||[]).filter(r=>r.date===date);
+      const bws=(er.bodyweight||[]).filter(r=>r.date===date);
+      const totalCal=Math.round(meals.reduce((a,m)=>a+(m.total?.kcal||0),0));
+      const totalProt=Math.round(meals.reduce((a,m)=>a+(m.total?.protein||0),0));
+      const sleep=sleeps[0];
+      const sleepColor=sleep?(sleep.durationHours>=7?'var(--run)':sleep.durationHours>=6?'var(--fatrate)':'var(--fat-c)'):'var(--muted)';
+      return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
+        <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
+          ${sleep?`<span style="font-size:11px;color:${sleepColor};margin-left:4px;">😴${sleep.durationHours}h</span>`:''}
+          ${totalCal?`<span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>`:''}
+          ${totalProt?`<span style="font-size:11px;color:var(--protein);">단백질${totalProt}g</span>`:''}
+          ${runs.length?`<span style="font-size:11px;color:var(--run);">🏃${runs.map(r=>r.distance+'km').join(' ')}</span>`:''}
+          ${bikes.length?`<span style="font-size:11px;color:var(--coach);">🚴${bikes.map(r=>r.duration+'분').join(' ')}</span>`:''}
+          ${bws.length?`<span style="font-size:11px;color:var(--cal);">💪${bws.length}회</span>`:''}
+        </div>
+        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
+          ${sleep?`<div style="font-size:12px;color:var(--dim);">😴 취침 ${sleep.bedtime||'—'} → 기상 ${sleep.waketime||'—'} <span style="color:${sleepColor};font-weight:700;">${sleep.durationHours}h</span>${sleep.quality?` · 품질${sleep.quality}점`:''}</div>`:''}
+          ${meals.map(m=>`<div style="font-size:12px;color:var(--dim);"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span> <span style="margin-left:6px;">${m.foodText}</span> <span style="color:var(--cal);font-family:'DM Mono',monospace;">${m.total?.kcal||0}kcal</span></div>`).join('')}
+          ${runs.map(r=>`<div style="font-size:12px;color:var(--run);">🏃 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div>`).join('')}
+          ${bikes.map(r=>`<div style="font-size:12px;color:var(--coach);">🚴 ${r.duration}분 ${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div>`).join('')}
+          ${bws.map(r=>`<div style="font-size:12px;color:var(--cal);">💪 ${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')}</div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  else if(currentHistTab==='sleep'){
+    const data=filterByPeriod([...sr].reverse(),'date');
+    if(!data.length){el.innerHTML='<div class="empty-state">수면 기록 없음</div>';return;}
+    const qEmoji={5:'😊',4:'🙂',3:'😐',2:'😑',1:'😩'};
+    el.innerHTML=data.map(r=>{
+      const sc=r.durationHours>=7?'var(--run)':r.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
+      return`<div class="hi-item">
+        <div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div></div>
+        <div class="hi-body">
+          <div class="hi-main" style="color:${sc}">${r.durationHours}h ${r.quality?qEmoji[r.quality]:''}</div>
+          <div class="hi-sub">취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'}${r.memo?' · '+r.memo:''}</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:right;">
+          ${r.durationHours>=7?'✅ 충분':r.durationHours>=6?'⚠️ 부족':'❌ 심각'}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  else if(currentHistTab==='meal'){
+    // 날짜별 그룹핑
+    const filtered=filterByPeriod([...mr],'date');
+    const grouped={};
+    filtered.forEach(m=>{if(!grouped[m.date])grouped[m.date]=[];grouped[m.date].push(m);});
+    const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+    if(!dates.length){el.innerHTML='<div class="empty-state">식사 기록 없음</div>';return;}
+    el.innerHTML=dates.map(date=>{
+      const meals=grouped[date];
+      const totalCal=Math.round(meals.reduce((a,m)=>a+(m.total?.kcal||0),0));
+      const totalProt=Math.round(meals.reduce((a,m)=>a+(m.total?.protein||0),0));
+      const totalCarb=Math.round(meals.reduce((a,m)=>a+(m.total?.carb||0),0));
+      return`<div style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--text);">${date}</span>
+          <span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>
+          <span style="font-size:11px;color:var(--protein);">단${totalProt}g</span>
+          <span style="font-size:11px;color:var(--carb);">탄${totalCarb}g</span>
+        </div>
+        ${meals.map(m=>`<div class="hi-item" style="padding:8px 4px;">
+          <div class="hi-date"><div class="hi-date-d">${m.time||''}</div></div>
+          <div class="hi-body">
+            <div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span><span style="margin-left:6px;">${m.foodText}</span></div>
+            <div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>
+          </div>
+        </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+  else if(currentHistTab==='exercise'){
+    renderExHistTable(er);
+  }
+}
+
+// ══ 운동 종목별 테이블 뷰 ══
+let exSortKey='date', exSortAsc=false, currentExHistSub='run';
+function renderExHistTable(er){
+  const el=document.getElementById('hist-content');
+  if(!el)return;
+  // 서브탭 버튼
+  const subTabs=`<div style="display:flex;gap:6px;margin-bottom:12px;">
+    <button onclick="switchExSub('run',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='run'?'var(--run)':'var(--border)'};background:${currentExHistSub==='run'?'rgba(0,229,160,.12)':'var(--s2)'};color:${currentExHistSub==='run'?'var(--run)':'var(--muted)'};font-size:12px;cursor:pointer;">🏃 런닝</button>
+    <button onclick="switchExSub('bike',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='bike'?'var(--coach)':'var(--border)'};background:${currentExHistSub==='bike'?'rgba(79,195,247,.12)':'var(--s2)'};color:${currentExHistSub==='bike'?'var(--coach)':'var(--muted)'};font-size:12px;cursor:pointer;">🚴 자전거</button>
+    <button onclick="switchExSub('bodyweight',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='bodyweight'?'var(--cal)':'var(--border)'};background:${currentExHistSub==='bodyweight'?'rgba(255,112,67,.12)':'var(--s2)'};color:${currentExHistSub==='bodyweight'?'var(--cal)':'var(--muted)'};font-size:12px;cursor:pointer;">💪 복합</button>
+  </div>`;
+  if(currentExHistSub==='run'){
+    const data=filterByPeriod([...(er.run||[])],'date');
+    if(!data.length){el.innerHTML=subTabs+'<div class="empty-state">런닝 기록 없음</div>';return;}
+    // 정렬
+    const sorted=sortExData(data,'run');
+    // 통계
+    const totalDist=sorted.reduce((a,r)=>a+(parseFloat(r.distance)||0),0);
+    const totalCal=sorted.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+    const toS=p=>{if(!p)return null;const[m,s]=p.split(':').map(Number);return m*60+(s||0);};
+    const paces=sorted.filter(r=>r.pace).map(r=>toS(r.pace));
+    const bestPace=paces.length?Math.min(...paces):null;
+    const fmtS=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    const statBar=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+      <div class="pb-card"><div class="pb-card-label">총 기록</div><div class="pb-card-val" style="color:var(--run);font-size:16px;">${sorted.length}회</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 거리</div><div class="pb-card-val" style="color:var(--run);font-size:16px;">${totalDist.toFixed(1)}</div><div class="pb-card-sub">km</div></div>
+      <div class="pb-card"><div class="pb-card-label">최고 페이스</div><div class="pb-card-val" style="color:var(--run);font-size:16px;">${bestPace?fmtS(bestPace):'—'}</div><div class="pb-card-sub">/km</div></div>
+      <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:var(--run);font-size:16px;">${totalCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
+    </div>`;
+    const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?'var(--run)':'var(--muted)'};font-family:'DM Mono',monospace;text-align:${k==='date'?'left':'right'};cursor:pointer;white-space:nowrap;"`;
+    const arrow=(k)=>exSortKey===k?(exSortAsc?'▲':'▼'):'';
+    const table=`<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:1px solid var(--border);">
+        <th ${thStyle('date')} onclick="sortEx('date')">날짜${arrow('date')}</th>
+        <th ${thStyle('distance')} onclick="sortEx('distance')">거리${arrow('distance')}</th>
+        <th ${thStyle('duration')} onclick="sortEx('duration')">시간${arrow('duration')}</th>
+        <th ${thStyle('pace')} onclick="sortEx('pace')">페이스${arrow('pace')}</th>
+        <th ${thStyle('hr')} onclick="sortEx('hr')">심박${arrow('hr')}</th>
+        <th ${thStyle('cal')} onclick="sortEx('cal')">칼로리${arrow('cal')}</th>
+        <th ${thStyle('cadence')} onclick="sortEx('cadence')">케이던스${arrow('cadence')}</th>
+      </tr></thead>
+      <tbody>${sorted.map((r,i)=>{
+        const isPB=r.pace&&paces.length&&toS(r.pace)===bestPace;
+        return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}${isPB?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--run);text-align:right;font-weight:700;">${r.distance||'—'}<span style="color:var(--muted);font-size:10px;">km</span></td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.duration||'—'}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);text-align:right;font-weight:${isPB?'700':'400'};">${r.pace||'—'}<span style="color:var(--muted);font-size:10px;">/km</span></td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.cadence||'—'}<span style="color:var(--muted);font-size:10px;">spm</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+    el.innerHTML=subTabs+statBar+table;
+  }
+  else if(currentExHistSub==='bike'){
+    const data=filterByPeriod([...(er.bike||[])],'date');
+    if(!data.length){el.innerHTML=subTabs+'<div class="empty-state">자전거 기록 없음</div>';return;}
+    const sorted=sortExData(data,'bike');
+    const totalDur=sorted.reduce((a,r)=>a+(parseInt(r.duration)||0),0);
+    const totalCal=sorted.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+    const maxDur=Math.max(...sorted.filter(r=>r.duration).map(r=>parseInt(r.duration)));
+    const statBar=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+      <div class="pb-card"><div class="pb-card-label">총 기록</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${sorted.length}회</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${totalDur}</div><div class="pb-card-sub">분</div></div>
+      <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${totalCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
+    </div>`;
+    const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?'var(--coach)':'var(--muted)'};font-family:'DM Mono',monospace;text-align:${k==='date'?'left':'right'};cursor:pointer;"`;
+    const arrow=(k)=>exSortKey===k?(exSortAsc?'▲':'▼'):'';
+    const table=`<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:1px solid var(--border);">
+        <th ${thStyle('date')} onclick="sortEx('date')">날짜${arrow('date')}</th>
+        <th ${thStyle('duration')} onclick="sortEx('duration')">시간(분)${arrow('duration')}</th>
+        <th ${thStyle('hr')} onclick="sortEx('hr')">심박${arrow('hr')}</th>
+        <th ${thStyle('cal')} onclick="sortEx('cal')">칼로리${arrow('cal')}</th>
+      </tr></thead>
+      <tbody>${sorted.map((r,i)=>{
+        const isPBDur=parseInt(r.duration)===maxDur;
+        return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${r.duration||'—'}<span style="color:var(--muted);font-size:10px;">분</span>${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+    el.innerHTML=subTabs+statBar+table;
+  }
+  else{
+    // 복합운동 — 종목별 최고 기록
+    const data=filterByPeriod([...(er.bodyweight||[])],'date');
+    if(!data.length){el.innerHTML=subTabs+'<div class="empty-state">복합운동 기록 없음</div>';return;}
+    const sorted=[...data].sort((a,b)=>b.date.localeCompare(a.date));
+    // 종목별 집계
+    const exMap={};
+    data.forEach(session=>{
+      session.exercises?.forEach(e=>{
+        if(!exMap[e.name])exMap[e.name]=[];
+        exMap[e.name].push({date:session.date,reps:e.reps||0,sets:e.sets||0,vol:(e.reps||0)*(e.sets||0)});
+      });
+    });
+    const statBar=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+      <div class="pb-card"><div class="pb-card-label">총 세션</div><div class="pb-card-val" style="color:var(--cal);font-size:16px;">${sorted.length}회</div></div>
+      <div class="pb-card"><div class="pb-card-label">종목 수</div><div class="pb-card-val" style="color:var(--cal);font-size:16px;">${Object.keys(exMap).length}가지</div></div>
+    </div>`;
+    // 종목별 PB 테이블
+    const exTables=Object.entries(exMap).map(([name,records])=>{
+      const maxReps=Math.max(...records.map(r=>r.reps));
+      const maxSets=Math.max(...records.map(r=>r.sets));
+      const maxVol=Math.max(...records.map(r=>r.vol));
+      const recsSorted=[...records].sort((a,b)=>b.date.localeCompare(a.date));
+      return`<div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--cal);letter-spacing:1px;font-family:'DM Mono',monospace;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+          💪 ${name}
+          <span style="font-size:10px;color:var(--muted);font-weight:400;">최고 ${maxReps}회×${maxSets}세트</span>
+        </div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;">날짜</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">횟수</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">세트</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">볼륨</th>
+          </tr></thead>
+          <tbody>${recsSorted.map((r,i)=>{
+            const isPBVol=r.vol===maxVol;
+            return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
+              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
+              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:${r.reps===maxReps?'var(--cal)':'var(--dim)'};text-align:right;font-weight:${r.reps===maxReps?700:400};">${r.reps}회</td>
+              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:${r.sets===maxSets?'var(--cal)':'var(--dim)'};text-align:right;font-weight:${r.sets===maxSets?700:400};">${r.sets}세트</td>
+              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:${isPBVol?'var(--pb)':'var(--dim)'};text-align:right;">${r.vol}${isPBVol?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table></div>
+      </div>`;
+    }).join('');
+    el.innerHTML=subTabs+statBar+exTables;
+  }
+}
+function switchExSub(type){
+  currentExHistSub=type;exSortKey='date';exSortAsc=false;
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
+  renderExHistTable(er);
+}
+function sortEx(key){
+  if(exSortKey===key)exSortAsc=!exSortAsc;else{exSortKey=key;exSortAsc=false;}
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
+  renderExHistTable(er);
+}
+function sortExData(data,type){
+  return[...data].sort((a,b)=>{
+    let va,vb;
+    if(exSortKey==='date'){va=a.date+(a.time||'');vb=b.date+(b.time||'');}
+    else if(exSortKey==='pace'){
+      const toS=p=>{if(!p)return exSortAsc?99999:0;const[m,s]=p.split(':').map(Number);return m*60+(s||0);};
+      va=toS(a.pace);vb=toS(b.pace);
+      // 페이스는 낮을수록 좋으므로 반전
+      return exSortAsc?va-vb:vb-va;
+    }
+    else{va=parseFloat(a[exSortKey])||0;vb=parseFloat(b[exSortKey])||0;}
+    if(typeof va==='string')return exSortAsc?va.localeCompare(vb):vb.localeCompare(va);
+    return exSortAsc?va-vb:vb-va;
+  });
+}
+
 function isPBRun(rec,runs){if(!rec.pace||!rec.distance)return false;const toS=p=>{const[m,s]=p.split(':').map(Number);return m*60+(s||0);};const d=parseFloat(rec.distance);const sim=runs.filter(r=>r!==rec&&r.distance&&Math.abs(parseFloat(r.distance)-d)<=0.5&&r.pace);return sim.length>0&&sim.every(r=>toS(r.pace)>=toS(rec.pace));}
 function renderAllPBs(er){
   const grid=document.getElementById('d-pb-grid');
