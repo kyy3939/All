@@ -357,7 +357,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.1.5</span>
+  <span class="nav-ver">v1.1.7</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -790,13 +790,15 @@ async function syncFromSheet(){
 
 const _d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));const today=`${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 const pad=n=>String(n).padStart(2,'0');
-const GOALS={cal:2100,protein:150,carb:250};
+const GOALS={cal:2100,protein:150,carb:250,fat:60};
 function nowTime(){const n=new Date();return`${pad(n.getHours())}:${pad(n.getMinutes())}`;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
 function initDates(){
-  const now=new Date();const ds=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;const ts=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const ds=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const ts=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
   ['b-date','ex-date','m-date','sl-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
   ['b-time','ex-time','m-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ts;});
   const days=['일','월','화','수','목','금','토'];
@@ -846,10 +848,14 @@ function renderDashboard(){
   } else {
     bsc.innerHTML='<div style="grid-column:1/-1;padding:8px 0;font-size:12px;color:var(--muted);text-align:center;">체성분 기록 없음</div>';
   }
-  const totals=tmDisplay.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),protein:a.protein+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0)}),{cal:0,protein:0,carb:0});
+  const totals=tmDisplay.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),protein:a.protein+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0),fat:a.fat+(m.total?.fat||0)}),{cal:0,protein:0,carb:0,fat:0});
   document.getElementById('d-meal-meta').textContent=tmDisplay.length?`${Math.round(totals.cal)}kcal / ${tmDisplay.length}끼`:'기록 없음';
   const pct=(v,g)=>Math.min(100,Math.round(v/g*100));
-  document.getElementById('d-nutrition-bars').innerHTML=`<div class="nb-row"><div class="nb-label">칼로리</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.cal,GOALS.cal)}%;background:var(--cal);"></div></div><div class="nb-vals">${Math.round(totals.cal)}/${GOALS.cal}</div></div><div class="nb-row"><div class="nb-label">단백질</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.protein,GOALS.protein)}%;background:var(--protein);"></div></div><div class="nb-vals">${Math.round(totals.protein)}g/${GOALS.protein}g</div></div><div class="nb-row"><div class="nb-label">탄수화물</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.carb,GOALS.carb)}%;background:var(--carb);"></div></div><div class="nb-vals">${Math.round(totals.carb)}g/${GOALS.carb}g</div></div>`;
+  document.getElementById('d-nutrition-bars').innerHTML=`
+    <div class="nb-row"><div class="nb-label">칼로리</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.cal,GOALS.cal)}%;background:var(--cal);"></div></div><div class="nb-vals">${Math.round(totals.cal)}/${GOALS.cal}</div></div>
+    <div class="nb-row"><div class="nb-label">단백질</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.protein,GOALS.protein)}%;background:var(--protein);"></div></div><div class="nb-vals">${Math.round(totals.protein)}g/${GOALS.protein}g</div></div>
+    <div class="nb-row"><div class="nb-label">탄수화물</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.carb,GOALS.carb)}%;background:var(--carb);"></div></div><div class="nb-vals">${Math.round(totals.carb)}g/${GOALS.carb}g</div></div>
+    <div class="nb-row"><div class="nb-label">지방</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.fat,60)}%;background:#e040fb;"></div></div><div class="nb-vals">${Math.round(totals.fat)}g/60g</div></div>`;
   document.getElementById('d-meal-list').innerHTML=tmDisplay.length?tmDisplay.map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${m.total?.kcal||0}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
   const tex=(er.run?.length||0)+(er.bike?.length||0)+(er.bodyweight?.length||0);
   document.getElementById('d-ex-meta').textContent=`총 ${tex}회`;
@@ -881,7 +887,7 @@ function renderBodyCharts(br,days){
   let data=days===0?br:br.filter(r=>{const cut=new Date();cut.setDate(cut.getDate()-days);return r.date>=cut.toISOString().slice(0,10);});
   const labels=data.map(r=>r.date.slice(5));
   const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}},y:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}}}});
-  const mk=(label,vals,color)=>({label,data:vals,backgroundColor:color+'99',borderColor:color,borderWidth:1,borderRadius:4});
+  const mk=(label,vals,color)=>({label,data:vals,backgroundColor:color+'99',borderColor:color,borderWidth:1,borderRadius:4,barThickness:data.length===1?20:'flex',maxBarThickness:28});
   const make=(ref,id,label,vals,color)=>{if(ref)ref.destroy();return new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[mk(label,vals,color)]},options:baseOpts()});};
   chartWeight  =make(chartWeight,  'chartWeight',  '체중',   data.map(r=>r.weight),  '#00e5ff');
   chartSkeletal=make(chartSkeletal,'chartSkeletal','골격근', data.map(r=>r.skeletal),'#69f0ae');
@@ -967,9 +973,29 @@ function renderBodyHist(){
   const list=document.getElementById('b-hist-list');
   document.getElementById('b-hist-count').textContent=`${bodyRecs.length}건`;
   if(!bodyRecs.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
-  list.innerHTML=[...bodyRecs].reverse().map((r,ri)=>{const i=bodyRecs.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main">${r.weight||'—'}kg</div><div class="hi-sub">골격근 ${r.skeletal||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div><button class="hi-del" onclick="delBodyRec(${i})">×</button></div>`;}).join('');
+  list.innerHTML=[...bodyRecs].reverse().map((r,ri)=>{const i=bodyRecs.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main">${r.weight||'—'}kg</div><div class="hi-sub">골격근 ${r.skeletal||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div><button class="hi-del" onclick="editBodyRec(${i})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delBodyRec(${i})">×</button></div>`;}).join('');
 }
 function delBodyRec(i){if(!confirm('삭제할까요?'))return;bodyRecs.splice(i,1);localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));showPrevHints();showLastBodyRec();renderBodyHist();}
+function editBodyRec(i){
+  const r=bodyRecs[i];if(!r)return;
+  document.getElementById('b-date').value=r.date||'';
+  document.getElementById('b-time').value=r.time||'';
+  document.getElementById('b-weight').value=r.weight||'';
+  document.getElementById('b-skeletal').value=r.skeletal||'';
+  document.getElementById('b-fatmass').value=r.fatMass||'';
+  document.getElementById('b-water').value=r.water||'';
+  document.getElementById('b-fatrate').value=r.fatRate||'';
+  document.getElementById('b-bmi').value=r.bmi||'';
+  document.getElementById('b-bmr').value=r.bmr||'';
+  // 기존 기록 삭제 후 수정 저장 유도
+  bodyRecs.splice(i,1);
+  localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));
+  showPrevHints();showLastBodyRec();renderBodyHist();
+  showToast('✏️ 수정할 내용을 변경 후 저장하세요');
+  document.getElementById('b-weight').focus();
+  // 체성분 탭으로 스크롤
+  document.getElementById('page-body').scrollTop=0;
+}
 
 // ══ 운동 ══
 let exRecs=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
