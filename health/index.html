@@ -364,7 +364,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.2.5</span>
+  <span class="nav-ver">v1.2.6</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -476,11 +476,12 @@ select.inp{cursor:pointer;font-size:14px;}
               <button class="pb-btn" onclick="setHistPeriod(0,this)">전체</button>
             </div>
           </div>
-          <!-- 날짜 선택 -->
-          <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
-            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;">날짜 선택</span>
-            <input type="date" id="hist-date-pick" class="inp" style="font-size:12px;flex:1;max-width:160px;" onchange="renderHistDay(this.value)">
-            <button onclick="clearHistDate()" style="background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;padding:5px 10px;cursor:pointer;white-space:nowrap;">전체 보기</button>
+          <!-- 날짜 선택 + 검색 -->
+          <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;">날짜</span>
+            <input type="date" id="hist-date-pick" class="inp" style="font-size:12px;flex:1;min-width:130px;max-width:160px;">
+            <button onclick="applyHistDate()" style="padding:8px 14px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 검색</button>
+            <button onclick="clearHistDate()" style="padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:none;color:var(--muted);font-size:11px;cursor:pointer;white-space:nowrap;">전체</button>
           </div>
           <!-- 히스토리 탭 -->
           <div style="display:flex;gap:6px;padding:12px 18px 0;">
@@ -786,47 +787,104 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0e
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 function parseSheetData(raw){
-  // 구글 시트에서 날짜가 Date객체나 ISO문자열로 오는 경우 YYYY-MM-DD로 정규화
-  function normalizeDate(v){
-    if(!v)return'';
-    if(typeof v==='string'){
-      // ISO 문자열 "2026-06-07T..." → "2026-06-07" (직접 슬라이스, 타임존 영향 없음)
-      const m=v.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if(m)return`${m[1]}-${m[2]}-${m[3]}`;
-      // "2026. 06. 07." 형태 처리
-      const k=v.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
-      if(k)return`${k[1]}-${k[2].padStart(2,'0')}-${k[3].padStart(2,'0')}`;
-      return v.slice(0,10);
+  // GAS가 이미 KST 기준 'yyyy-MM-dd' / 'HH:mm' 문자열로 반환하므로
+  // 추가 변환 없이 그대로 사용. 빈값/null 방어만 처리.
+  function safeDate(v){ return String(v||'').slice(0,10)||''; }
+  function safeTime(v){ return String(v||'').slice(0,5)||''; }
+  function safeFloat(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+  function safeInt(v){ const n=parseInt(v); return isNaN(n)?null:n; }
+
+  // ── 체성분: 날짜|시간|체중|골격근량|체지방량|체수분|체지방률|BMI|기초대사량
+  const bodyRecs=(raw.body||[]).map(r=>({
+    date:safeDate(r['날짜']),
+    time:safeTime(r['시간']),
+    weight:safeFloat(r['체중']),
+    skeletal:safeFloat(r['골격근량']),
+    fatMass:safeFloat(r['체지방량']),
+    water:safeFloat(r['체수분']),
+    fatRate:safeFloat(r['체지방률']),
+    bmi:safeFloat(r['BMI']),
+    bmr:safeFloat(r['기초대사량'])
+  })).filter(r=>r.date);
+
+  // ── 식사: 날짜|시간|구분|음식내용|칼로리|단백질|탄수화물|지방
+  const mealRecs=(raw.meal||[]).map((r,i)=>({
+    id:i+1,
+    date:safeDate(r['날짜']),
+    time:safeTime(r['시간']),
+    mealType:r['구분']||'',
+    foodText:r['음식내용']||'',
+    total:{
+      kcal:safeFloat(r['칼로리'])||0,
+      protein:safeFloat(r['단백질'])||0,
+      carb:safeFloat(r['탄수화물'])||0,
+      fat:safeFloat(r['지방'])||0
     }
-    if(typeof v==='number'){
-      // 구글 시트 날짜 시리얼 → UTC 기준 날짜 (시리얼은 UTC 자정 기준)
-      const d=new Date(Math.round((v-25569)*86400)*1000);
-      return`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-    }
-    return String(v).slice(0,10);
-  }
-  function normalizeTime(v){
-    if(!v&&v!==0)return'';
-    // 구글 시트 시간은 소수(0~1)로 옴: 0.5 = 12:00
-    if(typeof v==='number'){
-      const totalMins=Math.round(v*1440);
-      const h=Math.floor(totalMins/60)%24;
-      const m=totalMins%60;
-      return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-    }
-    const s=String(v);
-    const m=s.match(/(\d{1,2}:\d{2})/);
-    return m?m[1]:s.slice(0,5);
-  }
-  // 체성분 시트 실제 컬럼: 날짜|시간|체중|골격근량|체지방량|체수분|체지방률|BMI|기초대사량 (측정시점 컬럼 없음)
-  const bodyRecs=(raw.body||[]).map(r=>({date:normalizeDate(r['날짜']),time:r['시간']||'',weight:parseFloat(r['체중'])||null,skeletal:parseFloat(r['골격근량'])||null,fatMass:parseFloat(r['체지방량'])||null,water:parseFloat(r['체수분'])||null,fatRate:parseFloat(r['체지방률'])||null,bmi:parseFloat(r['BMI'])||null,bmr:parseFloat(r['기초대사량'])||null})).filter(r=>r.date);
-  const mealRecs=(raw.meal||[]).map((r,i)=>({id:i+1,date:normalizeDate(r['날짜']),time:normalizeTime(r['시간']),mealType:r['구분'],foodText:r['음식내용'],total:{kcal:parseFloat(r['칼로리'])||0,protein:parseFloat(r['단백질'])||0,carb:parseFloat(r['탄수화물'])||0,fat:parseFloat(r['지방'])||0}})).filter(r=>r.date);
+  })).filter(r=>r.date);
+
+  // ── 운동: 날짜|시간|종류|세부내용|시간(분)|거리(km)|페이스|심박수|칼로리
+  // 복합운동은 세부내용을 파싱해서 exercises 배열로 변환
   const exRecs={run:[],bike:[],bodyweight:[]};
-  (raw.exercise||[]).forEach(r=>{const t=r['종류'];const d=normalizeDate(r['날짜']);const tm=normalizeTime(r['시간']);if(t==='런닝'){exRecs.run.push({date:d,time:tm,duration:r['시간(분)'],distance:parseFloat(r['거리(km)'])||null,pace:r['페이스'],hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null});}else if(t==='자전거'){exRecs.bike.push({date:d,time:tm,duration:parseInt(r['시간(분)'])||null,hr:parseInt(r['심박수'])||null,cal:parseInt(r['칼로리'])||null,memo:r['세부내용']});}else if(t==='복합운동'){const exercises=(r['세부내용']||'').split(',').map(s=>{const m=s.trim().match(/(.+)\s(\d+)회×(\d+)세트/);return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};}).filter(e=>e.name);exRecs.bodyweight.push({date:d,time:tm,exercises});}});
-  // 수면 시트 실제 컬럼: 날짜|취침시간|기상시간|수면시간(h)|품질(1-5)|메모 (구분 컬럼 없음)
-  const sleepRecs=(raw.sleep||[]).map(r=>({date:normalizeDate(r['날짜']),sleepType:'밤잠',bedtime:r['취침시간']||'',waketime:r['기상시간']||'',durationHours:parseFloat(r['수면시간(h)'])||null,quality:r['품질(1-5)']?parseInt(r['품질(1-5)']):null,memo:r['메모']||null})).filter(r=>r.date);
-  return{bodyRecs,mealRecs,exRecs,sleepRecs};
+  (raw.exercise||[]).forEach(r=>{
+    const date=safeDate(r['날짜']);
+    const time=safeTime(r['시간']);
+    const type=String(r['종류']||'');
+    if(type==='런닝'){
+      exRecs.run.push({
+        date,time,
+        distance:safeFloat(r['거리(km)']),
+        duration:String(r['시간(분)']||''),
+        pace:String(r['페이스']||''),
+        hr:safeInt(r['심박수']),
+        cal:safeInt(r['칼로리']),
+        cadence:safeInt(r['케이던스'])||null,
+        steps:safeInt(r['걸음수'])||null
+      });
+    } else if(type==='자전거'){
+      exRecs.bike.push({
+        date,time,
+        duration:safeInt(r['시간(분)']),
+        hr:safeInt(r['심박수']),
+        cal:safeInt(r['칼로리']),
+        memo:String(r['세부내용']||'')
+      });
+    } else if(type==='복합운동'){
+      // "스쿼트 15회×1세트, 윗몸일으키기 20회×3세트" 형태 파싱
+      const detail=String(r['세부내용']||'');
+      const exercises=detail.split(',').map(s=>{
+        const m=s.trim().match(/(.+?)\s*(\d+)회×(\d+)세트/);
+        return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};
+      }).filter(e=>e.name);
+      // 같은 날짜+시간 복합운동 세션 합치기 (시트에 여러 행으로 저장된 경우)
+      const existing=exRecs.bodyweight.find(e=>e.date===date&&e.time===time);
+      if(existing){
+        existing.exercises.push(...exercises);
+      } else {
+        exRecs.bodyweight.push({date,time,exercises});
+      }
+    }
+  });
+
+  // ── 수면: 날짜|취침시간|기상시간|수면시간(h)|품질(1-5)|메모
+  const sleepRecs=(raw.sleep||[]).map(r=>({
+    date:safeDate(r['날짜']),
+    bedtime:safeTime(r['취침시간']),
+    waketime:safeTime(r['기상시간']),
+    durationHours:safeFloat(r['수면시간(h)']),
+    quality:safeInt(r['품질(1-5)']),
+    memo:String(r['메모']||'')||null
+  })).filter(r=>r.date);
+
+  // 수면 중복 제거 (같은 날짜면 마지막 것 유지)
+  const sleepDeduped=[];
+  const sleepSeen=new Set();
+  [...sleepRecs].reverse().forEach(r=>{
+    if(!sleepSeen.has(r.date)){sleepSeen.add(r.date);sleepDeduped.unshift(r);}
+  });
+
+  return{bodyRecs,mealRecs,exRecs,sleepRecs:sleepDeduped};
 }
+
 async function syncFromSheet(){
   showToast('☁️ 동기화 중...');
   const raw=await sheetLoad();
@@ -950,8 +1008,27 @@ function renderBodyCharts(br,days){
   let data=days===0?br:br.filter(r=>{const cut=new Date();cut.setDate(cut.getDate()-days);return r.date>=cut.toISOString().slice(0,10);});
   const labels=data.map(r=>r.date.slice(5));
   const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}},y:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}}}});
-  const mk=(label,vals,color)=>({label,data:vals,backgroundColor:color+'99',borderColor:color,borderWidth:1,borderRadius:4,barThickness:data.length===1?20:'flex',maxBarThickness:28});
-  const make=(ref,id,label,vals,color)=>{if(ref)ref.destroy();return new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[mk(label,vals,color)]},options:baseOpts()});};
+  const mk=(label,vals,color)=>({
+    label,data:vals,borderColor:color,backgroundColor:color+'18',
+    borderWidth:2,pointRadius:4,pointBackgroundColor:color,
+    pointBorderColor:'#080b14',pointBorderWidth:2,
+    tension:0.35,fill:true
+  });
+  const makeOpts=(color)=>{
+    const base=baseOpts();
+    base.plugins.datalabels={display:true,color:color,font:{size:9,family:'DM Mono',weight:'bold'},
+      formatter:v=>v!=null?v:'',anchor:'end',align:'top',offset:2,
+      clamp:true};
+    return base;
+  };
+  const make=(ref,id,label,vals,color)=>{
+    if(ref)ref.destroy();
+    return new Chart(document.getElementById(id),{
+      type:'line',
+      data:{labels,datasets:[mk(label,vals,color)]},
+      options:makeOpts(color)
+    });
+  };
   chartWeight  =make(chartWeight,  'chartWeight',  '체중',   data.map(r=>r.weight),  '#00e5ff');
   chartSkeletal=make(chartSkeletal,'chartSkeletal','골격근', data.map(r=>r.skeletal),'#69f0ae');
   chartFatRate =make(chartFatRate, 'chartFatRate', '체지방률',data.map(r=>r.fatRate), '#ff4081');
@@ -984,6 +1061,11 @@ function switchHistTab(tab,btn){
   document.querySelectorAll('.ex-tab-dash').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderHistPanel();
+}
+function applyHistDate(){
+  const date=document.getElementById('hist-date-pick').value;
+  if(date) renderHistDay(date);
+  else clearHistDate();
 }
 function renderHistDay(date){
   currentHistDate=date; currentHistTab='day';
