@@ -415,7 +415,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.3.5</span>
+  <span class="nav-ver">v1.3.7</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -896,7 +896,11 @@ function parseSheetData(raw){
       protein:safeFloat(r['단백질'])||0,
       carb:safeFloat(r['탄수화물'])||0,
       fat:safeFloat(r['지방'])||0
-    }
+    },
+    foods:(()=>{
+      const rawFoods=r['세부음식']||r['foods']||r['foodsJson']||'';
+      try{const parsed=JSON.parse(rawFoods);return Array.isArray(parsed)?parsed:[];}catch(e){return [];}
+    })()
   })).filter(r=>r.date);
 
   // ── 운동: 날짜|시간|종류|세부내용|시간(분)|거리(km)|페이스|심박수|칼로리
@@ -1276,18 +1280,21 @@ function renderHistPanel(){
       const totalCal=Math.round(meals.reduce((a,m)=>a+(m.total?.kcal||0),0));
       const totalProt=Math.round(meals.reduce((a,m)=>a+(m.total?.protein||0),0));
       const totalCarb=Math.round(meals.reduce((a,m)=>a+(m.total?.carb||0),0));
+      const totalFat=Math.round(meals.reduce((a,m)=>a+(m.total?.fat||0),0));
       return`<div style="margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;">
           <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--text);">${date}</span>
           <span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>
           <span style="font-size:11px;color:var(--protein);">단${totalProt}g</span>
           <span style="font-size:11px;color:var(--carb);">탄${totalCarb}g</span>
+          <span style="font-size:11px;color:#e040fb;">지${totalFat}g</span>
         </div>
         ${meals.map(m=>`<div class="hi-item" style="padding:8px 4px;">
           <div class="hi-date"><div class="hi-date-d">${m.time||''}</div></div>
           <div class="hi-body">
             <div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span><span style="margin-left:6px;">${m.foodText}</span></div>
             <div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>
+            ${foodDetailsHtml(m)}
           </div>
         </div>`).join('')}
       </div>`;
@@ -1647,7 +1654,7 @@ function saveMeal(){
   const rec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
   mealRecs.push(rec);mealRecs.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
-  sheetSave({type:'meal',date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,total:rec.total});
+  sheetSave({type:'meal',date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,foods:rec.foods,foodsJson:JSON.stringify(rec.foods||[]),total:rec.total});
   document.getElementById('food-input').value='';document.getElementById('analysis-result').classList.remove('show');
   pendingAnalysis=null;
   updateMealSummary();renderMealHist();showToast('✅ 식사 저장됐어요!');
@@ -1674,7 +1681,7 @@ function renderMealHist(){
   const list=document.getElementById('m-hist-list');
   document.getElementById('m-hist-count').textContent=showingToday?`${tm.length}건`:`최근 ${tm.length}건`;
   if(!tm.length){list.innerHTML='<div class="empty-state">식사 기록 없음</div>';return;}
-  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div></div><button class="hi-del" onclick="editMeal(${m.id})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
+  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>${foodDetailsHtml(m)}</div><button class="hi-del" onclick="editMeal(${m.id})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
 }
 function delMeal(id){if(!confirm('삭제?'))return;mealRecs=mealRecs.filter(m=>m.id!==id);localStorage.setItem('mealRecords',JSON.stringify(mealRecs));updateMealSummary();renderMealHist();}
 function editMeal(id){
@@ -1803,8 +1810,8 @@ const CHAT_SYSTEM=`당신은 4명의 전문가로 구성된 통합 헬스 코치
 [학습/원리 질문] 교과서 수준의 깊이 있는 설명, 분량 제한 없음
 [일반 대화] overall만 채움
 
-JSON만 응답(마크다운 없이):
-{"bio":"🧬 신체상태/생리학","exercise":"🏋️ 운동 코칭","nutrition":"🥗 영양 코칭","overall":"⚡ 종합 조언"}
+반드시 아래 형식의 "유효한 JSON 객체"만 응답하세요. 마크다운, 설명문, 코드블록, 따옴표 밖의 문장 금지. 각 항목은 2~4문장으로 간결하게 작성하세요.
+{"bio":"신체상태/생리학 조언","exercise":"운동 코칭","nutrition":"영양 코칭","overall":"종합 조언"}
 
 핵심: 남성 만39세 175cm, 목표 체중2-3kg감량+근육증가+유지, 목표섭취~2100kcal, 단백질150g/일`;
 
@@ -1855,35 +1862,112 @@ function buildChatContext(){
   if(lm){const[h,m]=lm.time.split(':').map(Number);const fh=(Date.now()-new Date().setHours(h,m,0,0))/3600000;if(fh>=0)ctx+=`[공복] 마지막식사(${lm.mealType} ${lm.time}) 이후 ${fh.toFixed(1)}h\n`;}
   return ctx;
 }
-function normalizeAiResult(rawInput){
-  let obj=rawInput;
-  if(typeof obj==='string'){
-    let raw=obj.trim();
-    raw=raw.replace(/```json\n?|```/g,'').trim();
-    raw=raw.replace(/^json\s*/i,'').trim();
-    // Gemini/GAS가 따옴표·콜론 형태의 JSON 조각만 반환하는 경우 보정
-    const looksLikeJsonFields=/"?(bio|body|exercise|nutrition|overall|summary|advice)"?\s*:/i.test(raw);
-    const candidates=[];
-    candidates.push(raw);
-    if(looksLikeJsonFields && !raw.startsWith('{')) candidates.push('{'+raw.replace(/^,+|,+$/g,'')+'}');
-    const m=raw.match(/\{[\s\S]*\}/);
-    if(m) candidates.push(m[0].trim());
-    for(const cand of candidates){
-      try{obj=JSON.parse(cand);break;}catch(e){}
-    }
-    if(typeof obj==='string'){
-      // JSON 문자열이 한 번 더 인코딩된 경우 재귀 처리
-      if(obj.trim().startsWith('{') || /"?(bio|exercise|nutrition|overall)"?\s*:/i.test(obj)) return normalizeAiResult(obj);
-    }
-    if(typeof obj==='string' && obj===raw) obj={overall:raw};
-  }
-  if(!obj||typeof obj!=='object') obj={overall:String(rawInput||'')};
-  // Gemini가 {text:"{...}"} 또는 {result:"{...}"} 형태로 한 번 더 감싸는 경우 처리
-  for(const k of ['text','content','message','result','answer']){
-    if(Object.keys(obj).length===1 && typeof obj[k]==='string' && (obj[k].trim().startsWith('{') || /"?(bio|exercise|nutrition|overall)"?\s*:/i.test(obj[k]))){
-      return normalizeAiResult(obj[k]);
+
+function stripAiValueText(v){
+  if(v===undefined||v===null)return '';
+  let t=String(v);
+  t=t.replace(/```json\n?|```/g,'');
+  t=t.replace(/<br\s*\/?>/gi,'\n').replace(/&lt;br\s*\/?&gt;/gi,'\n').replace(/\\n/g,'\n');
+  t=t.replace(/\\"/g,'"').replace(/\\'/g,"'");
+  t=t.replace(/^\s*[:=]\s*/,'').trim();
+  t=t.replace(/^['"]+|['"]+$/g,'').trim();
+  t=t.replace(/^[,\s]+|[,\s]+$/g,'').trim();
+  t=t.replace(/\s*[,}]\s*$/,'').trim();
+  return t;
+}
+function unwrapAiText(raw){
+  let text=String(raw||'').trim();
+  text=text.replace(/```json\n?|```/g,'').trim();
+  text=text.replace(/^json\s*/i,'').trim();
+  // HTML/escaped JSON 보정
+  text=text.replace(/&quot;/g,'"').replace(/&#34;/g,'"').replace(/&amp;/g,'&');
+  text=text.replace(/<br\s*\/?>/gi,'\n').replace(/&lt;br\s*\/?&gt;/gi,'\n');
+  // JSON 문자열이 따옴표로 한 번 감싸져 있으면 풀기
+  for(let i=0;i<2;i++){
+    const t=text.trim();
+    if((t.startsWith('"')&&t.endsWith('"'))||(t.startsWith("'")&&t.endsWith("'"))){
+      try{text=JSON.parse(t);continue;}catch(e){text=t.slice(1,-1);continue;}
     }
   }
+  text=String(text).replace(/\\n/g,'\n').replace(/\\"/g,'"').replace(/\\\//g,'/');
+  return text.trim();
+}
+function extractAiSectionsFromText(raw){
+  if(!raw)return null;
+  let text=unwrapAiText(raw);
+  const err=detectAiError(text);
+  if(err)return {overall:err};
+  // { ... } 일부만 있는 경우 우선 JSON 파싱 시도
+  const jsonMatch=text.match(/\{[\s\S]*\}/);
+  const jsonCandidates=[text];
+  if(jsonMatch)jsonCandidates.push(jsonMatch[0]);
+  if(/"?(bio|body|exercise|workout|nutrition|meal|diet|overall|summary|advice)"?\s*:/i.test(text)&&!text.trim().startsWith('{')){
+    jsonCandidates.push('{'+text.replace(/^,+|,+$/g,'')+'}');
+  }
+  for(const cand of jsonCandidates){
+    try{
+      const obj=JSON.parse(cand);
+      if(obj&&typeof obj==='object'){
+        const normalized=normalizeAiObject(obj);
+        if(Object.values(normalized).some(Boolean))return normalized;
+      }
+    }catch(e){}
+  }
+  // JSON 파싱 실패 시 key:value 조각을 강제 분리
+  const keyRe=/["']?\b(bio|body|exercise|workout|nutrition|meal|diet|overall|summary|advice)\b["']?\s*:\s*["']?/gi;
+  const matches=[...text.matchAll(keyRe)];
+  if(!matches.length)return null;
+  const out={};
+  const keyMap={body:'bio',workout:'exercise',meal:'nutrition',diet:'nutrition',summary:'overall',advice:'overall'};
+  for(let i=0;i<matches.length;i++){
+    const rawKey=matches[i][1].toLowerCase();
+    const key=keyMap[rawKey]||rawKey;
+    const start=matches[i].index+matches[i][0].length;
+    const end=i+1<matches.length?matches[i+1].index:text.length;
+    let val=text.slice(start,end);
+    val=val.replace(/^[\s"']+|[\s"',}]+$/g,'').trim();
+    val=stripAiValueText(val);
+    if(val) out[key]=(out[key]?out[key]+'\n\n':'')+val;
+  }
+  return Object.values(out).some(Boolean)?out:null;
+}
+function detectAiError(text){
+  text=String(text||'');
+  if(/high demand|temporarily overloaded|try again later|503|ServiceUnavailable/i.test(text))return '⚠️ Gemini 서버가 일시적으로 혼잡합니다. 데이터 저장과 동기화는 정상이며, 잠시 후 다시 시도해주세요.';
+  if(/quota|429|Too many requests|Resource has been exhausted|exceeded your current quota|RESOURCE_EXHAUSTED/i.test(text))return '⚠️ Gemini 요청 제한에 걸렸습니다. 하루 한도보다 순간 요청량 또는 토큰 사용량이 많을 때도 발생합니다. 10~30초 후 다시 시도해주세요.';
+  if(/API key|permission|unauthorized|forbidden|403|401/i.test(text))return '⚠️ Gemini API 인증 또는 권한 문제가 발생했습니다. Apps Script의 API 키와 권한 설정을 확인해주세요.';
+  return '';
+}
+function foodDetailsHtml(m){
+  const foods=Array.isArray(m.foods)?m.foods.filter(f=>f&&f.name):[];
+  if(foods.length){
+    return `<div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">${foods.map(f=>`<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.55;">• ${esc(f.name||'음식')} <span style="color:var(--cal);">${Math.round(f.kcal||0)}kcal</span> · 단${f.protein||0}g · 탄${f.carb||0}g · 지${f.fat||0}g</div>`).join('')}</div>`;
+  }
+  const parts=String(m.foodText||'').split(/[,，、\/]+|\s+및\s+/).map(x=>x.trim()).filter(Boolean);
+  if(parts.length>1){
+    return `<div style="margin-top:7px;font-size:10px;color:var(--muted);line-height:1.6;">${parts.map(x=>`• ${esc(x)}`).join('<br>')}<br><span style="color:var(--fat-c);">※ 이 기록은 세부 칼로리가 저장되지 않아 총합만 표시됩니다.</span></div>`;
+  }
+  return '';
+}
+function normalizeAiObject(obj){
+  if(!obj||typeof obj!=='object')return {overall:String(obj||'')};
+  // Apps Script/Gemini가 result/text 안에 다시 문자열 JSON을 넣어주는 경우
+  for(const k of ['text','content','message','result','answer','response']){
+    if(Object.keys(obj).length===1 && typeof obj[k]==='string'){
+      const extracted=extractAiSectionsFromText(obj[k]);
+      if(extracted)return extracted;
+      return {overall:obj[k]};
+    }
+  }
+  // Gemini API 원본 candidates 형태 대응
+  try{
+    const candText=obj.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('\n');
+    if(candText){
+      const extracted=extractAiSectionsFromText(candText);
+      if(extracted)return extracted;
+      return {overall:candText};
+    }
+  }catch(e){}
   const pick=(...keys)=>keys.map(k=>obj[k]).find(v=>v!==undefined&&v!==null&&String(v).trim()!=='');
   let normalized={
     bio:pick('bio','body','bodyStatus','body_status','physiology','신체상태','체성분'),
@@ -1891,29 +1975,41 @@ function normalizeAiResult(rawInput){
     nutrition:pick('nutrition','meal','diet','food','nutritionCoach','식단','영양'),
     overall:pick('overall','summary','advice','comment','종합','종합조언')
   };
-  // 전체 JSON이 overall에 들어간 경우 다시 분해
-  if(!normalized.bio&&!normalized.exercise&&!normalized.nutrition&&typeof normalized.overall==='string'&&/"?(bio|exercise|nutrition)"?\s*:/i.test(normalized.overall)){
-    return normalizeAiResult(normalized.overall);
+  // 값 중에 다시 JSON 조각이 들어간 경우 분해해서 병합
+  for(const k of Object.keys(normalized)){
+    if(typeof normalized[k]==='string' && /["']?\b(bio|exercise|nutrition|overall|summary|advice)\b["']?\s*:/i.test(normalized[k])){
+      const ex=extractAiSectionsFromText(normalized[k]);
+      if(ex){
+        normalized={...normalized,...ex};
+        break;
+      }
+    }
   }
-  // 지정 키가 없으면 전체 객체를 보기 좋게 변환
   if(!normalized.bio&&!normalized.exercise&&!normalized.nutrition&&!normalized.overall){
     normalized.overall=Object.entries(obj).map(([k,v])=>`${k}: ${typeof v==='object'?JSON.stringify(v):v}`).join('\n\n');
   }
   return normalized;
 }
+function normalizeAiResult(rawInput){
+  if(rawInput&&typeof rawInput==='object')return normalizeAiObject(rawInput);
+  const raw=unwrapAiText(rawInput||'');
+  const err=detectAiError(raw);
+  if(err)return {overall:err};
+  const extracted=extractAiSectionsFromText(raw);
+  if(extracted)return extracted;
+  return {overall:raw};
+}
 function cleanAiText(value){
   if(value===undefined||value===null)return '';
   let text=typeof value==='object'?JSON.stringify(value,null,2):String(value);
-  text=text.replace(/```json\n?|```/g,'').trim();
-  text=text.replace(/<br\s*\/?>/gi,'\n');
-  text=text.replace(/&lt;br\s*\/?&gt;/gi,'\n');
-  text=text.replace(/\\n/g,'\n');
-  // JSON 조각이 섞여 노출되는 경우 정리
-  text=text.replace(/^\s*"?(bio|body|exercise|nutrition|overall|summary|advice)"?\s*:\s*/i,'');
+  text=unwrapAiText(text);
+  // 그래도 남아있는 JSON 키/문법 제거
   text=text.replace(/^\s*[,{]+|[,}]+\s*$/g,'');
+  text=text.replace(/^\s*["']?\b(bio|body|exercise|workout|nutrition|meal|diet|overall|summary|advice)\b["']?\s*:\s*["']?/i,'');
+  text=text.replace(/\s*[,}]?\s*["']?\b(bio|body|exercise|workout|nutrition|meal|diet|overall|summary|advice)\b["']?\s*:\s*["']?/gi,'\n\n');
   text=text.replace(/^[\s"']+|[\s"',]+$/g,'');
   text=text.replace(/\n{3,}/g,'\n\n');
-  return text;
+  return text.trim();
 }
 function escChat(s){
   return String(s)
@@ -1923,7 +2019,7 @@ function escChat(s){
 function formatAiContent(value){
   let text=cleanAiText(value);
   if(!text)return '';
-  // 번호/불릿 앞에 줄바꿈 보정
+  // 너무 긴 응답은 문단/목록 단위로 정리
   text=text.replace(/\s*(\d+\.\s)/g,'\n$1').replace(/\s*([•\-]\s)/g,'\n$1');
   const blocks=text.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
   const html=blocks.map(block=>{
@@ -1932,12 +2028,11 @@ function formatAiContent(value){
     if(isList){
       return '<ul>'+lines.map(x=>`<li>${escChat(x.replace(/^(\d+\.|[•\-])\s*/,''))}</li>`).join('')+'</ul>';
     }
-    // 긴 한 문단은 문장 단위로 2~3개 문단으로 분리
-    if(lines.length===1 && block.length>130){
-      const sentences=block.replace(/([.!?。]|요\.|다\.|니다\.)\s*/g,'$1\n').split(/\n/).map(x=>x.trim()).filter(Boolean);
+    if(lines.length===1 && block.length>120){
+      const sentences=block.replace(/(다\.|요\.|니다\.|[.!?。])\s*/g,'$1\n').split(/\n/).map(x=>x.trim()).filter(Boolean);
       if(sentences.length>1){
         const groups=[];let cur='';
-        sentences.forEach(sent=>{if((cur+sent).length>120){if(cur)groups.push(cur.trim());cur=sent;}else{cur+=(cur?' ':'')+sent;}});
+        sentences.forEach(sent=>{if((cur+' '+sent).trim().length>115){if(cur)groups.push(cur.trim());cur=sent;}else{cur=(cur?' ':'')+sent;}});
         if(cur)groups.push(cur.trim());
         return groups.map(g=>`<p>${escChat(g)}</p>`).join('');
       }
@@ -1948,14 +2043,18 @@ function formatAiContent(value){
 }
 function addAiChatMsg(result){
   result=normalizeAiResult(result);
+  // 마지막 방어: overall 안에 JSON 조각이 남으면 다시 분해
+  if(result.overall && !result.bio && !result.exercise && !result.nutrition && /["']?\b(bio|exercise|nutrition)\b["']?\s*:/i.test(String(result.overall))){
+    result=normalizeAiResult(result.overall);
+  }
   const area=document.getElementById('messages');const div=document.createElement('div');div.className='msg ai';
-  const hasMulti=result.bio||result.exercise||result.nutrition;
   let s='';
   if(result.bio)s+=`<div class="cs-section bio"><div class="cs-title">🧬 신체 상태</div><div class="cs-content">${formatAiContent(result.bio)}</div></div>`;
   if(result.exercise)s+=`<div class="cs-section exercise"><div class="cs-title">🏋️ 운동 코칭</div><div class="cs-content">${formatAiContent(result.exercise)}</div></div>`;
   if(result.nutrition)s+=`<div class="cs-section nutrition"><div class="cs-title">🥗 영양 코칭</div><div class="cs-content">${formatAiContent(result.nutrition)}</div></div>`;
   if(result.overall)s+=`<div class="cs-section overall"><div class="cs-title">⚡ 종합 조언</div><div class="cs-content">${formatAiContent(result.overall)}</div></div>`;
-  div.innerHTML=`<div class="msg-meta">🤖 헬스코치 · ${nowTime()}</div><div class="bubble">${hasMulti?`<div class="coaching-sections">${s}</div>`:s}</div>`;
+  if(!s)s=`<div class="cs-section overall"><div class="cs-title">⚡ 종합 조언</div><div class="cs-content">응답을 정리하지 못했어요. 잠시 후 다시 시도해주세요.</div></div>`;
+  div.innerHTML=`<div class="msg-meta">🤖 헬스코치 · ${nowTime()}</div><div class="bubble"><div class="coaching-sections">${s}</div></div>`;
   area.appendChild(div);scrollChat();
 }
 function addUserChatMsg(text){const area=document.getElementById('messages');const div=document.createElement('div');div.className='msg user';div.innerHTML=`<div class="bubble">${esc(text)}</div><div class="msg-time">${nowTime()}</div>`;area.appendChild(div);scrollChat();}
@@ -1965,6 +2064,29 @@ function scrollChat(){const a=document.getElementById('messages');a.scrollTop=a.
 function qs(text){document.getElementById('chat-inp').value=text;sendChat();}
 function handleChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
 function autoResize(el){el.style.height='48px';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+async function fetchAiWithRetry(payload){
+  let lastErr=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+      const data=await resp.json();
+      const raw=typeof data.result==='object'?JSON.stringify(data.result):String(data.result||data.message||'');
+      const err=detectAiError(raw);
+      if(data.status==='ok' && !err)return data;
+      lastErr=new Error(err||data.message||'AI 응답 오류');
+      if(attempt===0 && /요청 제한|혼잡|잠시 후/i.test(lastErr.message)){
+        await new Promise(r=>setTimeout(r,1600));
+        continue;
+      }
+      throw lastErr;
+    }catch(e){
+      lastErr=e;
+      if(attempt===0){await new Promise(r=>setTimeout(r,1600));continue;}
+      throw lastErr;
+    }
+  }
+  throw lastErr||new Error('AI 호출 실패');
+}
 async function sendChat(){
   if(chatLoading)return;
   const inp=document.getElementById('chat-inp');const text=inp.value.trim();if(!text)return;
@@ -1973,22 +2095,20 @@ async function sendChat(){
   const ctx=buildChatContext();chatHistory.push({role:'user',content:`${ctx}\n[질문] ${text}`});
   showTyping();
   try{
-    const resp=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+    const data=await fetchAiWithRetry({
       type:'ai',
       system:CHAT_SYSTEM,
       messages:chatHistory
-    })});
-    const data=await resp.json();
+    });
     hideTyping();
-    if(data.status!=='ok'){throw new Error(data.message||'GAS 오류');}
     const raw=data.result||'{}';
     const result=normalizeAiResult(raw);
-    chatHistory.push({role:'assistant',content:raw});
+    chatHistory.push({role:'assistant',content:typeof raw==='string'?raw:JSON.stringify(raw)});
     addAiChatMsg(result);
   }catch(e){
     hideTyping();
     console.error('코치 오류:',e);
-    addAiChatMsg({overall:`⚠️ AI 코치 서버가 일시적으로 혼잡하거나 응답하지 않았어요.\n\n${e.message.includes('high demand')?'Gemini 모델 사용량이 많아서 생긴 일시적 오류입니다. 데이터 저장/동기화는 정상입니다.':'오류 내용: '+e.message}\n\n잠시 후 다시 시도해주세요.`});
+    addAiChatMsg({overall:detectAiError(e.message)||`⚠️ AI 코치 응답을 받지 못했어요. 데이터 저장과 동기화는 정상입니다.\n\n오류 내용: ${e.message}\n\n잠시 후 다시 시도해주세요.`});
   }
   chatLoading=false;document.getElementById('send-btn').disabled=false;
 }
