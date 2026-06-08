@@ -383,7 +383,7 @@ select.inp{cursor:pointer;font-size:14px;}
 .report-box{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:16px;line-height:1.8;font-size:13px;color:var(--text);}
 .report-box b{color:var(--coach);}
 
-/* ══ v1.3.4 추가: AI 코치 가독성/모바일 출력 개선 + 즐겨찾기 삭제 ══ */
+/* ══ v1.3.5 추가: AI 코치 가독성/모바일 출력 개선 + 즐겨찾기 삭제 ══ */
 .fav-food-chip{display:inline-flex;align-items:center;gap:6px;}
 .fav-food-x{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;line-height:1;transition:all .15s;}
 .fav-food-x:hover{background:rgba(255,82,82,.18);color:#ff5252;}
@@ -415,7 +415,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.3.4</span>
+  <span class="nav-ver">v1.3.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1860,29 +1860,41 @@ function normalizeAiResult(rawInput){
   if(typeof obj==='string'){
     let raw=obj.trim();
     raw=raw.replace(/```json\n?|```/g,'').trim();
-    for(let i=0;i<3;i++){
-      try{obj=JSON.parse(raw);break;}
-      catch(e){
-        const m=raw.match(/\{[\s\S]*\}/);
-        if(m&&m[0]!==raw){raw=m[0].trim();continue;}
-        obj={overall:raw};break;
-      }
+    raw=raw.replace(/^json\s*/i,'').trim();
+    // Gemini/GAS가 따옴표·콜론 형태의 JSON 조각만 반환하는 경우 보정
+    const looksLikeJsonFields=/"?(bio|body|exercise|nutrition|overall|summary|advice)"?\s*:/i.test(raw);
+    const candidates=[];
+    candidates.push(raw);
+    if(looksLikeJsonFields && !raw.startsWith('{')) candidates.push('{'+raw.replace(/^,+|,+$/g,'')+'}');
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(m) candidates.push(m[0].trim());
+    for(const cand of candidates){
+      try{obj=JSON.parse(cand);break;}catch(e){}
     }
+    if(typeof obj==='string'){
+      // JSON 문자열이 한 번 더 인코딩된 경우 재귀 처리
+      if(obj.trim().startsWith('{') || /"?(bio|exercise|nutrition|overall)"?\s*:/i.test(obj)) return normalizeAiResult(obj);
+    }
+    if(typeof obj==='string' && obj===raw) obj={overall:raw};
   }
   if(!obj||typeof obj!=='object') obj={overall:String(rawInput||'')};
   // Gemini가 {text:"{...}"} 또는 {result:"{...}"} 형태로 한 번 더 감싸는 경우 처리
   for(const k of ['text','content','message','result','answer']){
-    if(Object.keys(obj).length===1 && typeof obj[k]==='string' && obj[k].trim().startsWith('{')){
+    if(Object.keys(obj).length===1 && typeof obj[k]==='string' && (obj[k].trim().startsWith('{') || /"?(bio|exercise|nutrition|overall)"?\s*:/i.test(obj[k]))){
       return normalizeAiResult(obj[k]);
     }
   }
   const pick=(...keys)=>keys.map(k=>obj[k]).find(v=>v!==undefined&&v!==null&&String(v).trim()!=='');
-  const normalized={
+  let normalized={
     bio:pick('bio','body','bodyStatus','body_status','physiology','신체상태','체성분'),
     exercise:pick('exercise','workout','training','exerciseCoach','운동','운동코칭'),
     nutrition:pick('nutrition','meal','diet','food','nutritionCoach','식단','영양'),
     overall:pick('overall','summary','advice','comment','종합','종합조언')
   };
+  // 전체 JSON이 overall에 들어간 경우 다시 분해
+  if(!normalized.bio&&!normalized.exercise&&!normalized.nutrition&&typeof normalized.overall==='string'&&/"?(bio|exercise|nutrition)"?\s*:/i.test(normalized.overall)){
+    return normalizeAiResult(normalized.overall);
+  }
   // 지정 키가 없으면 전체 객체를 보기 좋게 변환
   if(!normalized.bio&&!normalized.exercise&&!normalized.nutrition&&!normalized.overall){
     normalized.overall=Object.entries(obj).map(([k,v])=>`${k}: ${typeof v==='object'?JSON.stringify(v):v}`).join('\n\n');
@@ -1893,11 +1905,13 @@ function cleanAiText(value){
   if(value===undefined||value===null)return '';
   let text=typeof value==='object'?JSON.stringify(value,null,2):String(value);
   text=text.replace(/```json\n?|```/g,'').trim();
+  text=text.replace(/<br\s*\/?>/gi,'\n');
+  text=text.replace(/&lt;br\s*\/?&gt;/gi,'\n');
+  text=text.replace(/\\n/g,'\n');
   // JSON 조각이 섞여 노출되는 경우 정리
   text=text.replace(/^\s*"?(bio|body|exercise|nutrition|overall|summary|advice)"?\s*:\s*/i,'');
-  text=text.replace(/[{}]/g,'');
+  text=text.replace(/^\s*[,{]+|[,}]+\s*$/g,'');
   text=text.replace(/^[\s"']+|[\s"',]+$/g,'');
-  text=text.replace(/\\n/g,'\n');
   text=text.replace(/\n{3,}/g,'\n\n');
   return text;
 }
@@ -1919,16 +1933,16 @@ function formatAiContent(value){
       return '<ul>'+lines.map(x=>`<li>${escChat(x.replace(/^(\d+\.|[•\-])\s*/,''))}</li>`).join('')+'</ul>';
     }
     // 긴 한 문단은 문장 단위로 2~3개 문단으로 분리
-    if(lines.length===1 && block.length>160){
+    if(lines.length===1 && block.length>130){
       const sentences=block.replace(/([.!?。]|요\.|다\.|니다\.)\s*/g,'$1\n').split(/\n/).map(x=>x.trim()).filter(Boolean);
       if(sentences.length>1){
         const groups=[];let cur='';
-        sentences.forEach(sent=>{if((cur+sent).length>130){if(cur)groups.push(cur.trim());cur=sent;}else{cur+=(cur?' ':'')+sent;}});
+        sentences.forEach(sent=>{if((cur+sent).length>120){if(cur)groups.push(cur.trim());cur=sent;}else{cur+=(cur?' ':'')+sent;}});
         if(cur)groups.push(cur.trim());
         return groups.map(g=>`<p>${escChat(g)}</p>`).join('');
       }
     }
-    return `<p>${escChat(lines.join('<br>'))}</p>`;
+    return `<p>${lines.map(escChat).join('<br>')}</p>`;
   }).join('');
   return html;
 }
