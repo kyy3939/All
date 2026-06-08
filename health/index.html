@@ -441,7 +441,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.4.5</span>
+  <span class="nav-ver">v1.4.6</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -644,14 +644,14 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="card">
           <div class="card-title">🏃 런닝 기록 <div class="ct-line"></div></div>
           <div class="inp-grid">
-            <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km</span></div><input type="number" class="inp" id="run-dist" placeholder="0.00" step="0.01"></div>
-            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">mm:ss</span></div><input type="text" class="inp" id="run-dur" placeholder="36:58"></div>
-            <div class="inp-group"><div class="ig-label">페이스<span class="ig-unit">/km</span></div><input type="text" class="inp" id="run-pace" placeholder="05:31"></div>
-            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" class="inp" id="run-hr" placeholder="156"></div>
-            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" class="inp" id="run-cal" placeholder="545"></div>
-            <div class="inp-group"><div class="ig-label">케이던스<span class="ig-unit">spm</span></div><input type="number" class="inp" id="run-cadence" placeholder="164"></div>
-            <div class="inp-group"><div class="ig-label">걸음수<span class="ig-unit">보</span></div><input type="number" class="inp" id="run-steps" placeholder="6073"></div>
-            <div class="inp-group"><div class="ig-label">땀 손실<span class="ig-unit">ml</span></div><input type="number" class="inp" id="run-sweat" placeholder="762"></div>
+            <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km</span></div><input type="number" inputmode="decimal" class="inp" id="run-dist" placeholder="0.00" step="0.01"></div>
+            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="run-dur" placeholder="36:58" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">페이스<span class="ig-unit">/km</span></div><input type="text" inputmode="numeric" class="inp" id="run-pace" placeholder="05:31" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" inputmode="numeric" class="inp" id="run-hr" placeholder="156"></div>
+            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="run-cal" placeholder="545"></div>
+            <div class="inp-group"><div class="ig-label">케이던스<span class="ig-unit">spm</span></div><input type="number" inputmode="numeric" class="inp" id="run-cadence" placeholder="164"></div>
+            <div class="inp-group"><div class="ig-label">걸음수<span class="ig-unit">보</span></div><input type="number" inputmode="numeric" class="inp" id="run-steps" placeholder="6073"></div>
+            <div class="inp-group"><div class="ig-label">땀 손실<span class="ig-unit">ml</span></div><input type="number" inputmode="numeric" class="inp" id="run-sweat" placeholder="762"></div>
           </div>
         </div>
         <button class="save-btn primary" onclick="saveRun()">🏃 런닝 저장</button>
@@ -660,14 +660,14 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="card">
           <div class="card-title">🚶 걷기 기록 <div class="ct-line"></div></div>
           <div class="inp-grid">
-            <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km</span></div><input type="number" class="inp" id="walk-dist" placeholder="0.00" step="0.01"></div>
-            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">mm:ss</span></div><input type="text" class="inp" id="walk-dur" placeholder="30:00"></div>
-            <div class="inp-group"><div class="ig-label">페이스<span class="ig-unit">/km</span></div><input type="text" class="inp" id="walk-pace" placeholder="10:00"></div>
-            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" class="inp" id="walk-hr" placeholder="110"></div>
-            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" class="inp" id="walk-cal" placeholder="150"></div>
-            <div class="inp-group"><div class="ig-label">케이던스<span class="ig-unit">spm</span></div><input type="number" class="inp" id="walk-cadence" placeholder="110"></div>
-            <div class="inp-group"><div class="ig-label">걸음수<span class="ig-unit">보</span></div><input type="number" class="inp" id="walk-steps" placeholder="5000"></div>
-            <div class="inp-group"><div class="ig-label">땀 손실<span class="ig-unit">ml</span></div><input type="number" class="inp" id="walk-sweat" placeholder="300"></div>
+            <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km</span></div><input type="number" inputmode="decimal" class="inp" id="walk-dist" placeholder="0.00" step="0.01"></div>
+            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="walk-dur" placeholder="30:00" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">페이스<span class="ig-unit">/km</span></div><input type="text" inputmode="numeric" class="inp" id="walk-pace" placeholder="10:00" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" inputmode="numeric" class="inp" id="walk-hr" placeholder="110"></div>
+            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="walk-cal" placeholder="150"></div>
+            <div class="inp-group"><div class="ig-label">케이던스<span class="ig-unit">spm</span></div><input type="number" inputmode="numeric" class="inp" id="walk-cadence" placeholder="110"></div>
+            <div class="inp-group"><div class="ig-label">걸음수<span class="ig-unit">보</span></div><input type="number" inputmode="numeric" class="inp" id="walk-steps" placeholder="5000"></div>
+            <div class="inp-group"><div class="ig-label">땀 손실<span class="ig-unit">ml</span></div><input type="number" inputmode="numeric" class="inp" id="walk-sweat" placeholder="300"></div>
           </div>
         </div>
         <button class="save-btn primary" onclick="saveWalk()">🚶 걷기 저장</button>
@@ -1121,7 +1121,7 @@ function renderDashboard(){
   function setC(id,cur,prv,bad){if(cur==null||prv==null)return;const d=(cur-prv).toFixed(1);const up=d>0;const cls=(bad?up:!up)?'up':'dn';const arr=up?'▲':'▼';document.getElementById(id).innerHTML=`<span class="${cls}">${arr}${Math.abs(d)}</span> 전일`;}
   if(latest){setV('d-weight',latest.weight,'kg');setV('d-skeletal',latest.skeletal,'kg');setV('d-fatrate',latest.fatRate,'%');if(prev){setC('d-weight-chg',latest.weight,prev.weight,true);setC('d-skeletal-chg',latest.skeletal,prev.skeletal,false);setC('d-fatrate-chg',latest.fatRate,prev.fatRate,true);}}
   const tm=mr.filter(m=>m.date===today);
-  const tmDisplay=tm.length?tm:[...mr].reverse().slice(0,3);
+  const tmDisplay=tm; // 오늘 기록만 표시 (이전 날짜 폴백 제거)
   const tc=Math.round(tmDisplay.reduce((a,m)=>a+(m.total?.kcal||0),0));
   document.getElementById('d-cal').innerHTML=tc?`${tc}<span class="sc-unit">kcal</span>`:`—<span class="sc-unit">kcal</span>`;
   document.getElementById('d-cal-sub').textContent=tc?`목표 ${GOALS.cal}의 ${Math.round(tc/GOALS.cal*100)}%`:'기록 없음';
@@ -1150,19 +1150,21 @@ function renderDashboard(){
     <div class="nb-row"><div class="nb-label">탄수화물</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.carb,GOALS.carb)}%;background:var(--carb);"></div></div><div class="nb-vals">${Math.round(totals.carb)}g/${GOALS.carb}g</div></div>
     <div class="nb-row"><div class="nb-label">지방</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.fat,60)}%;background:#e040fb;"></div></div><div class="nb-vals">${Math.round(totals.fat)}g/60g</div></div>`;
   document.getElementById('d-meal-list').innerHTML=tmDisplay.length?tmDisplay.map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${m.total?.kcal||0}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
-  const tex=(er.run?.length||0)+(er.walk?.length||0)+(er.bike?.length||0)+(er.bodyweight?.length||0);
+  const tex=(er.run?.filter(r=>r.date===today).length||0)+(er.walk?.filter(r=>r.date===today).length||0)+(er.bike?.filter(r=>r.date===today).length||0)+(er.bodyweight?.filter(r=>r.date===today).length||0);
   document.getElementById('d-ex-meta').textContent=`총 ${tex}회`;
   renderDashEx(er,currentDashEx);
   renderAllPBs(er);
   renderHistPanel();
   // 수면 대시보드
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
-  const lastSleep=sr[sr.length-1];
+  // 오늘 날짜 기준 수면 기록 (없으면 빈 상태로 표시)
+  const todaySleep=sr.filter(r=>r.date===today).sort((a,b)=>a.date.localeCompare(b.date)).pop()||null;
+  const lastSleep=todaySleep;
   const sleepEl=document.getElementById('d-sleep-content');
   if(lastSleep){
     const sc=lastSleep.durationHours>=7?'var(--run)':lastSleep.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
     const sq={5:'😊 최고',4:'🙂 좋음',3:'😐 보통',2:'😑 나쁨',1:'😩 최악'};
-    document.getElementById('d-sleep-meta').textContent=lastSleep.date?.slice(5)||'';
+    document.getElementById('d-sleep-meta').textContent='오늘';
     sleepEl.innerHTML=`<div class="lr-vals" style="gap:20px;">
       <div class="lr-item"><div class="lr-item-label">수면 시간</div><div class="lr-item-val" style="font-size:22px;color:${sc}">${lastSleep.durationHours}h</div></div>
       <div class="lr-item"><div class="lr-item-label">취침</div><div class="lr-item-val">${lastSleep.bedtime||'—'}</div></div>
@@ -1212,8 +1214,10 @@ function renderBodyCharts(br,days){
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
 function switchDashEx(type,btn){currentDashEx=type;document.querySelectorAll('.ex-tab-dash').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');renderDashEx(er,type);}
 function renderDashEx(er,type){
-  const list=document.getElementById('d-ex-list');const data=[...(er[type]||[])].reverse();
-  if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
+  const list=document.getElementById('d-ex-list');
+  // 오늘 날짜 기록만 필터
+  const data=[...(er[type]||[])].filter(r=>r.date===today).reverse();
+  if(!data.length){list.innerHTML='<div class="empty-state">오늘 운동 기록 없음</div>';return;}
   if(type==='run'||type==='walk')list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:${type==='walk'?'var(--skeletal)':'var(--run)'}">${type==='walk'?'🚶 ':'🏃 '}${r.distance||'—'}km ${type==='run'&&isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`).join('');
   else if(type==='bike')list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`).join('');
   else list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div></div>`).join('');
@@ -1680,6 +1684,17 @@ let currentExType='run',currentExHistType='run';
 function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));document.getElementById('exs-'+(type==='bodyweight'?'bw':type)).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight'].indexOf(type)]);}
 function toggleExChip(el){el.classList.toggle('selected');document.getElementById('add-ex-btn').classList.toggle('show',document.querySelectorAll('.ex-chip.selected').length>0);}
 function addSelectedEx(){document.querySelectorAll('.ex-chip.selected').forEach(c=>{const n=c.dataset.ex;if(!document.querySelector(`[data-added="${n}"]`)){const div=document.createElement('div');div.className='added-ex-item';div.dataset.added=n;div.innerHTML=`<div class="aei-name">${n}</div><div class="aei-inputs"><input type="number" class="aei-inp" placeholder="15" min="1"><div class="aei-sep">회×</div><input type="number" class="aei-inp" placeholder="3" min="1"><div class="aei-sep">세트</div></div><button class="aei-x" onclick="this.parentElement.remove()">×</button>`;document.getElementById('added-exercises').appendChild(div);}c.classList.remove('selected');});document.getElementById('add-ex-btn').classList.remove('show');}
+// 시간/페이스 자동 콜론: 숫자만 입력하면 4자리 완성 시 xx:xx 포맷으로 변환
+function autoColon(el){
+  // 숫자만 추출
+  let v=el.value.replace(/[^0-9]/g,'');
+  if(v.length>=4){
+    // 4자리 이상이면 앞 2자리:뒤 2자리
+    el.value=v.slice(0,2)+':'+v.slice(2,4);
+  } else {
+    el.value=v;
+  }
+}
 function saveRun(){
   const dist=document.getElementById('run-dist').value;const dur=document.getElementById('run-dur').value;
   if(!dist&&!dur){showToast('⚠️ 거리 또는 시간 입력');return;}
@@ -1698,7 +1713,6 @@ async function saveWalk(){
   if(!exRecs.walk)exRecs.walk=[];
   exRecs.walk.push(r);exRecs.walk.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
-  // GAS walk 케이스로 직접 전달 (category:'walk')
   await sheetSave({type:'exercise',category:'walk',...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
