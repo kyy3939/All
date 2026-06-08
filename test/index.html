@@ -415,6 +415,18 @@ select.inp{cursor:pointer;font-size:14px;}
 .hist-sec-title .hst-text{font-size:10px;line-height:1.2;}
 @media(max-width:480px){.hist-summary-chip{min-width:48px;padding:5px 6px}.hist-summary-chip .hsc-text{font-size:9px}.hist-sec-title{min-width:42px}}
 
+/* ══ v1.4.2 추가: 기록 히스토리 탭/요약칩 모바일 줄바꿈 안정화 ══ */
+.hist-tab-dash{display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;min-width:72px!important;padding:8px 12px!important;line-height:1.15!important;white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important;text-align:center!important;}
+.hist-tab-dash .ht-icon{font-size:15px;line-height:1;}
+.hist-tab-dash .ht-label{display:block;font-size:11px;line-height:1.15;white-space:nowrap;word-break:keep-all;}
+.hist-summary-chip{min-width:66px!important;white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important;}
+.hist-summary-chip .hsc-icon{display:block!important;font-size:16px!important;}
+.hist-summary-chip .hsc-text{display:block!important;white-space:nowrap!important;word-break:keep-all!important;}
+.hist-sec-title{min-width:56px!important;white-space:normal!important;word-break:keep-all!important;}
+.hist-sec-title .hst-icon{display:block!important;font-size:16px!important;}
+.hist-sec-title .hst-text{display:block!important;white-space:nowrap!important;word-break:keep-all!important;}
+@media(max-width:420px){.hist-tab-dash{min-width:62px!important;padding:7px 9px!important}.hist-summary-chip{min-width:58px!important;padding:5px 7px!important}.hist-summary-chip .hsc-text{font-size:9px!important}.hist-sec-title{min-width:50px!important}}
+
 </style>
 </head>
 <body>
@@ -425,7 +437,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.3.9</span>
+  <span class="nav-ver">v1.4.2</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -551,11 +563,11 @@ select.inp{cursor:pointer;font-size:14px;}
           </div>
           <!-- 히스토리 탭 -->
           <div style="display:flex;gap:6px;padding:12px 18px 0;">
-            <button class="ex-tab-dash active" onclick="switchHistTab('day',this)">📅 날짜별</button>
-            <button class="ex-tab-dash" onclick="switchHistTab('sleep',this)">😴 수면</button>
-            <button class="ex-tab-dash" onclick="switchHistTab('meal',this)">🥗 식사</button>
-            <button class="ex-tab-dash" onclick="switchHistTab('exercise',this)">🏋️ 운동</button>
-            <button class="ex-tab-dash" onclick="switchHistTab('body',this)">⚖️ 체성분</button>
+            <button class="ex-tab-dash hist-tab-dash active" onclick="switchHistTab('day',this)"><span class="ht-icon">📅</span><span class="ht-label">날짜별</span></button>
+            <button class="ex-tab-dash hist-tab-dash" onclick="switchHistTab('sleep',this)"><span class="ht-icon">😴</span><span class="ht-label">수면</span></button>
+            <button class="ex-tab-dash hist-tab-dash" onclick="switchHistTab('meal',this)"><span class="ht-icon">🥗</span><span class="ht-label">식사</span></button>
+            <button class="ex-tab-dash hist-tab-dash" onclick="switchHistTab('exercise',this)"><span class="ht-icon">🏋️</span><span class="ht-label">운동</span></button>
+            <button class="ex-tab-dash hist-tab-dash" onclick="switchHistTab('body',this)"><span class="ht-icon">⚖️</span><span class="ht-label">체성분</span></button>
           </div>
           <div id="hist-content" style="padding:8px 18px 16px;max-height:600px;overflow-y:auto;"></div>
         </div>
@@ -1682,10 +1694,10 @@ async function saveWalk(){
   if(!exRecs.walk)exRecs.walk=[];
   exRecs.walk.push(r);exRecs.walk.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
-  // 현재 Apps Script가 category='walk'를 모르면 복합운동으로 저장할 수 있어,
-  // 시트 저장은 런닝과 동일한 구조(category='run')로 보내고 detail/kind에 걷기 마커를 남긴다.
-  // 앱 동기화(parseSheetData)에서는 이 마커를 보고 다시 걷기로 분류한다.
-  await sheetSave({type:'exercise',category:'run',exerciseType:'walk',kind:'걷기',detail:'걷기',memo:'걷기',...r});
+  // 걷기는 별도 category='walk'로 저장 요청하고,
+  // Apps Script가 아직 걷기를 지원하지 않아 종류가 런닝/복합운동으로 저장되더라도
+  // detail/kind/memo의 걷기 마커를 보고 앱 동기화 시 걷기로 복원한다.
+  await sheetSave({type:'exercise',category:'walk',exerciseType:'walk',kind:'걷기',exerciseName:'걷기',detail:'걷기',memo:'걷기',...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
 }
