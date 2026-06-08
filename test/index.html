@@ -26,7 +26,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   display:flex;align-items:center;padding:0 16px;gap:8px;
   flex-shrink:0;z-index:100;position:relative;overflow:hidden;
 }
-.nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--coach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px;white-space:nowrap;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--coach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px;white-space:nowrap;}
 .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--run);box-shadow:0 0 6px var(--run);animation:blink 2s infinite;flex-shrink:0;}
 .nav-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;display:none;}
 .nav-sync{padding:5px 10px;background:none;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;margin-left:auto;white-space:nowrap;flex-shrink:0;}
@@ -406,13 +406,22 @@ select.inp{cursor:pointer;font-size:14px;}
   .cs-section{padding:14px 15px;}
 }
 
+/* ══ v1.4.1 추가: 기록 히스토리 요약 칩 / 로고 새로고침 ══ */
+.hist-summary-chip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:54px;padding:5px 8px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025);font-size:11px;line-height:1.2;text-align:center;white-space:nowrap;}
+.hist-summary-chip .hsc-icon{font-size:14px;line-height:1;}
+.hist-summary-chip .hsc-text{font-family:'DM Mono',monospace;font-size:10px;line-height:1.2;}
+.hist-sec-title{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:48px;padding:4px 7px;border-radius:10px;background:rgba(255,255,255,.025);font-size:11px;font-weight:700;line-height:1.2;text-align:center;}
+.hist-sec-title .hst-icon{font-size:14px;line-height:1;}
+.hist-sec-title .hst-text{font-size:10px;line-height:1.2;}
+@media(max-width:480px){.hist-summary-chip{min-width:48px;padding:5px 6px}.hist-summary-chip .hsc-text{font-size:9px}.hist-sec-title{min-width:42px}}
+
 </style>
 </head>
 <body>
 
 <!-- 상단 헤더 -->
 <div class="topnav">
-  <div class="nav-logo">HEALTH COACH</div>
+  <div class="nav-logo" onclick="location.reload()" title="새로고침">HEALTH COACH</div>
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
@@ -931,7 +940,12 @@ function parseSheetData(raw){
     const time=safeTime(r['시간']);
     const type=String(r['종류']||'');
     if(type==='런닝'){
-      exRecs.run.push({
+      // Apps Script가 아직 걷기 전용 종류를 지원하지 않는 경우,
+      // 걷기를 런닝 category로 저장하면서 세부내용/메모에 '걷기' 마커를 남긴다.
+      // 동기화 시 이 마커가 있으면 앱에서는 걷기로 복원한다.
+      const detailText=String(r['세부내용']||r['메모']||r['detail']||r['kind']||'');
+      const target=detailText.includes('걷기')||detailText.toLowerCase().includes('walk') ? exRecs.walk : exRecs.run;
+      target.push({
         date,time,
         distance:safeFloat(r['거리(km)']),
         duration:String(r['시간(분)']||''),
@@ -939,7 +953,8 @@ function parseSheetData(raw){
         hr:safeInt(r['심박수']),
         cal:safeInt(r['칼로리']),
         cadence:safeInt(r['케이던스'])||null,
-        steps:safeInt(r['걸음수'])||null
+        steps:safeInt(r['걸음수'])||null,
+        detail:detailText||null
       });
     } else if(type==='걷기'){
       exRecs.walk.push({
@@ -963,7 +978,8 @@ function parseSheetData(raw){
     } else if(type==='복합운동'){
       // 걷기를 기존 Apps Script가 복합운동으로 저장해버린 경우 보정
       // 복합운동인데 거리/페이스/걸음수 값이 있으면 실제로는 걷기 기록으로 판단
-      const hasWalkFields=safeFloat(r['거리(km)'])||String(r['페이스']||'').trim()||safeInt(r['걸음수']);
+      const detailText=String(r['세부내용']||r['메모']||r['detail']||r['kind']||'');
+      const hasWalkFields=detailText.includes('걷기')||detailText.toLowerCase().includes('walk')||safeFloat(r['거리(km)'])||String(r['페이스']||'').trim()||safeInt(r['걸음수']);
       if(hasWalkFields){
         exRecs.walk.push({
           date,time,
@@ -1283,7 +1299,7 @@ function renderHistPanel(){
       const exMin=runMin+walkMin+bikeMin;
       const section=(icon,title,meta,bodyHtml,color)=>`<div style="padding:7px 0;border-top:1px dashed var(--border);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-          <span style="font-size:12px;font-weight:700;color:${color};min-width:70px;">${icon} ${title}</span>
+          <span class="hist-sec-title" style="color:${color};"><span class="hst-icon">${icon}</span><span class="hst-text">${title}</span></span>
           <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${meta||''}</span>
         </div>
         <div style="font-size:12px;color:var(--dim);line-height:1.75;padding-left:2px;">${bodyHtml}</div>
@@ -1301,10 +1317,10 @@ function renderHistPanel(){
       return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
         <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
           <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);margin-right:auto;">${date}</span>
-          ${body?`<span style="font-size:11px;color:var(--bio);">⚖️ ${body.weight||'—'}kg</span>`:''}
-          ${sleepTotal?`<span style="font-size:11px;color:var(--fatrate);">😴 ${sleepTotal.toFixed(1)}h</span>`:''}
-          ${totalCal?`<span style="font-size:11px;color:var(--cal);">🔥 ${totalCal}kcal</span>`:''}
-          ${exCal||exMin?`<span style="font-size:11px;color:var(--run);">🏋️ ${exCal?exCal+'kcal':''}${exMin?` · ${fmtMin(exMin)}`:''}</span>`:''}
+          ${body?`<span class="hist-summary-chip" style="color:var(--bio);"><span class="hsc-icon">⚖️</span><span class="hsc-text">${body.weight||'—'}kg</span></span>`:''}
+          ${sleepTotal?`<span class="hist-summary-chip" style="color:var(--fatrate);"><span class="hsc-icon">😴</span><span class="hsc-text">${sleepTotal.toFixed(1)}h</span></span>`:''}
+          ${totalCal?`<span class="hist-summary-chip" style="color:var(--cal);"><span class="hsc-icon">🔥</span><span class="hsc-text">${totalCal}kcal</span></span>`:''}
+          ${exCal||exMin?`<span class="hist-summary-chip" style="color:var(--run);"><span class="hsc-icon">🏋️</span><span class="hsc-text">${exCal?exCal+'kcal':''}${exMin?` · ${fmtMin(exMin)}`:''}</span></span>`:''}
         </div>
         <div style="padding:6px 14px 10px;display:flex;flex-direction:column;">
           ${sleepHtml}${mealHtml}${exHtml}${bodyHtml}
@@ -1666,7 +1682,10 @@ async function saveWalk(){
   if(!exRecs.walk)exRecs.walk=[];
   exRecs.walk.push(r);exRecs.walk.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
-  await sheetSave({type:'exercise',category:'walk',exerciseType:'walk',kind:'걷기',detail:'걷기',...r});
+  // 현재 Apps Script가 category='walk'를 모르면 복합운동으로 저장할 수 있어,
+  // 시트 저장은 런닝과 동일한 구조(category='run')로 보내고 detail/kind에 걷기 마커를 남긴다.
+  // 앱 동기화(parseSheetData)에서는 이 마커를 보고 다시 걷기로 분류한다.
+  await sheetSave({type:'exercise',category:'run',exerciseType:'walk',kind:'걷기',detail:'걷기',memo:'걷기',...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
 }
@@ -1724,15 +1743,37 @@ async function analyzeFood(){
   btn.disabled=false;btn.innerHTML='🔍 영양소 자동 분석';
 }
 let mealSaving=false;
+function mergeSameMealRecord(newRec){
+  // 같은 날짜+식사구분은 한 식사 묶음으로 합친다.
+  // 특히 간식처럼 구운계란 저장 후 단백질우유를 추가 저장할 때
+  // 구글시트/앱이 서로 다른 항목만 보이는 것을 방지한다.
+  const idx=mealRecs.findIndex(m=>m.date===newRec.date&&m.mealType===newRec.mealType);
+  if(idx<0) return newRec;
+  const oldRec=mealRecs[idx];
+  const merged=mergeMealAnalysis(oldRec,newRec);
+  const rec={
+    ...oldRec,
+    time:newRec.time||oldRec.time,
+    foodText:merged.foodText,
+    foods:merged.foods,
+    total:merged.total,
+    updatedAt:Date.now()
+  };
+  mealRecs[idx]=rec;
+  return rec;
+}
 async function saveMeal(){
   if(!pendingAnalysis){showToast('⚠️ 먼저 분석해주세요');return;}
   if(mealSaving){showToast('⚠️ 저장 중입니다...');return;}
   mealSaving=true;
   const btn=document.getElementById('meal-save-btn');btn.disabled=true;btn.textContent='💾 저장 중...';
-  const rec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
-  mealRecs.push(rec);mealRecs.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const newRec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
+  const existed=mealRecs.some(m=>m.date===newRec.date&&m.mealType===newRec.mealType);
+  const rec=mergeSameMealRecord(newRec);
+  if(!existed) mealRecs.push(rec);
+  mealRecs.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
-  await sheetSave({type:'meal',date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,foods:rec.foods,foodsJson:JSON.stringify(rec.foods||[]),total:rec.total});
+  await sheetSave({type:'meal',id:rec.id,date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,foods:rec.foods,foodsJson:JSON.stringify(rec.foods||[]),total:rec.total});
   document.getElementById('food-input').value='';document.getElementById('analysis-result').classList.remove('show');
   pendingAnalysis=null;
   updateMealSummary();renderMealHist();showToast('✅ 식사 저장됐어요!');
