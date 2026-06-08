@@ -416,7 +416,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.3.8</span>
+  <span class="nav-ver">v1.3.9</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -930,7 +930,7 @@ function parseSheetData(raw){
     const date=safeDate(r['날짜']);
     const time=safeTime(r['시간']);
     const type=String(r['종류']||'');
-    if(type==='런닝'||type==='run'){
+    if(type==='런닝'){
       exRecs.run.push({
         date,time,
         distance:safeFloat(r['거리(km)']),
@@ -941,7 +941,7 @@ function parseSheetData(raw){
         cadence:safeInt(r['케이던스'])||null,
         steps:safeInt(r['걸음수'])||null
       });
-    } else if(type==='걷기'||type==='walk'){
+    } else if(type==='걷기'){
       exRecs.walk.push({
         date,time,
         distance:safeFloat(r['거리(km)']),
@@ -952,7 +952,7 @@ function parseSheetData(raw){
         cadence:safeInt(r['케이던스'])||null,
         steps:safeInt(r['걸음수'])||null
       });
-    } else if(type==='자전거'||type==='bike'){
+    } else if(type==='자전거'){
       exRecs.bike.push({
         date,time,
         duration:safeInt(r['시간(분)']),
@@ -960,20 +960,47 @@ function parseSheetData(raw){
         cal:safeInt(r['칼로리']),
         memo:String(r['세부내용']||'')
       });
-    } else if(type==='복합운동'||type==='bodyweight'){
-      // "스쿼트 15회×1세트, 윗몸일으키기 20회×3세트" 형태 파싱
-      const detail=String(r['세부내용']||'');
-      const exercises=detail.split(',').map(s=>{
-        const m=s.trim().match(/(.+?)\s*(\d+)회×(\d+)세트/);
-        return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};
-      }).filter(e=>e.name);
-      // 같은 날짜+시간 복합운동 세션 합치기 (시트에 여러 행으로 저장된 경우)
-      const existing=exRecs.bodyweight.find(e=>e.date===date&&e.time===time);
-      if(existing){
-        existing.exercises.push(...exercises);
+    } else if(type==='복합운동'){
+      // 걷기를 기존 Apps Script가 복합운동으로 저장해버린 경우 보정
+      // 복합운동인데 거리/페이스/걸음수 값이 있으면 실제로는 걷기 기록으로 판단
+      const hasWalkFields=safeFloat(r['거리(km)'])||String(r['페이스']||'').trim()||safeInt(r['걸음수']);
+      if(hasWalkFields){
+        exRecs.walk.push({
+          date,time,
+          distance:safeFloat(r['거리(km)']),
+          duration:String(r['시간(분)']||''),
+          pace:String(r['페이스']||''),
+          hr:safeInt(r['심박수']),
+          cal:safeInt(r['칼로리']),
+          cadence:safeInt(r['케이던스'])||null,
+          steps:safeInt(r['걸음수'])||null
+        });
       } else {
-        exRecs.bodyweight.push({date,time,exercises});
+        // "스쿼트 15회×1세트, 윗몸일으키기 20회×3세트" 형태 파싱
+        const detail=String(r['세부내용']||'');
+        const exercises=detail.split(',').map(s=>{
+          const m=s.trim().match(/(.+?)\s*(\d+)회×(\d+)세트/);
+          return m?{name:m[1].trim(),reps:parseInt(m[2]),sets:parseInt(m[3])}:{name:s.trim(),reps:null,sets:null};
+        }).filter(e=>e.name);
+        // 같은 날짜+시간 복합운동 세션 합치기 (시트에 여러 행으로 저장된 경우)
+        const existing=exRecs.bodyweight.find(e=>e.date===date&&e.time===time);
+        if(existing){
+          existing.exercises.push(...exercises);
+        } else {
+          exRecs.bodyweight.push({date,time,exercises});
+        }
       }
+    } else if(type==='walk'||type==='걷기'){
+      exRecs.walk.push({
+        date,time,
+        distance:safeFloat(r['거리(km)']),
+        duration:String(r['시간(분)']||''),
+        pace:String(r['페이스']||''),
+        hr:safeInt(r['심박수']),
+        cal:safeInt(r['칼로리']),
+        cadence:safeInt(r['케이던스'])||null,
+        steps:safeInt(r['걸음수'])||null
+      });
     }
   });
 
@@ -1632,14 +1659,14 @@ function saveRun(){
   renderExHist('run');showToast('🏃 런닝 저장됐어요!');
 }
 
-function saveWalk(){
+async function saveWalk(){
   const dist=document.getElementById('walk-dist').value;const dur=document.getElementById('walk-dur').value;
   if(!dist&&!dur){showToast('⚠️ 거리 또는 시간 입력');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,pace:document.getElementById('walk-pace').value||null,hr:parseInt(document.getElementById('walk-hr').value)||null,cal:parseInt(document.getElementById('walk-cal').value)||null,cadence:parseInt(document.getElementById('walk-cadence').value)||null,steps:parseInt(document.getElementById('walk-steps').value)||null,sweat:parseInt(document.getElementById('walk-sweat').value)||null};
   if(!exRecs.walk)exRecs.walk=[];
   exRecs.walk.push(r);exRecs.walk.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
-  sheetSave({type:'exercise',category:'walk',...r});
+  await sheetSave({type:'exercise',category:'walk',exerciseType:'walk',kind:'걷기',detail:'걷기',...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
 }
@@ -1697,7 +1724,7 @@ async function analyzeFood(){
   btn.disabled=false;btn.innerHTML='🔍 영양소 자동 분석';
 }
 let mealSaving=false;
-function saveMeal(){
+async function saveMeal(){
   if(!pendingAnalysis){showToast('⚠️ 먼저 분석해주세요');return;}
   if(mealSaving){showToast('⚠️ 저장 중입니다...');return;}
   mealSaving=true;
@@ -1705,7 +1732,7 @@ function saveMeal(){
   const rec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
   mealRecs.push(rec);mealRecs.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
-  sheetSave({type:'meal',date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,foods:rec.foods,foodsJson:JSON.stringify(rec.foods||[]),total:rec.total});
+  await sheetSave({type:'meal',date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,foods:rec.foods,foodsJson:JSON.stringify(rec.foods||[]),total:rec.total});
   document.getElementById('food-input').value='';document.getElementById('analysis-result').classList.remove('show');
   pendingAnalysis=null;
   updateMealSummary();renderMealHist();showToast('✅ 식사 저장됐어요!');
@@ -1758,6 +1785,22 @@ function editMeal(id){
 
 
 // ══ v1.3.0 식사 즐겨찾기/직접 입력 ══
+function mergeMealAnalysis(base, addition){
+  const b=base||{foods:[],total:{kcal:0,protein:0,carb:0,fat:0},foodText:''};
+  const a=addition||{foods:[],total:{kcal:0,protein:0,carb:0,fat:0},foodText:''};
+  const foods=[...(b.foods||[]),...(a.foods||[])];
+  const total={
+    kcal:(b.total?.kcal||0)+(a.total?.kcal||0),
+    protein:(b.total?.protein||0)+(a.total?.protein||0),
+    carb:(b.total?.carb||0)+(a.total?.carb||0),
+    fat:(b.total?.fat||0)+(a.total?.fat||0)
+  };
+  const names=foods.map(f=>f.name).filter(Boolean);
+  return{foods,total,foodText:names.length?names.join(', '):[b.foodText,a.foodText].filter(Boolean).join(', ')};
+}
+function clearManualNutritionFields(){
+  ['manual-name','manual-cal','manual-prot','manual-carb','manual-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
 function renderFoodFavorites(){
   const el=document.getElementById('fav-food-grid');if(!el)return;
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');
@@ -1775,9 +1818,11 @@ function deleteFavoriteMeal(i){
 }
 function useFavoriteMeal(i){
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');const f=favs[i];if(!f)return;
-  document.getElementById('food-input').value=f.foodText||'';
-  pendingAnalysis={foods:f.foods||[{name:f.foodText,kcal:f.total?.kcal||0,protein:f.total?.protein||0,carb:f.total?.carb||0,fat:f.total?.fat||0}],total:f.total,foodText:f.foodText};
-  fillAnalysisResult(pendingAnalysis);showToast('⭐ 즐겨찾기를 불러왔어요');
+  const favAnalysis={foods:f.foods||[{name:f.foodText,kcal:f.total?.kcal||0,protein:f.total?.protein||0,carb:f.total?.carb||0,fat:f.total?.fat||0}],total:f.total||{},foodText:f.foodText||''};
+  // 이미 분석/직접입력된 음식이 있으면 덮어쓰지 않고 추가한다.
+  pendingAnalysis=pendingAnalysis?mergeMealAnalysis(pendingAnalysis,favAnalysis):favAnalysis;
+  document.getElementById('food-input').value=pendingAnalysis.foodText||'';
+  fillAnalysisResult(pendingAnalysis);showToast(pendingAnalysis===favAnalysis?'⭐ 즐겨찾기를 불러왔어요':'➕ 즐겨찾기를 식사에 추가했어요');
 }
 function fillAnalysisResult(parsed){
   document.getElementById('ar-foods').innerHTML=(parsed.foods||[]).map(f=>`<div class="ar-food-item"><div class="ar-food-name">${esc(f.name||parsed.foodText||'음식')}</div><div class="ar-food-kcal">${f.kcal||0}kcal</div></div>`).join('');
@@ -1786,12 +1831,14 @@ function fillAnalysisResult(parsed){
 }
 function applyManualNutrition(){
   const manualName=(document.getElementById('manual-name')?.value||'').trim();
-  const food=(manualName||document.getElementById('food-input').value||'직접 입력 음식').trim();
-  if(manualName && !document.getElementById('food-input').value.trim()) document.getElementById('food-input').value=manualName;
+  const baseText=(document.getElementById('food-input').value||'').trim();
+  const food=(manualName||baseText||'직접 입력 음식').trim();
   const total={kcal:getNum(document.getElementById('manual-cal').value),protein:getNum(document.getElementById('manual-prot').value),carb:getNum(document.getElementById('manual-carb').value),fat:getNum(document.getElementById('manual-fat').value)};
   if(!total.kcal&&!total.protein&&!total.carb&&!total.fat){showToast('⚠️ 직접 입력값을 넣어주세요');return;}
-  pendingAnalysis={foods:[{name:food,kcal:total.kcal,protein:total.protein,carb:total.carb,fat:total.fat}],total,foodText:food};
-  fillAnalysisResult(pendingAnalysis);showToast('✍️ 직접 입력값을 적용했어요');
+  const added={foods:[{name:food,kcal:total.kcal,protein:total.protein,carb:total.carb,fat:total.fat}],total,foodText:food};
+  pendingAnalysis=pendingAnalysis?mergeMealAnalysis(pendingAnalysis,added):added;
+  document.getElementById('food-input').value=pendingAnalysis.foodText||'';
+  fillAnalysisResult(pendingAnalysis);clearManualNutritionFields();showToast(pendingAnalysis===added?'✍️ 직접 입력값을 적용했어요':'➕ 직접 입력 음식을 추가했어요');
 }
 function saveCurrentFavorite(){
   if(!pendingAnalysis){applyManualNutrition();if(!pendingAnalysis)return;}
