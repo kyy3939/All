@@ -441,7 +441,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.4.6</span>
+  <span class="nav-ver">v1.4.7</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1121,7 +1121,7 @@ function renderDashboard(){
   function setC(id,cur,prv,bad){if(cur==null||prv==null)return;const d=(cur-prv).toFixed(1);const up=d>0;const cls=(bad?up:!up)?'up':'dn';const arr=up?'▲':'▼';document.getElementById(id).innerHTML=`<span class="${cls}">${arr}${Math.abs(d)}</span> 전일`;}
   if(latest){setV('d-weight',latest.weight,'kg');setV('d-skeletal',latest.skeletal,'kg');setV('d-fatrate',latest.fatRate,'%');if(prev){setC('d-weight-chg',latest.weight,prev.weight,true);setC('d-skeletal-chg',latest.skeletal,prev.skeletal,false);setC('d-fatrate-chg',latest.fatRate,prev.fatRate,true);}}
   const tm=mr.filter(m=>m.date===today);
-  const tmDisplay=tm; // 오늘 기록만 표시 (이전 날짜 폴백 제거)
+  const tmDisplay=tm; // 오늘 기록만 표시
   const tc=Math.round(tmDisplay.reduce((a,m)=>a+(m.total?.kcal||0),0));
   document.getElementById('d-cal').innerHTML=tc?`${tc}<span class="sc-unit">kcal</span>`:`—<span class="sc-unit">kcal</span>`;
   document.getElementById('d-cal-sub').textContent=tc?`목표 ${GOALS.cal}의 ${Math.round(tc/GOALS.cal*100)}%`:'기록 없음';
@@ -1156,9 +1156,22 @@ function renderDashboard(){
   renderAllPBs(er);
   renderHistPanel();
   // 수면 대시보드
+  // 날짜 기준: 기록은 취침일(sl-date)로 저장됨
+  // - date===today: 오늘 날짜로 저장된 수면 (오늘 낮잠, 또는 오늘 날짜 선택해 기록한 밤잠)
+  // - date===yesterday + 기상시간<취침시간: 어젯밤 자고 오늘 새벽/아침 기상 → 오늘 대시보드에 표시
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
-  // 오늘 날짜 기준 수면 기록 (없으면 빈 상태로 표시)
-  const todaySleep=sr.filter(r=>r.date===today).sort((a,b)=>a.date.localeCompare(b.date)).pop()||null;
+  const yesterday=(()=>{const d=new Date(today);d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);})();
+  function isWakeToday(rec){
+    // 기상시간 < 취침시간 → 익일 기상 (예: 취침23:00 기상06:00)
+    if(!rec.bedtime||!rec.waketime) return false;
+    const[bh,bm]=rec.bedtime.split(':').map(Number);
+    const[wh,wm]=rec.waketime.split(':').map(Number);
+    return (wh*60+wm) < (bh*60+bm);
+  }
+  const todaySleep = sr.filter(r=>
+    r.date===today ||
+    (r.date===yesterday && isWakeToday(r))
+  ).sort((a,b)=>a.date.localeCompare(b.date)).pop() || null;
   const lastSleep=todaySleep;
   const sleepEl=document.getElementById('d-sleep-content');
   if(lastSleep){
@@ -1175,7 +1188,7 @@ function renderDashboard(){
     <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;">권장 수면 8시간 기준 ${Math.round(lastSleep.durationHours/8*100)}%</div>`;
   } else {
     document.getElementById('d-sleep-meta').textContent='';
-    sleepEl.innerHTML='<div class="empty-state">수면 기록 없음</div>';
+    sleepEl.innerHTML='<div class="empty-state">오늘 수면 기록 없음</div>';
   }
 }
 let chartWeight=null,chartSkeletal=null,chartFatRate=null,chartBMI=null,chartFatMass=null,chartWater=null;
@@ -1215,9 +1228,8 @@ function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').f
 function switchDashEx(type,btn){currentDashEx=type;document.querySelectorAll('.ex-tab-dash').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');renderDashEx(er,type);}
 function renderDashEx(er,type){
   const list=document.getElementById('d-ex-list');
-  // 오늘 날짜 기록만 필터
   const data=[...(er[type]||[])].filter(r=>r.date===today).reverse();
-  if(!data.length){list.innerHTML='<div class="empty-state">오늘 운동 기록 없음</div>';return;}
+  if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
   if(type==='run'||type==='walk')list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:${type==='walk'?'var(--skeletal)':'var(--run)'}">${type==='walk'?'🚶 ':'🏃 '}${r.distance||'—'}km ${type==='run'&&isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`).join('');
   else if(type==='bike')list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`).join('');
   else list.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date">${r.date?.slice(5)||''}</div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div></div>`).join('');
@@ -1684,12 +1696,10 @@ let currentExType='run',currentExHistType='run';
 function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));document.getElementById('exs-'+(type==='bodyweight'?'bw':type)).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight'].indexOf(type)]);}
 function toggleExChip(el){el.classList.toggle('selected');document.getElementById('add-ex-btn').classList.toggle('show',document.querySelectorAll('.ex-chip.selected').length>0);}
 function addSelectedEx(){document.querySelectorAll('.ex-chip.selected').forEach(c=>{const n=c.dataset.ex;if(!document.querySelector(`[data-added="${n}"]`)){const div=document.createElement('div');div.className='added-ex-item';div.dataset.added=n;div.innerHTML=`<div class="aei-name">${n}</div><div class="aei-inputs"><input type="number" class="aei-inp" placeholder="15" min="1"><div class="aei-sep">회×</div><input type="number" class="aei-inp" placeholder="3" min="1"><div class="aei-sep">세트</div></div><button class="aei-x" onclick="this.parentElement.remove()">×</button>`;document.getElementById('added-exercises').appendChild(div);}c.classList.remove('selected');});document.getElementById('add-ex-btn').classList.remove('show');}
-// 시간/페이스 자동 콜론: 숫자만 입력하면 4자리 완성 시 xx:xx 포맷으로 변환
+// 시간/페이스 자동 콜론: 숫자 4자리 완성 시 xx:xx 포맷으로 자동 변환
 function autoColon(el){
-  // 숫자만 추출
   let v=el.value.replace(/[^0-9]/g,'');
   if(v.length>=4){
-    // 4자리 이상이면 앞 2자리:뒤 2자리
     el.value=v.slice(0,2)+':'+v.slice(2,4);
   } else {
     el.value=v;
@@ -1713,6 +1723,9 @@ async function saveWalk(){
   if(!exRecs.walk)exRecs.walk=[];
   exRecs.walk.push(r);exRecs.walk.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
+  // GAS walk 케이스로 직접 전달
+  // Apps Script가 아직 걷기 전용 종류를 지원하지 않는 경우,
+  // 걷기를 런닝 category로 저장하면서 세부내용/메모에 '걷기' 마커를 남긴다.
   await sheetSave({type:'exercise',category:'walk',...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
