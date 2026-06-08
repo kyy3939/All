@@ -415,7 +415,7 @@ select.inp{cursor:pointer;font-size:14px;}
 .hist-sec-title .hst-text{font-size:10px;line-height:1.2;}
 @media(max-width:480px){.hist-summary-chip{min-width:48px;padding:5px 6px}.hist-summary-chip .hsc-text{font-size:9px}.hist-sec-title{min-width:42px}}
 
-/* ══ v1.4.2 추가: 기록 히스토리 탭/요약칩 모바일 줄바꿈 안정화 ══ */
+/* ══ v1.4.3 추가: 기록 히스토리 탭/요약칩 모바일 줄바꿈 안정화 ══ */
 .hist-tab-dash{display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;min-width:72px!important;padding:8px 12px!important;line-height:1.15!important;white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important;text-align:center!important;}
 .hist-tab-dash .ht-icon{font-size:15px;line-height:1;}
 .hist-tab-dash .ht-label{display:block;font-size:11px;line-height:1.15;white-space:nowrap;word-break:keep-all;}
@@ -433,11 +433,11 @@ select.inp{cursor:pointer;font-size:14px;}
 
 <!-- 상단 헤더 -->
 <div class="topnav">
-  <div class="nav-logo" onclick="location.reload()" title="새로고침">HEALTH COACH</div>
+  <div class="nav-logo" onclick="hardRefreshHealthCoach()" title="새로고침">HEALTH COACH</div>
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.4.2</span>
+  <span class="nav-ver">v1.4.4</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -950,14 +950,13 @@ function parseSheetData(raw){
   (raw.exercise||[]).forEach(r=>{
     const date=safeDate(r['날짜']);
     const time=safeTime(r['시간']);
-    const type=String(r['종류']||'');
-    if(type==='런닝'){
-      // Apps Script가 아직 걷기 전용 종류를 지원하지 않는 경우,
-      // 걷기를 런닝 category로 저장하면서 세부내용/메모에 '걷기' 마커를 남긴다.
-      // 동기화 시 이 마커가 있으면 앱에서는 걷기로 복원한다.
-      const detailText=String(r['세부내용']||r['메모']||r['detail']||r['kind']||'');
-      const target=detailText.includes('걷기')||detailText.toLowerCase().includes('walk') ? exRecs.walk : exRecs.run;
-      target.push({
+    const typeRaw=String(r['종류']||'');
+    const type=typeRaw.trim();
+    const detailText=String(r['세부내용']||r['메모']||r['detail']||r['kind']||r['운동명']||'');
+    const typeLower=(type+' '+detailText).toLowerCase();
+    const isWalkMarker=type.includes('걷')||typeLower.includes('walk')||detailText.includes('걷기');
+    const hasRunLikeFields=!!(safeFloat(r['거리(km)'])||String(r['페이스']||'').trim()||safeInt(r['걸음수']));
+    const parseRunLike=()=>({
         date,time,
         distance:safeFloat(r['거리(km)']),
         duration:String(r['시간(분)']||''),
@@ -968,18 +967,15 @@ function parseSheetData(raw){
         steps:safeInt(r['걸음수'])||null,
         detail:detailText||null
       });
-    } else if(type==='걷기'){
-      exRecs.walk.push({
-        date,time,
-        distance:safeFloat(r['거리(km)']),
-        duration:String(r['시간(분)']||''),
-        pace:String(r['페이스']||''),
-        hr:safeInt(r['심박수']),
-        cal:safeInt(r['칼로리']),
-        cadence:safeInt(r['케이던스'])||null,
-        steps:safeInt(r['걸음수'])||null
-      });
-    } else if(type==='자전거'){
+    if(type.includes('런')){
+      // Apps Script가 아직 걷기 전용 종류를 지원하지 않는 경우,
+      // 걷기를 런닝 category로 저장하면서 세부내용/메모에 '걷기' 마커를 남긴다.
+      // 동기화 시 이 마커가 있으면 앱에서는 걷기로 복원한다.
+      const target=isWalkMarker ? exRecs.walk : exRecs.run;
+      target.push(parseRunLike());
+    } else if(type.includes('걷')||typeLower.includes('walk')){
+      exRecs.walk.push(parseRunLike());
+    } else if(type.includes('자전거')||type.toLowerCase().includes('bike')){
       exRecs.bike.push({
         date,time,
         duration:safeInt(r['시간(분)']),
@@ -987,22 +983,12 @@ function parseSheetData(raw){
         cal:safeInt(r['칼로리']),
         memo:String(r['세부내용']||'')
       });
-    } else if(type==='복합운동'){
-      // 걷기를 기존 Apps Script가 복합운동으로 저장해버린 경우 보정
-      // 복합운동인데 거리/페이스/걸음수 값이 있으면 실제로는 걷기 기록으로 판단
-      const detailText=String(r['세부내용']||r['메모']||r['detail']||r['kind']||'');
-      const hasWalkFields=detailText.includes('걷기')||detailText.toLowerCase().includes('walk')||safeFloat(r['거리(km)'])||String(r['페이스']||'').trim()||safeInt(r['걸음수']);
-      if(hasWalkFields){
-        exRecs.walk.push({
-          date,time,
-          distance:safeFloat(r['거리(km)']),
-          duration:String(r['시간(분)']||''),
-          pace:String(r['페이스']||''),
-          hr:safeInt(r['심박수']),
-          cal:safeInt(r['칼로리']),
-          cadence:safeInt(r['케이던스'])||null,
-          steps:safeInt(r['걸음수'])||null
-        });
+    } else if(type.includes('복합')||type.toLowerCase().includes('bodyweight')){
+      // Apps Script가 걷기를 모르는 경우 복합운동으로 저장할 수 있어 보정
+      // 거리/페이스/걸음수 등 런닝형 필드가 있거나 '걷기/walk' 마커가 있으면 걷기로 복원
+      const detailHasExercisePattern=/\d+회×\d+세트/.test(detailText);
+      if(isWalkMarker || (hasRunLikeFields && !detailHasExercisePattern)){
+        exRecs.walk.push(parseRunLike());
       } else {
         // "스쿼트 15회×1세트, 윗몸일으키기 20회×3세트" 형태 파싱
         const detail=String(r['세부내용']||'');
@@ -1018,17 +1004,8 @@ function parseSheetData(raw){
           exRecs.bodyweight.push({date,time,exercises});
         }
       }
-    } else if(type==='walk'||type==='걷기'){
-      exRecs.walk.push({
-        date,time,
-        distance:safeFloat(r['거리(km)']),
-        duration:String(r['시간(분)']||''),
-        pace:String(r['페이스']||''),
-        hr:safeInt(r['심박수']),
-        cal:safeInt(r['칼로리']),
-        cadence:safeInt(r['케이던스'])||null,
-        steps:safeInt(r['걸음수'])||null
-      });
+    } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
+      exRecs.walk.push(parseRunLike());
     }
   });
 
@@ -1075,13 +1052,40 @@ async function syncFromSheet(){
 }
 
 // KST(UTC+9) 기준 오늘 날짜 — toLocaleString 대신 offset 직접 계산
-const _kst=new Date(Date.now()+9*3600*1000);const today=_kst.toISOString().slice(0,10);
+function getKstDateString(){return new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);}
+let today=getKstDateString();
+let lastKnownToday=today;
 const pad=n=>String(n).padStart(2,'0');
 const GOALS={cal:2100,protein:150,carb:250,fat:60};
 const getNum=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 function nowTime(){const n=new Date();return`${pad(n.getHours())}:${pad(n.getMinutes())}`;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function hardRefreshHealthCoach(){
+  // 어느 탭에 있든 상단 로고 클릭 시 전체 페이지를 새로고침
+  window.location.reload();
+}
+function refreshTodayViews(){
+  today=getKstDateString();
+  initDates();
+  updateMealSummary();renderMealHist();
+  renderExHist(currentExHistType||'run');
+  renderSleepHist();
+  renderDashboard();
+  if(document.getElementById('page-chat')?.classList.contains('active'))loadChatContext();
+}
+function checkDateRollover(){
+  const current=getKstDateString();
+  if(current!==lastKnownToday){
+    lastKnownToday=current;
+    today=current;
+    refreshTodayViews();
+    showToast('📅 날짜가 바뀌어 오늘 화면을 새로 갱신했어요');
+  }
+}
+window.addEventListener('focus',checkDateRollover);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDateRollover();});
+setInterval(checkDateRollover,60000);
 
 function initDates(){
   const now=new Date(Date.now()+9*3600*1000);
@@ -1697,7 +1701,7 @@ async function saveWalk(){
   // 걷기는 별도 category='walk'로 저장 요청하고,
   // Apps Script가 아직 걷기를 지원하지 않아 종류가 런닝/복합운동으로 저장되더라도
   // detail/kind/memo의 걷기 마커를 보고 앱 동기화 시 걷기로 복원한다.
-  await sheetSave({type:'exercise',category:'walk',exerciseType:'walk',kind:'걷기',exerciseName:'걷기',detail:'걷기',memo:'걷기',...r});
+  await sheetSave({type:'exercise',category:'run',exerciseType:'run',kind:'걷기',exerciseName:'걷기',detail:'걷기',memo:'걷기',mode:'walk',walk:true,...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
 }
