@@ -681,6 +681,7 @@ select.inp{cursor:pointer;font-size:14px;}
           <div class="fav-food-grid" id="fav-food-grid"><span style="font-size:12px;color:var(--muted);">저장된 즐겨찾기 없음</span></div>
           <div class="manual-nutri-title" style="margin-top:10px;"><span>✍️ 칼로리를 알고 있을 때 직접 입력</span><button class="mini-btn" onclick="applyManualNutrition()">직접값 적용</button></div>
           <div class="manual-grid">
+            <input type="text" class="inp" id="manual-food" placeholder="항목명" style="font-size:13px;">
             <input type="number" class="inp" id="manual-cal" placeholder="kcal" step="1" style="font-size:13px;">
             <input type="number" class="inp" id="manual-prot" placeholder="단백질 g" step="0.1" style="font-size:13px;">
             <input type="number" class="inp" id="manual-carb" placeholder="탄수 g" step="0.1" style="font-size:13px;">
@@ -788,13 +789,6 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="ctx-card"><div class="cc-label">오늘 운동</div><div class="cc-val no-data" id="ctx-ex-val">—</div><div class="cc-sub" id="ctx-ex-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">전날 수면</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub">밤잠+낮잠</div></div>
       </div>
-      <div class="section" style="margin-bottom:16px;">
-        <div class="sec-hdr"><div class="sec-title">🌙 자기 전 마무리 리포트</div><div class="sec-meta">오늘 데이터 기준</div></div>
-        <div style="padding:14px 18px;">
-          <button class="save-btn primary" onclick="generateDailyReport()" style="margin-top:0;">📄 오늘 마무리 리포트 생성</button>
-          <div id="daily-report-box" class="report-box" style="display:none;margin-top:12px;"></div>
-        </div>
-      </div>
       <!-- 상태 표시 -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
         <div class="nav-dot"></div>
@@ -818,6 +812,14 @@ select.inp{cursor:pointer;font-size:14px;}
         <textarea class="chat-inp" id="chat-inp" placeholder="질문하거나 기록하세요..." onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendChat()">↑</button>
       </div>
+      <div class="section" style="margin-bottom:16px;">
+        <div class="sec-hdr"><div class="sec-title">🌙 자기 전 마무리 리포트</div><div class="sec-meta">오늘 데이터 기준</div></div>
+        <div style="padding:14px 18px;">
+          <button class="save-btn primary" onclick="generateDailyReport()" style="margin-top:0;">📄 오늘 마무리 리포트 생성</button>
+          <div id="daily-report-box" class="report-box" style="display:none;margin-top:12px;"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1143,7 +1145,7 @@ function filterByPeriod(arr, dateKey){
   return arr.filter(r=>r[dateKey]>=cutStr);
 }
 
-function _renderHistPanelOriginal(){
+function renderHistPanel(){
   const el=document.getElementById('hist-content');
   if(!el)return;
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
@@ -1151,8 +1153,38 @@ function _renderHistPanelOriginal(){
   const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
 
+  const fmtNum=(v,unit='')=>(v===null||v===undefined||v==='')?'—':`${v}${unit}`;
+  const sumMeal=(meals)=>meals.reduce((a,m)=>({
+    kcal:a.kcal+(m.total?.kcal||0),
+    protein:a.protein+(m.total?.protein||0),
+    carb:a.carb+(m.total?.carb||0),
+    fat:a.fat+(m.total?.fat||0)
+  }),{kcal:0,protein:0,carb:0,fat:0});
+  const durToMin=(v)=>{
+    if(!v)return 0;
+    if(typeof v==='number')return v;
+    const parts=String(v).split(':').map(Number);
+    if(parts.length>=2 && !isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
+    const n=parseFloat(v);return isNaN(n)?0:n;
+  };
+  const sumExercise=(runs,bikes,bws)=>{
+    const runCal=runs.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+    const bikeCal=bikes.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+    const bwCal=bws.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+    const runMin=runs.reduce((a,r)=>a+durToMin(r.duration),0);
+    const bikeMin=bikes.reduce((a,r)=>a+(parseInt(r.duration)||0),0);
+    const bwMin=bws.reduce((a,r)=>a+(parseInt(r.duration)||0),0);
+    return {cal:runCal+bikeCal+bwCal,min:runMin+bikeMin+bwMin,count:runs.length+bikes.length+bws.length};
+  };
+  const section=(title,color,body,meta='')=>`<div style="border:1px solid ${color};border-radius:11px;margin:8px 0;overflow:hidden;background:rgba(20,24,41,.55);">
+    <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:800;color:${color};">${title}</div>
+      <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${meta}</div>
+    </div>
+    <div style="padding:10px 12px;line-height:1.8;">${body}</div>
+  </div>`;
+
   if(currentHistTab==='day'){
-    // 날짜별 통합 뷰 — 모든 날짜 수집
     let dates=new Set();
     filterByPeriod(br,'date').forEach(r=>dates.add(r.date));
     filterByPeriod(sr,'date').forEach(r=>dates.add(r.date));
@@ -1169,29 +1201,39 @@ function _renderHistPanelOriginal(){
       const runs=(er.run||[]).filter(r=>r.date===date);
       const bikes=(er.bike||[]).filter(r=>r.date===date);
       const bws=(er.bodyweight||[]).filter(r=>r.date===date);
-      const totalCal=Math.round(meals.reduce((a,m)=>a+(m.total?.kcal||0),0));
-      const totalProt=Math.round(meals.reduce((a,m)=>a+(m.total?.protein||0),0));
-      const sleep=sleeps[0];
-      const sleepColor=sleep?(sleep.durationHours>=7?'var(--run)':sleep.durationHours>=6?'var(--fatrate)':'var(--fat-c)'):'var(--muted)';
-      return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
-        <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
-          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
-          ${bodies.length?`<span style="font-size:11px;color:var(--bio);">⚖️${bodies[bodies.length-1].weight||'—'}kg</span>`:''}
-          ${sleep?`<span style="font-size:11px;color:${sleepColor};margin-left:4px;">😴${sleep.durationHours}h</span>`:''}
-          ${totalCal?`<span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>`:''}
-          ${totalProt?`<span style="font-size:11px;color:var(--protein);">단백질${totalProt}g</span>`:''}
-          ${runs.length?`<span style="font-size:11px;color:var(--run);">🏃${runs.map(r=>r.distance+'km').join(' ')}</span>`:''}
-          ${bikes.length?`<span style="font-size:11px;color:var(--coach);">🚴${bikes.map(r=>r.duration+'분').join(' ')}</span>`:''}
-          ${bws.length?`<span style="font-size:11px;color:var(--cal);">💪${bws.length}회</span>`:''}
+      const body=bodies[bodies.length-1];
+      const meal=sumMeal(meals);
+      const ex=sumExercise(runs,bikes,bws);
+      const sleepH=sleeps.reduce((a,s)=>a+(parseFloat(s.durationHours)||0),0);
+      const headerChips=[];
+      if(body)headerChips.push(`<span style="color:var(--bio);">⚖ ${fmtNum(body.weight,'kg')}</span>`);
+      if(meal.kcal)headerChips.push(`<span style="color:var(--cal);">🔥 ${Math.round(meal.kcal)}kcal</span>`);
+      if(ex.count)headerChips.push(`<span style="color:var(--run);">🏋 ${ex.min?Math.round(ex.min)+'분 · ':''}${Math.round(ex.cal)}kcal</span>`);
+      if(sleepH)headerChips.push(`<span style="color:var(--fatrate);">😴 ${sleepH.toFixed(1)}h</span>`);
+
+      const parts=[];
+      if(sleeps.length){
+        parts.push(section('😴 수면','var(--fatrate)',sleeps.map(s=>`<div style="font-size:12px;color:var(--dim);">${s.type||'수면'} ${fmtNum(s.durationHours,'h')} · 취침 ${s.bedtime||'—'} → 기상 ${s.waketime||'—'} · 품질${s.quality||'—'}점</div>`).join(''),`총 ${sleepH.toFixed(1)}h`));
+      }
+      if(meals.length){
+        parts.push(section('🥗 식사','var(--cal)',meals.map(m=>`<div style="font-size:12px;color:var(--dim);"><span class="meal-badge badge-${m.mealType}">${m.mealType||'식사'}</span> <span style="margin-left:6px;">${esc(m.foodText||'')}</span> <b style="color:var(--cal);">${Math.round(m.total?.kcal||0)}kcal</b></div>`).join(''),`총 ${Math.round(meal.kcal)}kcal · 단${Math.round(meal.protein)}g · 탄${Math.round(meal.carb)}g · 지${Math.round(meal.fat)}g`));
+      }
+      if(runs.length||bikes.length||bws.length){
+        const rows=[];
+        rows.push(...runs.map(r=>`<div style="font-size:12px;color:var(--dim);">🏃 런닝 ${r.distance?`${r.distance}km`:''} ${r.duration?`· ${r.duration}`:''} ${r.cal?`· <b style="color:var(--run);">${r.cal}kcal</b>`:''}</div>`));
+        rows.push(...bikes.map(r=>`<div style="font-size:12px;color:var(--dim);">🚴 자전거 ${r.duration||'—'}분 ${r.cal?`· <b style="color:var(--run);">${r.cal}kcal</b>`:''}</div>`));
+        rows.push(...bws.map(r=>`<div style="font-size:12px;color:var(--dim);">💪 복합 ${r.exercises?.length||0}종목 · ${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div>`));
+        parts.push(section('🏋️ 운동','var(--run)',rows.join(''),`총 ${ex.count}건 · ${Math.round(ex.cal)}kcal${ex.min?` · ${Math.round(ex.min)}분`:''}`));
+      }
+      if(body){
+        parts.push(section('⚖️ 체성분','var(--bio)',`<div style="font-size:12px;color:var(--dim);">체중 <b style="color:var(--weight);">${fmtNum(body.weight,'kg')}</b> · 골격근량 <b style="color:var(--skeletal);">${fmtNum(body.skeletal,'kg')}</b> · 체지방량 <b style="color:var(--fat-c);">${fmtNum(body.fatMass,'kg')}</b> · 체수분 ${fmtNum(body.water,'kg')} · 체지방률 <b style="color:var(--fat-c);">${fmtNum(body.fatRate,'%')}</b> · BMI <b style="color:var(--fatrate);">${fmtNum(body.bmi)}</b></div>`,body.time?`기록 ${body.time}`:''));
+      }
+      return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;">
+        <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);margin-right:auto;">${date}</span>
+          ${headerChips.join('')}
         </div>
-        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
-          ${bodies.map(b=>`<div style="font-size:12px;color:var(--dim);">⚖️ <span style="color:var(--text);font-weight:700;">${b.weight||'—'}kg</span> · 골격근량 ${b.skeletal||'—'}kg · 체지방량 ${b.fatMass||'—'}kg · 체지방률 ${b.fatRate||'—'}% · BMI ${b.bmi||'—'} ${b.timing?`<span style="color:var(--muted);">(${b.timing})</span>`:''}</div>`).join('')}
-          ${sleep?`<div style="font-size:12px;color:var(--dim);">😴 취침 ${sleep.bedtime||'—'} → 기상 ${sleep.waketime||'—'} <span style="color:${sleepColor};font-weight:700;">${sleep.durationHours}h</span>${sleep.quality?` · 품질${sleep.quality}점`:''}</div>`:''}
-          ${meals.map(m=>`<div style="font-size:12px;color:var(--dim);"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span> <span style="margin-left:6px;">${m.foodText}</span> <span style="color:var(--cal);font-family:'DM Mono',monospace;">${m.total?.kcal||0}kcal</span></div>`).join('')}
-          ${runs.map(r=>`<div style="font-size:12px;color:var(--run);">🏃 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div>`).join('')}
-          ${bikes.map(r=>`<div style="font-size:12px;color:var(--coach);">🚴 ${r.duration}분 ${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div>`).join('')}
-          ${bws.map(r=>`<div style="font-size:12px;color:var(--cal);">💪 ${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')}</div>`).join('')}
-        </div>
+        <div style="padding:8px 12px 10px;">${parts.join('')||'<div class="empty-state">기록 없음</div>'}</div>
       </div>`;
     }).join('');
   }
@@ -1214,7 +1256,6 @@ function _renderHistPanelOriginal(){
     }).join('');
   }
   else if(currentHistTab==='meal'){
-    // 날짜별 그룹핑
     const filtered=filterByPeriod([...mr],'date');
     const grouped={};
     filtered.forEach(m=>{if(!grouped[m.date])grouped[m.date]=[];grouped[m.date].push(m);});
@@ -1222,20 +1263,19 @@ function _renderHistPanelOriginal(){
     if(!dates.length){el.innerHTML='<div class="empty-state">식사 기록 없음</div>';return;}
     el.innerHTML=dates.map(date=>{
       const meals=grouped[date];
-      const totalCal=Math.round(meals.reduce((a,m)=>a+(m.total?.kcal||0),0));
-      const totalProt=Math.round(meals.reduce((a,m)=>a+(m.total?.protein||0),0));
-      const totalCarb=Math.round(meals.reduce((a,m)=>a+(m.total?.carb||0),0));
+      const total=sumMeal(meals);
       return`<div style="margin-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;flex-wrap:wrap;">
           <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--text);">${date}</span>
-          <span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>
-          <span style="font-size:11px;color:var(--protein);">단${totalProt}g</span>
-          <span style="font-size:11px;color:var(--carb);">탄${totalCarb}g</span>
+          <span style="font-size:11px;color:var(--cal);">🔥${Math.round(total.kcal)}kcal</span>
+          <span style="font-size:11px;color:var(--protein);">단${Math.round(total.protein)}g</span>
+          <span style="font-size:11px;color:var(--carb);">탄${Math.round(total.carb)}g</span>
+          <span style="font-size:11px;color:#e040fb;">지${Math.round(total.fat)}g</span>
         </div>
         ${meals.map(m=>`<div class="hi-item" style="padding:8px 4px;">
           <div class="hi-date"><div class="hi-date-d">${m.time||''}</div></div>
           <div class="hi-body">
-            <div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span><span style="margin-left:6px;">${m.foodText}</span></div>
+            <div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span><span style="margin-left:6px;">${esc(m.foodText)}</span></div>
             <div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>
           </div>
         </div>`).join('')}
@@ -1667,9 +1707,13 @@ function fillAnalysisResult(parsed){
   document.getElementById('analysis-result').classList.add('show');document.getElementById('meal-save-btn').disabled=false;
 }
 function applyManualNutrition(){
-  const food=(document.getElementById('food-input').value||'직접 입력 음식').trim();
+  const manualName=(document.getElementById('manual-food')?.value||'').trim();
+  const typedFood=(document.getElementById('food-input').value||'').trim();
+  const food=manualName||typedFood||'직접 입력 음식';
   const total={kcal:getNum(document.getElementById('manual-cal').value),protein:getNum(document.getElementById('manual-prot').value),carb:getNum(document.getElementById('manual-carb').value),fat:getNum(document.getElementById('manual-fat').value)};
+  if(!manualName&&!typedFood){showToast('⚠️ 항목명을 입력해주세요');return;}
   if(!total.kcal&&!total.protein&&!total.carb&&!total.fat){showToast('⚠️ 직접 입력값을 넣어주세요');return;}
+  if(manualName && !typedFood)document.getElementById('food-input').value=manualName;
   pendingAnalysis={foods:[{name:food,kcal:total.kcal,protein:total.protein,carb:total.carb,fat:total.fat}],total,foodText:food};
   fillAnalysisResult(pendingAnalysis);showToast('✍️ 직접 입력값을 적용했어요');
 }
@@ -1986,100 +2030,6 @@ function applyDashLayout(){
   else{cols.style.cssText='display:flex;flex-direction:column;gap:12px;';}
 }
 window.addEventListener('resize',applyDashLayout);
-
-
-
-// ══ PATCH: 기록 히스토리 > 날짜별 탭에 체성분까지 항상 함께 표시 ══
-function renderHistPanel(){
-  if(currentHistTab!=='day') return _renderHistPanelOriginal();
-  const el=document.getElementById('hist-content');
-  if(!el) return;
-
-  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
-  const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
-  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
-  const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
-
-  const num=(v)=>{const n=parseFloat(v);return Number.isFinite(n)?n:null;};
-  const fmt=(v,unit='')=>{const n=num(v);return n==null?'—':`${Number.isInteger(n)?n:n.toFixed(1)}${unit}`;};
-  const getBody=(r,k)=>{
-    const map={fatMass:['fatMass','fatmass','bodyFatMass','체지방량'],fatRate:['fatRate','fatrate','bodyFatRate','체지방률'],skeletal:['skeletal','skeletalMass','골격근량'],water:['water','bodyWater','체수분'],weight:['weight','체중'],bmi:['bmi','BMI'],bmr:['bmr','기초대사량']};
-    for(const key of (map[k]||[k])){ if(r && r[key]!==undefined && r[key]!==null && r[key]!=='' ) return r[key]; }
-    return null;
-  };
-
-  let dates=new Set();
-  filterByPeriod(br,'date').forEach(r=>r.date&&dates.add(r.date));
-  filterByPeriod(sr,'date').forEach(r=>r.date&&dates.add(r.date));
-  filterByPeriod(mr,'date').forEach(r=>r.date&&dates.add(r.date));
-  filterByPeriod(er.run||[],'date').forEach(r=>r.date&&dates.add(r.date));
-  filterByPeriod(er.bike||[],'date').forEach(r=>r.date&&dates.add(r.date));
-  filterByPeriod(er.bodyweight||[],'date').forEach(r=>r.date&&dates.add(r.date));
-  dates=[...dates].sort((a,b)=>b.localeCompare(a));
-  if(!dates.length){el.innerHTML='<div class="empty-state">기록 없음</div>';return;}
-
-  el.innerHTML=dates.map(date=>{
-    const bodies=br.filter(r=>r.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    const sleeps=sr.filter(r=>r.date===date);
-    const meals=mr.filter(r=>r.date===date);
-    const runs=(er.run||[]).filter(r=>r.date===date);
-    const bikes=(er.bike||[]).filter(r=>r.date===date);
-    const bws=(er.bodyweight||[]).filter(r=>r.date===date);
-    const latestBody=bodies[bodies.length-1];
-    const sleepTotal=sleeps.reduce((a,s)=>a+(parseFloat(s.durationHours)||0),0);
-    const totalCal=Math.round(meals.reduce((a,m)=>a+(m.total?.kcal||0),0));
-    const totalProt=Math.round(meals.reduce((a,m)=>a+(m.total?.protein||0),0));
-    const exCal=Math.round(runs.reduce((a,r)=>a+(parseFloat(r.cal)||0),0)+bikes.reduce((a,r)=>a+(parseFloat(r.cal)||0),0));
-    const hasEx=runs.length||bikes.length||bws.length;
-    const sleepColor=sleepTotal?(sleepTotal>=7?'var(--run)':sleepTotal>=6?'var(--fatrate)':'var(--fat-c)'):'var(--muted)';
-
-    const chips=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;">
-      ${sleeps.length?`<span style="font-size:11px;color:${sleepColor};background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:999px;padding:3px 8px;">😴 ${sleepTotal.toFixed(1)}h</span>`:''}
-      ${meals.length?`<span style="font-size:11px;color:var(--cal);background:rgba(255,112,67,.08);border:1px solid rgba(255,112,67,.18);border-radius:999px;padding:3px 8px;">🥗 ${totalCal}kcal</span>`:''}
-      ${hasEx?`<span style="font-size:11px;color:var(--run);background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.18);border-radius:999px;padding:3px 8px;">🏋️ ${runs.length+bikes.length+bws.length}건${exCal?` · ${exCal}kcal`:''}</span>`:''}
-      ${latestBody?`<span style="font-size:11px;color:var(--weight);background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.18);border-radius:999px;padding:3px 8px;">⚖️ ${fmt(getBody(latestBody,'weight'),'kg')}</span>`:''}
-    </div>`;
-
-    const bodyHtml=bodies.length?`<div style="margin-top:8px;padding:10px 12px;background:rgba(0,229,255,.035);border:1px solid rgba(0,229,255,.12);border-radius:10px;">
-      <div style="font-size:12px;font-weight:700;color:var(--weight);margin-bottom:7px;">⚖️ 체성분 ${bodies.length>1?`<span style="font-size:10px;color:var(--muted);font-weight:400;">${bodies.length}건</span>`:''}</div>
-      ${bodies.map(b=>`<div style="font-size:12px;color:var(--dim);line-height:1.8;">
-        ${b.time?`<span style="font-family:'DM Mono',monospace;color:var(--muted);margin-right:6px;">${b.time}</span>`:''}
-        <span style="color:var(--text);font-weight:700;">체중 ${fmt(getBody(b,'weight'),'kg')}</span>
-        · 골격근량 ${fmt(getBody(b,'skeletal'),'kg')}
-        · 체지방량 ${fmt(getBody(b,'fatMass'),'kg')}
-        · 체수분 ${fmt(getBody(b,'water'),'kg')}
-        · 체지방률 ${fmt(getBody(b,'fatRate'),'%')}
-        · BMI ${fmt(getBody(b,'bmi'),'')}
-        ${getBody(b,'bmr')!=null?` · 기초대사량 ${fmt(getBody(b,'bmr'),'kcal')}`:''}
-        ${b.timing?` <span style="color:var(--muted);">(${b.timing})</span>`:''}
-      </div>`).join('')}
-    </div>`:'';
-
-    const sleepHtml=sleeps.length?sleeps.map(s=>`<div style="font-size:12px;color:var(--dim);line-height:1.8;">😴 ${s.sleepType||'수면'} ${s.bedtime||'—'} → ${s.waketime||'—'} <span style="color:${sleepColor};font-weight:700;">${s.durationHours||'—'}h</span>${s.quality?` · 품질${s.quality}점`:''}</div>`).join(''):'';
-    const mealHtml=meals.length?meals.map(m=>`<div style="font-size:12px;color:var(--dim);line-height:1.8;"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span> <span style="margin-left:6px;">${esc(m.foodText||'')}</span> <span style="color:var(--cal);font-family:'DM Mono',monospace;">${m.total?.kcal||0}kcal</span></div>`).join(''):'';
-    const exHtml=`${runs.map(r=>`<div style="font-size:12px;color:var(--run);line-height:1.8;">🏃 런닝 ${r.distance||'—'}km ${r.duration?'· '+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div>`).join('')}${bikes.map(r=>`<div style="font-size:12px;color:var(--coach);line-height:1.8;">🚴 자전거 ${r.duration||'—'}분 ${r.cal?'· 🔥'+r.cal+'kcal':''}</div>`).join('')}${bws.map(r=>`<div style="font-size:12px;color:var(--cal);line-height:1.8;">💪 복합 ${Array.isArray(r.exercises)?r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · '):'기록 있음'}</div>`).join('')}`;
-
-    return `<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
-      <div style="background:var(--s2);padding:11px 14px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
-          ${latestBody?`<span style="font-size:11px;color:var(--bio);">⚖️ ${fmt(getBody(latestBody,'weight'),'kg')}</span>`:''}
-          ${sleepTotal?`<span style="font-size:11px;color:${sleepColor};">😴 ${sleepTotal.toFixed(1)}h</span>`:''}
-          ${totalCal?`<span style="font-size:11px;color:var(--cal);">🔥 ${totalCal}kcal</span>`:''}
-          ${totalProt?`<span style="font-size:11px;color:var(--protein);">단백질 ${totalProt}g</span>`:''}
-          ${hasEx?`<span style="font-size:11px;color:var(--run);">🏋️ 운동 ${runs.length+bikes.length+bws.length}건</span>`:''}
-        </div>
-        ${chips}
-      </div>
-      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
-        ${bodyHtml}
-        ${sleepHtml}
-        ${mealHtml}
-        ${exHtml}
-      </div>
-    </div>`;
-  }).join('');
-}
 
 initDates();
 renderFoodFavorites();
