@@ -139,6 +139,10 @@ select.inp{cursor:pointer;font-size:14px;}
 .hist-list{max-height:360px;overflow-y:auto;}
 .hist-list::-webkit-scrollbar{width:3px;}
 .hist-list::-webkit-scrollbar-thumb{background:var(--border);}
+#hist-content::-webkit-scrollbar{width:4px;}
+#hist-content::-webkit-scrollbar-track{background:var(--bg);}
+#hist-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+#hist-content{scrollbar-color:var(--border) var(--bg);scrollbar-width:thin;}
 .hi-item{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;transition:background .15s;}
 .hi-item:last-child{border-bottom:none;}
 .hi-item:hover{background:var(--s2);}
@@ -437,7 +441,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.4.4</span>
+  <span class="nav-ver">v1.4.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -968,11 +972,7 @@ function parseSheetData(raw){
         detail:detailText||null
       });
     if(type.includes('런')){
-      // Apps Script가 아직 걷기 전용 종류를 지원하지 않는 경우,
-      // 걷기를 런닝 category로 저장하면서 세부내용/메모에 '걷기' 마커를 남긴다.
-      // 동기화 시 이 마커가 있으면 앱에서는 걷기로 복원한다.
-      const target=isWalkMarker ? exRecs.walk : exRecs.run;
-      target.push(parseRunLike());
+      exRecs.run.push(parseRunLike());
     } else if(type.includes('걷')||typeLower.includes('walk')){
       exRecs.walk.push(parseRunLike());
     } else if(type.includes('자전거')||type.toLowerCase().includes('bike')){
@@ -1698,10 +1698,8 @@ async function saveWalk(){
   if(!exRecs.walk)exRecs.walk=[];
   exRecs.walk.push(r);exRecs.walk.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
-  // 걷기는 별도 category='walk'로 저장 요청하고,
-  // Apps Script가 아직 걷기를 지원하지 않아 종류가 런닝/복합운동으로 저장되더라도
-  // detail/kind/memo의 걷기 마커를 보고 앱 동기화 시 걷기로 복원한다.
-  await sheetSave({type:'exercise',category:'run',exerciseType:'run',kind:'걷기',exerciseName:'걷기',detail:'걷기',memo:'걷기',mode:'walk',walk:true,...r});
+  // GAS walk 케이스로 직접 전달 (category:'walk')
+  await sheetSave({type:'exercise',category:'walk',...r});
   ['walk-dist','walk-dur','walk-pace','walk-hr','walk-cal','walk-cadence','walk-steps','walk-sweat'].forEach(id=>document.getElementById(id).value='');
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
 }
