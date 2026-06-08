@@ -789,13 +789,6 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="ctx-card"><div class="cc-label">오늘 운동</div><div class="cc-val no-data" id="ctx-ex-val">—</div><div class="cc-sub" id="ctx-ex-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">전날 수면</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub">밤잠+낮잠</div></div>
       </div>
-      <div class="section" style="margin-bottom:16px;">
-        <div class="sec-hdr"><div class="sec-title">🌙 자기 전 마무리 리포트</div><div class="sec-meta">오늘 데이터 기준</div></div>
-        <div style="padding:14px 18px;">
-          <button class="save-btn primary" onclick="generateDailyReport()" style="margin-top:0;">📄 오늘 마무리 리포트 생성</button>
-          <div id="daily-report-box" class="report-box" style="display:none;margin-top:12px;"></div>
-        </div>
-      </div>
       <!-- 상태 표시 -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
         <div class="nav-dot"></div>
@@ -818,6 +811,13 @@ select.inp{cursor:pointer;font-size:14px;}
       <div style="display:flex;gap:8px;margin-top:8px;">
         <textarea class="chat-inp" id="chat-inp" placeholder="질문하거나 기록하세요..." onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendChat()">↑</button>
+      </div>
+      <div class="section" style="margin-top:16px;margin-bottom:0;">
+        <div class="sec-hdr"><div class="sec-title">🌙 자기 전 마무리 리포트</div><div class="sec-meta">오늘 데이터 기준</div></div>
+        <div style="padding:14px 18px;">
+          <button class="save-btn primary" onclick="generateDailyReport()" style="margin-top:0;">📄 오늘 마무리 리포트 생성</button>
+          <div id="daily-report-box" class="report-box" style="display:none;margin-top:12px;"></div>
+        </div>
       </div>
     </div>
   </div>
