@@ -371,6 +371,15 @@ select.inp{cursor:pointer;font-size:14px;}
 .balance-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
 .balance-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;}
 .balance-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.cal-balance-grid{display:block;padding:14px 18px;}
+.balance-bars{display:flex;flex-direction:column;gap:10px;}
+.balance-bar-row{display:grid;grid-template-columns:82px 1fr 76px;align-items:center;gap:10px;}
+.balance-bar-label{font-size:11px;color:var(--dim);font-weight:700;white-space:nowrap;}
+.balance-bar-bg{height:11px;background:var(--s3);border:1px solid var(--border);border-radius:999px;overflow:hidden;}
+.balance-bar-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.balance-bar-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);text-align:right;}
+.balance-note{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--s2);border:1px solid var(--border);font-size:12px;color:var(--dim);line-height:1.6;}
+@media(max-width:420px){.balance-bar-row{grid-template-columns:68px 1fr 64px;gap:7px}.balance-bar-label,.balance-bar-val{font-size:10px;}}
 .report-box{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:16px;line-height:1.8;font-size:13px;color:var(--text);}
 .report-box b{color:var(--coach);}
 
@@ -1015,6 +1024,7 @@ function renderDashboard(){
     bsc.innerHTML='<div style="grid-column:1/-1;padding:8px 0;font-size:12px;color:var(--muted);text-align:center;">체성분 기록 없음</div>';
   }
   const totals=tmDisplay.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),protein:a.protein+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0),fat:a.fat+(m.total?.fat||0)}),{cal:0,protein:0,carb:0,fat:0});
+  renderCalorieBalance(latest, totals, er);
   document.getElementById('d-meal-meta').textContent=tmDisplay.length?`${Math.round(totals.cal)}kcal / ${tmDisplay.length}끼`:'기록 없음';
   const pct=(v,g)=>Math.min(100,Math.round(v/g*100));
   document.getElementById('d-nutrition-bars').innerHTML=`
@@ -1136,6 +1146,7 @@ function filterByPeriod(arr, dateKey){
 function renderHistPanel(){
   const el=document.getElementById('hist-content');
   if(!el)return;
+  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
   const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
   const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"bike":[],"bodyweight":[]}');
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
@@ -1143,6 +1154,7 @@ function renderHistPanel(){
   if(currentHistTab==='day'){
     // 날짜별 통합 뷰 — 모든 날짜 수집
     let dates=new Set();
+    filterByPeriod(br,'date').forEach(r=>dates.add(r.date));
     filterByPeriod(sr,'date').forEach(r=>dates.add(r.date));
     filterByPeriod(mr,'date').forEach(r=>dates.add(r.date));
     filterByPeriod(er.run||[],'date').forEach(r=>dates.add(r.date));
@@ -1151,6 +1163,7 @@ function renderHistPanel(){
     dates=[...dates].sort((a,b)=>b.localeCompare(a));
     if(!dates.length){el.innerHTML='<div class="empty-state">기록 없음</div>';return;}
     el.innerHTML=dates.map(date=>{
+      const bodies=br.filter(r=>r.date===date);
       const sleeps=sr.filter(r=>r.date===date);
       const meals=mr.filter(r=>r.date===date);
       const runs=(er.run||[]).filter(r=>r.date===date);
@@ -1163,6 +1176,7 @@ function renderHistPanel(){
       return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
         <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
           <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
+          ${bodies.length?`<span style="font-size:11px;color:var(--bio);">⚖️${bodies[bodies.length-1].weight||'—'}kg</span>`:''}
           ${sleep?`<span style="font-size:11px;color:${sleepColor};margin-left:4px;">😴${sleep.durationHours}h</span>`:''}
           ${totalCal?`<span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>`:''}
           ${totalProt?`<span style="font-size:11px;color:var(--protein);">단백질${totalProt}g</span>`:''}
@@ -1171,6 +1185,7 @@ function renderHistPanel(){
           ${bws.length?`<span style="font-size:11px;color:var(--cal);">💪${bws.length}회</span>`:''}
         </div>
         <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
+          ${bodies.map(b=>`<div style="font-size:12px;color:var(--dim);">⚖️ <span style="color:var(--text);font-weight:700;">${b.weight||'—'}kg</span> · 골격근량 ${b.skeletal||'—'}kg · 체지방량 ${b.fatMass||'—'}kg · 체지방률 ${b.fatRate||'—'}% · BMI ${b.bmi||'—'} ${b.timing?`<span style="color:var(--muted);">(${b.timing})</span>`:''}</div>`).join('')}
           ${sleep?`<div style="font-size:12px;color:var(--dim);">😴 취침 ${sleep.bedtime||'—'} → 기상 ${sleep.waketime||'—'} <span style="color:${sleepColor};font-weight:700;">${sleep.durationHours}h</span>${sleep.quality?` · 품질${sleep.quality}점`:''}</div>`:''}
           ${meals.map(m=>`<div style="font-size:12px;color:var(--dim);"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span> <span style="margin-left:6px;">${m.foodText}</span> <span style="color:var(--cal);font-family:'DM Mono',monospace;">${m.total?.kcal||0}kcal</span></div>`).join('')}
           ${runs.map(r=>`<div style="font-size:12px;color:var(--run);">🏃 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div>`).join('')}
@@ -1226,6 +1241,9 @@ function renderHistPanel(){
         </div>`).join('')}
       </div>`;
     }).join('');
+  }
+  else if(currentHistTab==='body'){
+    renderBodyHistTable(br);
   }
   else if(currentHistTab==='exercise'){
     renderExHistTable(er);
@@ -1664,11 +1682,42 @@ function saveCurrentFavorite(){
 function getTodayExerciseCalories(er){return ['run','bike','bodyweight'].reduce((sum,type)=>sum+(er[type]||[]).filter(r=>r.date===today).reduce((a,r)=>a+(r.cal||0),0),0);}
 function renderCalorieBalance(latest,mealTotals,er){
   const el=document.getElementById('d-cal-balance');if(!el)return;
-  const bmr=Math.round(latest?.bmr||0);const exCal=Math.round(getTodayExerciseCalories(er));const intake=Math.round(mealTotals.cal||0);const spent=bmr+exCal;const net=intake-spent;
-  el.innerHTML=`<div class="balance-card"><div class="balance-label">섭취</div><div class="balance-val" style="color:var(--cal)">${intake}</div><div class="balance-sub">kcal</div></div><div class="balance-card"><div class="balance-label">기초대사</div><div class="balance-val" style="color:var(--coach)">${bmr||'—'}</div><div class="balance-sub">최근 체성분 기준</div></div><div class="balance-card"><div class="balance-label">운동소모</div><div class="balance-val" style="color:var(--run)">${exCal}</div><div class="balance-sub">오늘 기록 합계</div></div><div class="balance-card"><div class="balance-label">순칼로리</div><div class="balance-val" style="color:${net>0?'var(--fat-c)':'var(--run)'}">${bmr?net:'—'}</div><div class="balance-sub">섭취-(BMR+운동)</div></div>`;
+  const bmr=Math.round(latest?.bmr||0);
+  const exCal=Math.round(getTodayExerciseCalories(er));
+  const intake=Math.round(mealTotals?.cal||0);
+  const spent=bmr+exCal;
+  const net=intake-spent;
+  const max=Math.max(intake,bmr,exCal,Math.abs(net),GOALS.cal,1);
+  const pct=v=>Math.min(100,Math.round((Math.abs(v)/max)*100));
+  const netColor=net>0?'var(--fat-c)':'var(--run)';
+  const netLabel=net>0?'초과':'여유';
+  document.getElementById('d-balance-meta').textContent=bmr?`순 ${net}kcal`:'BMR 미입력';
+  el.innerHTML=`<div class="balance-bars">
+    <div class="balance-bar-row">
+      <div class="balance-bar-label">기본 칼로리</div>
+      <div class="balance-bar-bg"><div class="balance-bar-fill" style="width:${pct(bmr)}%;background:var(--coach);"></div></div>
+      <div class="balance-bar-val">${bmr||'—'} kcal</div>
+    </div>
+    <div class="balance-bar-row">
+      <div class="balance-bar-label">식사 칼로리</div>
+      <div class="balance-bar-bg"><div class="balance-bar-fill" style="width:${pct(intake)}%;background:var(--cal);"></div></div>
+      <div class="balance-bar-val">${intake} kcal</div>
+    </div>
+    <div class="balance-bar-row">
+      <div class="balance-bar-label">운동 소모</div>
+      <div class="balance-bar-bg"><div class="balance-bar-fill" style="width:${pct(exCal)}%;background:var(--run);"></div></div>
+      <div class="balance-bar-val">${exCal} kcal</div>
+    </div>
+    <div class="balance-bar-row">
+      <div class="balance-bar-label">차감 칼로리</div>
+      <div class="balance-bar-bg"><div class="balance-bar-fill" style="width:${pct(net)}%;background:${netColor};"></div></div>
+      <div class="balance-bar-val" style="color:${netColor};">${bmr?`${net} kcal`: '—'}</div>
+    </div>
+  </div>
+  <div class="balance-note">계산식: 식사 칼로리 - (기본 칼로리 + 운동 소모). 현재 ${bmr?`<b style="color:${netColor};">${Math.abs(net)}kcal ${netLabel}</b>`:'기초대사량 기록이 없어 순칼로리 계산 불가'} 상태입니다.</div>`;
 }
 function renderBodyHistTable(br){
-  const el=document.getElementById('hist-content');let data=filterHistRecords(br).reverse();
+  const el=document.getElementById('hist-content');let data=filterByPeriod([...br],'date').reverse();
   if(!data.length){el.innerHTML='<div class="empty-state">체성분 기록 없음</div>';return;}
   el.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main">⚖️ ${r.weight||'—'}kg</div><div class="hi-sub">골격근량 ${r.skeletal||'—'}kg · 체지방량 ${r.fatMass||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div></div>`).join('');
 }
