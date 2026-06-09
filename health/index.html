@@ -455,7 +455,7 @@ select.inp{cursor:pointer;font-size:14px;}
 @media(max-width:420px){.eht-btn{min-width:60px!important;min-height:52px!important;padding:7px 9px!important}.eht-btn .eht-label{font-size:10px!important;}}
 
 
-/* ══ v1.5.7 추가: 식사 시간별 분리 / 모바일 PB 한줄 / 모바일 식사 히스토리 정렬 ══ */
+/* ══ v1.5.8 추가: 식사 시간별 분리 / 모바일 PB 한줄 / 대시보드 식사 히스토리 모바일 정렬 ══ */
 #d-pb-grid .pb-card-label{white-space:nowrap;word-break:keep-all;letter-spacing:.5px;}
 @media(max-width:768px){
   #d-pb-grid .pb-card{padding:10px 6px;}
@@ -463,15 +463,17 @@ select.inp{cursor:pointer;font-size:14px;}
   #d-pb-grid .pb-card-val{font-size:15px!important;}
   #d-pb-grid .pb-card-sub{font-size:9px;}
   #d-pb-grid [data-pb-run-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}
-  #m-hist-list .meal-history-item{display:block;position:relative;padding-right:42px;}
-  #m-hist-list .meal-history-item .hi-date{width:auto;min-width:0;display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;}
-  #m-hist-list .meal-history-item .hi-date-d,#m-hist-list .meal-history-item .hi-date-t{font-size:11px;line-height:1.2;}
-  #m-hist-list .meal-history-item .hi-body{width:100%;}
-  #m-hist-list .meal-history-item .hi-main{display:block;line-height:1.55;}
-  #m-hist-list .meal-history-item .meal-badge{display:inline-flex;margin:0 0 6px 0!important;}
+  #m-hist-list .meal-history-item,#hist-content .meal-history-item{display:block;position:relative;padding-right:42px;}
+  #m-hist-list .meal-history-item .hi-date,#hist-content .meal-history-item .hi-date{width:auto;min-width:0;display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;}
+  #m-hist-list .meal-history-item .hi-date-d,#m-hist-list .meal-history-item .hi-date-t,#hist-content .meal-history-item .hi-date-d,#hist-content .meal-history-item .hi-date-t{font-size:11px;line-height:1.2;}
+  #m-hist-list .meal-history-item .hi-body,#hist-content .meal-history-item .hi-body{width:100%;}
+  #m-hist-list .meal-history-item .hi-main,#hist-content .meal-history-item .hi-main{display:block;line-height:1.55;}
+  #m-hist-list .meal-history-item .meal-badge,#hist-content .meal-history-item .meal-badge{display:inline-flex;margin:0 0 6px 0!important;}
   #m-hist-list .meal-history-item .hi-del{position:absolute;top:10px;}
   #m-hist-list .meal-history-item .hi-del:nth-last-child(2){right:30px;}
   #m-hist-list .meal-history-item .hi-del:last-child{right:8px;}
+  #hist-content .meal-history-item{padding:12px 4px!important;}
+  #hist-content .meal-history-item .meal-time-title{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:6px;}
 }
 
 </style>
@@ -484,7 +486,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.7</span>
+  <span class="nav-ver">v1.5.8</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1474,7 +1476,7 @@ function renderHistPanel(){
         <div style="font-size:12px;color:var(--dim);line-height:1.75;padding-left:2px;">${bodyHtml}</div>
       </div>`;
       const sleepHtml=sleeps.length?section('😴','수면',`총 ${sleepTotal.toFixed(1)}h`,sleeps.map(r=>`취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'} <span style="color:var(--fatrate);font-weight:700;">${r.durationHours||'—'}h</span>${r.quality?` · 품질${r.quality}점`:''}`).join('<br>'),'var(--fatrate)'):'';
-      const mealHtml=meals.length?section('🥗','식사',`총 ${totalCal}kcal · 단${totalProt}g · 탄${totalCarb}g · 지${totalFat}g`,meals.map(m=>`<span class="meal-badge badge-${m.mealType}">${m.mealType}</span> <span style="margin-left:6px;">${esc(m.foodText||'')}</span> <span style="color:var(--cal);font-family:'DM Mono',monospace;">${m.total?.kcal||0}kcal</span>`).join('<br>'),'var(--cal)'):'';
+      const mealHtml=meals.length?section('🥗','식사',`총 ${totalCal}kcal · 단${totalProt}g · 탄${totalCarb}g · 지${totalFat}g`,meals.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<span class="meal-time-title">${m.time||''}</span> <span class="meal-badge badge-${m.mealType}">${m.mealType}</span><br><span style="display:inline-block;margin:4px 0 2px;">${esc(m.foodText||'')}</span><br><span style="color:var(--cal);font-family:'DM Mono',monospace;">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</span>`).join('<div style="height:8px"></div>'),'var(--cal)'):'';
       const exLines=[
         ...runs.map(r=>`🏃 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
         ...walks.map(r=>`🚶 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
@@ -1537,10 +1539,10 @@ function renderHistPanel(){
           <span style="font-size:11px;color:var(--carb);">탄${totalCarb}g</span>
           <span style="font-size:11px;color:#e040fb;">지${totalFat}g</span>
         </div>
-        ${meals.map(m=>`<div class="hi-item" style="padding:8px 4px;">
-          <div class="hi-date"><div class="hi-date-d">${m.time||''}</div></div>
+        ${meals.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<div class="hi-item meal-history-item">
+          <div class="hi-date"><div class="hi-date-d">${date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div>
           <div class="hi-body">
-            <div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}">${m.mealType}</span><span style="margin-left:6px;">${m.foodText}</span></div>
+            <div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText||'')}</div>
             <div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>
             ${foodDetailsHtml(m)}
           </div>
