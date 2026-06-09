@@ -441,7 +441,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.4.9</span>
+  <span class="nav-ver">v1.5.0</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -682,6 +682,11 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="ex-section" id="exs-bw">
         <div class="card">
           <div class="card-title">💪 복합운동 <div class="ct-line"></div></div>
+          <!-- 총 운동 시간 + 칼로리 -->
+          <div class="inp-grid" style="margin-bottom:12px;">
+            <div class="inp-group"><div class="ig-label">총 시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="bw-dur" placeholder="30:00" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="bw-cal" placeholder="150"></div>
+          </div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">종목 선택 후 추가하세요</div>
           <div class="exercise-chips">
             <div class="ex-chip" data-ex="스쿼트" onclick="toggleExChip(this)">스쿼트</div>
@@ -919,6 +924,9 @@ select.inp{cursor:pointer;font-size:14px;}
 const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0eDJa-fT_CCD15hq0vPooyIFZIXyYuqSA8Zwq0_pHVoKgA/exec';
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
+async function sheetLoadFavs(){try{const r=await fetch(`${GAS_URL}?type=favorites`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('즐겨찾기 불러오기 실패',e);}return null;}
+async function sheetSaveFav(fav){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favorite',...fav}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 저장실패',e);}}
+async function sheetDeleteFav(id){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favDelete',id}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 삭제실패',e);}}
 function parseSheetData(raw){
   // GAS가 이미 KST 기준 'yyyy-MM-dd' / 'HH:mm' 문자열로 반환하므로
   // 추가 변환 없이 그대로 사용. 빈값/null 방어만 처리.
@@ -1017,11 +1025,11 @@ function parseSheetData(raw){
       }
     } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
       exRecs.walk.push(parseRunLike());
-    } else {
-      // 기타 운동 (수영, 등산 등)
+    } else if(typeRaw.trim()){
+      // 기타 운동 — 종류가 런닝/걷기/자전거/복합운동이 아닌 경우 (예: 수영, 등산 등)
       exRecs.other.push({
         date, time,
-        name: typeRaw||'기타',
+        name: typeRaw.trim(),
         duration: String(r['시간(분)']||''),
         cal: safeInt(r['칼로리']),
         hr: safeInt(r['심박수']),
@@ -1053,18 +1061,21 @@ function parseSheetData(raw){
 
 async function syncFromSheet(){
   showToast('☁️ 동기화 중...');
-  const raw=await sheetLoad();
+  const [raw, favRaw] = await Promise.all([sheetLoad(), sheetLoadFavs()]);
   if(!raw){showToast('⚠️ 동기화 실패. 네트워크를 확인해주세요.');return;}
   const{bodyRecs:br,mealRecs:mr,exRecs:er,sleepRecs:sr}=parseSheetData(raw);
-  // 수면: 날짜+타입 기준 중복 제거 (같은 날짜+타입이면 마지막 것만 유지)
+  // 수면: 날짜+타입 기준 중복 제거
   const srDeduped=[];const srSeen=new Set();
   [...sr].reverse().forEach(r=>{const key=`${r.date}_${r.sleepType||'밤잠'}`;if(!srSeen.has(key)){srSeen.add(key);srDeduped.unshift(r);}});
-  // 시트 데이터로 전면 교체 (시트가 정보 원본)
   localStorage.setItem('bodyRecords',JSON.stringify(br));
   localStorage.setItem('mealRecords',JSON.stringify(mr));
   localStorage.setItem('exerciseRecords',JSON.stringify(er));
   localStorage.setItem('sleepRecords',JSON.stringify(srDeduped));
   bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=srDeduped;
+  // 즐겨찾기 동기화 (시트 → 앱)
+  if(favRaw){
+    if(favRaw.meal){localStorage.setItem('favoriteMeals',JSON.stringify(favRaw.meal));renderFoodFavorites();}
+  }
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
@@ -1195,7 +1206,7 @@ function renderDashboard(){
     <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;">권장 수면 8시간 기준 ${Math.round(lastSleep.durationHours/8*100)}%</div>`;
   } else {
     document.getElementById('d-sleep-meta').textContent='';
-    sleepEl.innerHTML='<div class="empty-state">수면 기록 없음</div>';
+    sleepEl.innerHTML='<div class="empty-state">오늘 수면 기록 없음</div>';
   }
 }
 let chartWeight=null,chartSkeletal=null,chartFatRate=null,chartBMI=null,chartFatMass=null,chartWater=null;
@@ -1232,7 +1243,7 @@ function renderBodyCharts(br,days){
   chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#ffd740');
 }
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
-// ── 대시보드 오늘 운동 전체 통합 표시 (탭 없음, other 포함)
+// ── 대시보드 오늘 운동 통합 (탭 없음, other 포함)
 function renderDashExAll(er){
   const el=document.getElementById('d-ex-list-all');if(!el)return;
   const runs=(er.run||[]).filter(r=>r.date===today);
@@ -1247,7 +1258,7 @@ function renderDashExAll(er){
   runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
-  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목</div><div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div></div>`;});
+  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목 ${r.duration?'⏱'+r.duration:''}</div><div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
   el.innerHTML=html;
 }
@@ -1710,21 +1721,17 @@ function editBodyRec(i){
 let exRecs=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
 if(!exRecs.walk)exRecs.walk=[];
 let currentExType='run',currentExHistType='run';
-function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));const sectionId={run:'run',walk:'walk',bike:'bike',bodyweight:'bw',other:'other'}[type]||type;document.getElementById('exs-'+sectionId).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight','other'].indexOf(type)]);}
+function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));const sid={run:'run',walk:'walk',bike:'bike',bodyweight:'bw',other:'other'}[type]||type;document.getElementById('exs-'+sid).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight','other'].indexOf(type)]);}
 function toggleExChip(el){el.classList.toggle('selected');document.getElementById('add-ex-btn').classList.toggle('show',document.querySelectorAll('.ex-chip.selected').length>0);}
 function addSelectedEx(){document.querySelectorAll('.ex-chip.selected').forEach(c=>{const n=c.dataset.ex;if(!document.querySelector(`[data-added="${n}"]`)){const div=document.createElement('div');div.className='added-ex-item';div.dataset.added=n;div.innerHTML=`<div class="aei-name">${n}</div><div class="aei-inputs"><input type="number" class="aei-inp" placeholder="15" min="1"><div class="aei-sep">회×</div><input type="number" class="aei-inp" placeholder="3" min="1"><div class="aei-sep">세트</div></div><button class="aei-x" onclick="this.parentElement.remove()">×</button>`;document.getElementById('added-exercises').appendChild(div);}c.classList.remove('selected');});document.getElementById('add-ex-btn').classList.remove('show');}
-// 시간 자동 포맷: 숫자 입력 → mm:ss 또는 h:mm:ss
-// 4자리: 3558 → 35:58 / 6자리: 10135 → 1:01:35
 function autoColon(el){
   let v=el.value.replace(/[^0-9]/g,'');
   if(v.length>=6){
-    // h:mm:ss
     const h=parseInt(v.slice(0,v.length-4));
     const mm=v.slice(v.length-4,v.length-2);
     const ss=v.slice(v.length-2);
     el.value=h+':'+mm+':'+ss;
   } else if(v.length>=4){
-    // mm:ss
     el.value=v.slice(0,v.length-2)+':'+v.slice(v.length-2);
   } else {
     el.value=v;
@@ -1792,11 +1799,15 @@ function saveBike(){
 function saveBW(){
   const items=document.querySelectorAll('.added-ex-item');if(!items.length){showToast('⚠️ 종목을 추가해주세요');return;}
   const exercises=[...items].map(item=>{const inps=item.querySelectorAll('.aei-inp');return{name:item.dataset.added,reps:parseInt(inps[0].value)||null,sets:parseInt(inps[1].value)||null};});
-  const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,exercises};
+  const dur=document.getElementById('bw-dur').value||null;
+  const cal=parseInt(document.getElementById('bw-cal').value)||null;
+  const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,exercises,duration:dur,cal};
   exRecs.bodyweight.push(r);exRecs.bodyweight.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
   sheetSave({type:'exercise',category:'bodyweight',...r});
   document.getElementById('added-exercises').innerHTML='';
+  document.getElementById('bw-dur').value='';
+  document.getElementById('bw-cal').value='';
   renderExHist('bodyweight');showToast('💪 복합운동 저장됐어요!');
 }
 function switchExHist(type,btn){currentExHistType=type;document.querySelectorAll('.eht-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderExHist(type);}
@@ -1807,8 +1818,8 @@ function renderExHist(type){
   if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
   if(type==='run'||type==='walk')list.innerHTML=data.map((r,ri)=>{const i=exRecs[type].length-1-ri;const isWalk=type==='walk';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:${isWalk?'var(--skeletal)':'var(--run)'}">${isWalk?'🚶':'🏃'} ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('${type}',${i})">×</button></div>`;}).join('');
   else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
-  else if(type==='other')list.innerHTML=data.map((r,ri)=>{const i=exRecs.other.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.distance?'· '+r.distance+'km':''} ${r.memo?'· '+r.memo:''}</div></div><button class="hi-del" onclick="delEx('other',${i})">×</button></div>`;}).join('');
-  else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
+  else if(type==='other')list.innerHTML=data.map((r,ri)=>{const i=(exRecs.other||[]).length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.distance?'· '+r.distance+'km':''} ${r.memo?'· '+r.memo:''}</div></div><button class="hi-del" onclick="delEx('other',${i})">×</button></div>`;}).join('');
+  else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises?.length||0}종목 ${r.duration?'⏱'+r.duration:''}</div><div class="hi-sub">${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')||''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
 }
 function delEx(type,i){if(!confirm('삭제?'))return;exRecs[type].splice(i,1);localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));renderExHist(type);}
 
@@ -1943,6 +1954,7 @@ function deleteFavoriteMeal(i){
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');
   const f=favs[i];if(!f)return;
   if(!confirm(`즐겨찾기에서 '${f.foodText||'음식'}'을 삭제할까요?`))return;
+  if(f.id) sheetDeleteFav(f.id);
   favs.splice(i,1);
   localStorage.setItem('favoriteMeals',JSON.stringify(favs));
   renderFoodFavorites();
@@ -1974,19 +1986,21 @@ function applyManualNutrition(){
 }
 function saveCurrentFavorite(){
   if(!pendingAnalysis){applyManualNutrition();if(!pendingAnalysis)return;}
-  // foods 배열 기준으로 표시명 재구성 (중복 방지)
+  // foods 배열 기준으로 표시명 재조합 (중복 방지)
   const foods=pendingAnalysis.foods||[];
   const displayName=foods.length
     ? foods.map(f=>f.name).filter(Boolean).join(', ')
     : pendingAnalysis.foodText||'음식';
-  const item={foodText:displayName,foods,total:pendingAnalysis.total,savedAt:Date.now()};
+  const id='mf_'+Date.now();
+  const item={id,favType:'meal',foodText:displayName,foods,total:pendingAnalysis.total,savedAt:Date.now()};
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');
   favs.unshift(item);
   localStorage.setItem('favoriteMeals',JSON.stringify(favs.slice(0,30)));
   renderFoodFavorites();
+  sheetSaveFav(item);
   showToast('⭐ 즐겨찾기에 저장했어요');
 }
-function getTodayExerciseCalories(er){return ['run','walk','bike','bodyweight','other'].reduce((sum,type)=>sum+(er[type]||[]).filter(r=>r.date===today).reduce((a,r)=>a+(r.cal||0),0),0);}
+function getTodayExerciseCalories(er){return ['run','walk','bike','bodyweight','other'].reduce((sum,type)=>sum+(er[type]||[]).filter(r=>r.date===today).reduce((a,r)=>a+(parseInt(r.cal)||0),0),0);}
 function renderCalorieBalance(latest,mealTotals,er){
   const el=document.getElementById('d-cal-balance');if(!el)return;
   const bmr=Math.round(latest?.bmr||0);
