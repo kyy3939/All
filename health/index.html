@@ -519,21 +519,30 @@ select.inp{cursor:pointer;font-size:14px;}
 .dash-ex-day-label{padding:10px 18px 4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);}
 @media(max-width:420px){#d-pb-grid [data-pb-walk-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}}
 
-/* ══ v1.7.0 추가: 날짜·시간 입력 UX 개선 / 복합운동 시간+칼로리 / 오늘운동 날짜 제거 ══ */
-input[type="date"].inp, input[type="time"].inp {
+/* ══ v1.8.0 추가: 시간입력 UX / 자전거 통일 / 운동 히스토리 통일 / 대시보드 요약카드 ══ */
+input[type="date"].inp {
   cursor:pointer;
   position:relative;
 }
-input[type="date"].inp::-webkit-calendar-picker-indicator,
-input[type="time"].inp::-webkit-calendar-picker-indicator {
+input[type="date"].inp::-webkit-calendar-picker-indicator {
   position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;
 }
 .dt-row{display:flex;gap:12px;flex-wrap:wrap;}
 .dt-row .inp-group{flex:1;min-width:140px;}
-.datetime-display{display:flex;align-items:center;gap:8px;background:var(--s2);border:1.5px solid var(--accent);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:'DM Mono',monospace;font-size:14px;color:var(--text);transition:all .2s;margin-bottom:4px;}
-.datetime-display:hover{border-color:var(--run);background:rgba(0,229,160,.06);}
-.datetime-display .dt-ico{font-size:16px;margin-right:4px;}
-.datetime-display .dt-val{font-weight:700;color:var(--accent);}
+/* 커스텀 시간 입력 */
+.time-inp-wrap{display:flex;align-items:center;gap:4px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;transition:border-color .2s;}
+.time-inp-wrap:focus-within{border-color:var(--accent);}
+.time-inp-wrap input[type=number]{background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--text);width:36px;text-align:center;-moz-appearance:textfield;padding:0;}
+.time-inp-wrap input[type=number]::-webkit-outer-spin-button,
+.time-inp-wrap input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.time-inp-wrap .t-sep{font-size:18px;font-weight:700;color:var(--muted);margin:0 1px;}
+.time-inp-wrap .t-label{font-size:10px;color:var(--muted);margin-left:4px;}
+/* 대시보드 오늘 운동 요약 카드 */
+.today-ex-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.tes-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
+.tes-card-label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;}
+.tes-card-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:var(--run);}
+.tes-card-sub{font-size:9px;color:var(--muted);margin-top:2px;}
 
 </style>
 </head>
@@ -545,7 +554,7 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.7.0</span>
+  <span class="nav-ver">v1.8.0</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -632,6 +641,9 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
           </div>
           <div class="section">
             <div class="sec-hdr"><div class="sec-title">🏋️ 오늘 운동</div><div class="sec-meta" id="d-ex-meta"></div></div>
+            <div id="d-ex-summary" style="display:none;">
+              <div class="today-ex-summary" id="d-ex-summary-cards"></div>
+            </div>
             <div id="d-ex-list-all" style="padding:4px 0;"></div>
           </div>
           <div class="section">
@@ -686,7 +698,14 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
         <div class="card-title">📅 측정 일시 <div class="ct-line"></div></div>
         <div class="dt-row">
           <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="b-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
-          <div class="inp-group"><div class="ig-label">시간</div><input type="time" class="inp" id="b-time" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
+          <div class="inp-group"><div class="ig-label">시간</div>
+          <div class="time-inp-wrap">
+            <input type="number" class="inp" id="b-time-h" min="0" max="23" placeholder="HH" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('b-time')">
+            <span class="t-sep">:</span>
+            <input type="number" class="inp" id="b-time-m" min="0" max="59" placeholder="MM" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('b-time')">
+            <span class="t-label">시:분</span>
+            <input type="hidden" id="b-time">
+          </div></div>
         </div>
         <!-- 측정 시점 선택 -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
@@ -736,7 +755,14 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
         <div class="card-title">📅 운동 일시 <div class="ct-line"></div></div>
         <div class="dt-row">
           <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="ex-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
-          <div class="inp-group"><div class="ig-label">시작 시간</div><input type="time" class="inp" id="ex-time" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
+          <div class="inp-group"><div class="ig-label">시작 시간</div>
+          <div class="time-inp-wrap">
+            <input type="number" class="inp" id="ex-time-h" min="0" max="23" placeholder="HH" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('ex-time')">
+            <span class="t-sep">:</span>
+            <input type="number" class="inp" id="ex-time-m" min="0" max="59" placeholder="MM" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('ex-time')">
+            <span class="t-label">시:분</span>
+            <input type="hidden" id="ex-time">
+          </div></div>
         </div>
       </div>
       <div class="ex-section active" id="exs-run">
@@ -775,9 +801,10 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
         <div class="card">
           <div class="card-title">🚴 실내자전거 <div class="ct-line"></div></div>
           <div class="inp-grid">
-            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">분</span></div><input type="number" class="inp" id="bike-dur" placeholder="30"></div>
-            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" class="inp" id="bike-cal" placeholder="200"></div>
-            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" class="inp" id="bike-hr" placeholder="130"></div>
+            <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km 선택</span></div><input type="number" inputmode="decimal" class="inp" id="bike-dist" placeholder="0.00" step="0.01"></div>
+            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="bike-dur" placeholder="30:00" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="bike-cal" placeholder="200"></div>
+            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" inputmode="numeric" class="inp" id="bike-hr" placeholder="130"></div>
             <div class="inp-group"><div class="ig-label">메모<span class="ig-unit">선택</span></div><input type="text" class="inp" id="bike-memo" placeholder="강도 등" style="font-size:13px;"></div>
           </div>
         </div>
@@ -862,7 +889,14 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
         <div class="card-title">✏️ 식사 입력 <div class="ct-line"></div></div>
         <div class="dt-row" style="margin-bottom:14px;">
           <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="m-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
-          <div class="inp-group"><div class="ig-label">시간</div><input type="time" class="inp" id="m-time" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
+          <div class="inp-group"><div class="ig-label">시간</div>
+          <div class="time-inp-wrap">
+            <input type="number" class="inp" id="m-time-h" min="0" max="23" placeholder="HH" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('m-time')">
+            <span class="t-sep">:</span>
+            <input type="number" class="inp" id="m-time-m" min="0" max="59" placeholder="MM" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('m-time')">
+            <span class="t-label">시:분</span>
+            <input type="hidden" id="m-time">
+          </div></div>
         </div>
         <textarea class="food-textarea" id="food-input" placeholder="먹은 음식을 입력하세요&#10;예: 밥 한 공기, 된장찌개, 계란 후라이 2개"></textarea>
         <button class="analyze-btn" id="analyze-btn" onclick="analyzeFood()">🔍 영양소 자동 분석</button>
@@ -937,11 +971,23 @@ input[type="time"].inp::-webkit-calendar-picker-indicator {
           </div>
           <div class="inp-group">
             <div class="ig-label">취침 시간</div>
-            <input type="time" class="inp" id="sl-bedtime" style="font-size:15px;" onclick="try{this.showPicker()}catch(e){}">
+            <div class="time-inp-wrap">
+            <input type="number" class="inp" id="sl-bedtime-h" min="0" max="23" placeholder="HH" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('sl-bedtime')">
+            <span class="t-sep">:</span>
+            <input type="number" class="inp" id="sl-bedtime-m" min="0" max="59" placeholder="MM" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('sl-bedtime')">
+            <span class="t-label">시:분</span>
+            <input type="hidden" id="sl-bedtime">
+          </div>
           </div>
           <div class="inp-group">
             <div class="ig-label">기상 시간</div>
-            <input type="time" class="inp" id="sl-waketime" style="font-size:15px;" onclick="try{this.showPicker()}catch(e){}">
+            <div class="time-inp-wrap">
+            <input type="number" class="inp" id="sl-waketime-h" min="0" max="23" placeholder="HH" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('sl-waketime')">
+            <span class="t-sep">:</span>
+            <input type="number" class="inp" id="sl-waketime-m" min="0" max="59" placeholder="MM" style="font-size:18px;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);syncTimeVal('sl-waketime')">
+            <span class="t-label">시:분</span>
+            <input type="hidden" id="sl-waketime">
+          </div>
           </div>
           <div class="inp-group full">
             <div class="ig-label">수면 시간 <span class="ig-unit">자동 계산</span></div>
@@ -1288,12 +1334,34 @@ window.addEventListener('focus',checkDateRollover);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDateRollover();});
 setInterval(checkDateRollover,60000);
 
+function syncTimeVal(baseId){
+  const h=document.getElementById(baseId+'-h');
+  const m=document.getElementById(baseId+'-m');
+  const hidden=document.getElementById(baseId);
+  if(!h||!m||!hidden)return;
+  const hv=String(h.value||'').padStart(2,'0');
+  const mv=String(m.value||'').padStart(2,'0');
+  if(h.value!==''&&m.value!=='')hidden.value=`${hv}:${mv}`;
+  else hidden.value='';
+}
+function setTimeInputVal(baseId,timeStr){
+  // "HH:MM" 형식을 커스텀 입력에 설정
+  if(!timeStr)return;
+  const parts=timeStr.split(':');
+  const hEl=document.getElementById(baseId+'-h');
+  const mEl=document.getElementById(baseId+'-m');
+  const hidden=document.getElementById(baseId);
+  if(hEl&&parts[0]!==undefined)hEl.value=parseInt(parts[0])||0;
+  if(mEl&&parts[1]!==undefined)mEl.value=parseInt(parts[1])||0;
+  if(hidden)hidden.value=timeStr;
+}
 function initDates(){
   const now=new Date(Date.now()+9*3600*1000);
   const ds=now.toISOString().slice(0,10);
-  const ts=`${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+  const hh=pad(now.getUTCHours());
+  const mm=pad(now.getUTCMinutes());
   ['b-date','ex-date','m-date','sl-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
-  ['b-time','ex-time','m-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ts;});
+  ['b-time','ex-time','m-time'].forEach(id=>setTimeInputVal(id,`${hh}:${mm}`));
   const days=['일','월','화','수','목','금','토'];
   document.getElementById('navDate').textContent=`${ds} ${days[now.getUTCDay()]}요일`;
 }
@@ -1420,13 +1488,30 @@ function renderDashExAll(er){
   const others=(er.other||[]).filter(r=>r.date===today);
   const total=runs.length+walks.length+bikes.length+bws.length+others.length;
   document.getElementById('d-ex-meta').textContent=total?`오늘 ${total}회`:'';
-  if(!total){el.innerHTML='<div class="empty-state" style="padding:16px 18px;">오늘 운동 기록 없음</div>';return;}
+  if(!total){el.innerHTML='<div class="empty-state" style="padding:16px 18px;">오늘 운동 기록 없음</div>';const sd=document.getElementById('d-ex-summary');if(sd)sd.style.display='none';return;}
+  // 통합 통계
+  const allRecs=[...runs,...walks,...bikes,...bws,...others];
+  const totalCnt=allRecs.length;
+  const totalCal=allRecs.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+  const durToMinLocal=(v)=>{if(!v)return 0;if(typeof v==='number')return v;const parts=String(v).split(':').map(Number);if(parts.length===3)return parts[0]*60+parts[1]+parts[2]/60;if(parts.length===2)return parts[0]+parts[1]/60;const n=parseFloat(v);return Number.isFinite(n)?n:0;};
+  const totalMin=allRecs.reduce((a,r)=>a+durToMinLocal(r.duration),0);
+  const fmtM=(m)=>{m=Math.round(m||0);if(!m)return'0분';const h=Math.floor(m/60),mm=m%60;return h?(mm?`${h}시간 ${mm}분`:`${h}시간`):`${mm}분`;};
+  // 요약 카드
+  const sumDiv=document.getElementById('d-ex-summary');
+  const sumCards=document.getElementById('d-ex-summary-cards');
+  if(sumDiv&&sumCards){
+    sumDiv.style.display='';
+    sumCards.innerHTML=`
+      <div class="tes-card"><div class="tes-card-label">총 횟수</div><div class="tes-card-val" style="color:var(--run)">${totalCnt}회</div></div>
+      <div class="tes-card"><div class="tes-card-label">총 시간</div><div class="tes-card-val" style="color:var(--coach);font-size:${totalMin>=60?'13px':'16px'}">${fmtM(totalMin)}</div></div>
+      <div class="tes-card"><div class="tes-card-label">총 소모</div><div class="tes-card-val" style="color:var(--cal)">${totalCal||'—'}</div><div class="tes-card-sub">kcal</div></div>`;
+  }
   let html=``;
   runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div><div class="hi-sub">${r.duration?'⏱'+r.duration+'분':''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
-  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목</div><div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}${r.duration?' · ⏱'+r.duration:''}${r.cal?' · 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
+  bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.distance?r.distance+'km':'자전거'}</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
+  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises?.length||0}종목</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration)+' ':''}${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')}${r.cal?' · 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
   el.innerHTML=html;
 }
 // ══ 기록 히스토리 패널 ══
@@ -1482,7 +1567,8 @@ function renderHistPanel(){
     if(!v)return 0;
     if(typeof v==='number')return v;
     const parts=String(v).split(':').map(Number);
-    if(parts.length>=2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
+    if(parts.length===3 && !Number.isNaN(parts[0]))return parts[0]*60+parts[1]+(parts[2]||0)/60;
+    if(parts.length===2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
     const n=parseFloat(v);return Number.isFinite(n)?n:0;
   };
   const fmtMin=(min)=>{
@@ -1524,7 +1610,7 @@ function renderHistPanel(){
       const exCal=[...runs,...walks,...bikes,...bws,...others].reduce((a,r)=>a+(parseInt(r.cal)||0),0);
       const runMin=runs.reduce((a,r)=>a+durToMin(r.duration),0);
       const walkMin=walks.reduce((a,r)=>a+durToMin(r.duration),0);
-      const bikeMin=bikes.reduce((a,r)=>a+(parseInt(r.duration)||0),0);
+      const bikeMin=bikes.reduce((a,r)=>a+durToMin(r.duration),0);
       const otherMin=others.reduce((a,r)=>a+durToMin(r.duration),0);
       const exMin=runMin+walkMin+bikeMin+otherMin;
       const section=(icon,title,meta,bodyHtml,color)=>`<div style="padding:7px 0;border-top:1px dashed var(--border);">
@@ -1539,8 +1625,8 @@ function renderHistPanel(){
       const exLines=[
         ...runs.map(r=>`🏃 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
         ...walks.map(r=>`🚶 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
-        ...bikes.map(r=>`🚴 ${r.duration||'—'}분 ${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}`),
-        ...bws.map(r=>`💪 ${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')||'복합운동'} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
+        ...bikes.map(r=>`🚴 ${r.distance?r.distance+'km ':''}${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}`),
+        ...bws.map(r=>`💪 ${r.exercises?.length||0}종목${r.duration?' ⏱'+fmtDurStr(r.duration):''} ${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')||''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
         ...others.map(r=>`➕ ${r.name||'기타'} ${r.duration?'⏱'+r.duration:''} ${r.distance?'· '+r.distance+'km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.memo?'· '+esc(r.memo):''}`)
       ];
       const exHtml=exLines.length?section('🏋️','운동',`${exCal?exCal+'kcal':''}${exMin?` · ${fmtMin(exMin)}`:''}${!exCal&&!exMin?exLines.length+'건':''}`,exLines.join('<br>'),'var(--run)'):'';
@@ -1619,8 +1705,21 @@ function histDurToMin(v){
   if(!v)return 0;
   if(typeof v==='number')return v;
   const parts=String(v).split(':').map(Number);
-  if(parts.length>=2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
+  if(parts.length===3 && !Number.isNaN(parts[0]))return parts[0]*60+parts[1]+(parts[2]||0)/60;
+  if(parts.length===2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
   const n=parseFloat(v);return Number.isFinite(n)?n:0;
+}
+// duration 값을 읽기 좋은 문자열로 변환
+function fmtDurStr(v){
+  if(!v)return '';
+  if(typeof v==='number'){const h=Math.floor(v/60),m=v%60,s=0;return h?(m||s)?(s?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${h}:${String(m).padStart(2,'0')}:00`):`${h}:00:00`:String(v)+'분';}
+  const str=String(v);
+  // 이미 h:mm:ss 형식이면 그대로
+  const parts=str.split(':');
+  if(parts.length===3)return str;
+  if(parts.length===2)return str;
+  // 숫자만 있으면 분으로 처리
+  const n=parseFloat(str);return Number.isFinite(n)&&n>0?n+'분':str;
 }
 function histFmtMin(min){
   min=Math.round(min||0);
@@ -1690,12 +1789,15 @@ function renderExHistTable(er){
     const data=filterByPeriod([...(er.bike||[])],'date');
     if(!data.length){el.innerHTML=subTabs+'<div class="empty-state">자전거 기록 없음</div>';return;}
     const sorted=sortExData(data,'bike');
-    const totalDur=sorted.reduce((a,r)=>a+(parseInt(r.duration)||0),0);
+    const totalDurMin=sorted.reduce((a,r)=>a+histDurToMin(r.duration),0);
     const totalCal=sorted.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
-    const maxDur=Math.max(...sorted.filter(r=>r.duration).map(r=>parseInt(r.duration)));
-    const statBar=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+    const totalDist=sorted.reduce((a,r)=>a+(parseFloat(r.distance)||0),0);
+    const maxDurMin=sorted.length?Math.max(...sorted.map(r=>histDurToMin(r.duration))):0;
+    const maxDurR=sorted.find(r=>histDurToMin(r.duration)===maxDurMin);
+    const statBar=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
       <div class="pb-card"><div class="pb-card-label">총 기록</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${sorted.length}회</div></div>
-      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${totalDur}</div><div class="pb-card-sub">분</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 거리</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${totalDist.toFixed(1)}</div><div class="pb-card-sub">km</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--coach);font-size:13px;">${histFmtMin(totalDurMin)||'—'}</div></div>
       <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${totalCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
     </div>`;
     const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?'var(--coach)':'var(--muted)'};font-family:'DM Mono',monospace;text-align:${k==='date'?'left':'right'};cursor:pointer;"`;
@@ -1704,15 +1806,18 @@ function renderExHistTable(er){
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead><tr style="border-bottom:1px solid var(--border);">
         <th ${thStyle('date')} onclick="sortEx('date')">날짜${arrow('date')}</th>
+        <th ${thStyle('distance')} onclick="sortEx('distance')">거리${arrow('distance')}</th>
         <th ${thStyle('duration')} onclick="sortEx('duration')">시간${arrow('duration')}</th>
         <th ${thStyle('hr')} onclick="sortEx('hr')">심박${arrow('hr')}</th>
         <th ${thStyle('cal')} onclick="sortEx('cal')">칼로리${arrow('cal')}</th>
       </tr></thead>
       <tbody>${sorted.map((r,i)=>{
-        const isPBDur=parseInt(r.duration)===maxDur;
+        const rMin=histDurToMin(r.duration);
+        const isPBDur=rMin>0&&rMin===maxDurMin;
         return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${r.duration?r.duration+'분':'—'}${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:700;">${r.distance?r.distance+'<span style="color:var(--muted);font-size:10px;">km</span>':'—'}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${fmtDurStr(r.duration)||'—'}</td>
           <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
           <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
         </tr>`;
@@ -1943,7 +2048,7 @@ function delBodyRec(i){if(!confirm('삭제할까요?'))return;bodyRecs.splice(i,
 function editBodyRec(i){
   const r=bodyRecs[i];if(!r)return;
   document.getElementById('b-date').value=r.date||'';
-  document.getElementById('b-time').value=r.time||'';
+  setTimeInputVal('b-time',r.time||'');
   document.getElementById('b-weight').value=r.weight||'';
   document.getElementById('b-skeletal').value=r.skeletal||'';
   document.getElementById('b-fatmass').value=r.fatMass||'';
@@ -2065,11 +2170,12 @@ function saveOther(){
 }
 function saveBike(){
   const dur=document.getElementById('bike-dur').value;if(!dur){showToast('⚠️ 시간 입력');return;}
-  const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,duration:parseInt(dur),cal:parseInt(document.getElementById('bike-cal').value)||null,hr:parseInt(document.getElementById('bike-hr').value)||null,memo:document.getElementById('bike-memo').value||null};
+  const dist=document.getElementById('bike-dist').value;
+  const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,cal:parseInt(document.getElementById('bike-cal').value)||null,hr:parseInt(document.getElementById('bike-hr').value)||null,memo:document.getElementById('bike-memo').value||null};
   exRecs.bike.push(r);exRecs.bike.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
   sheetSave({type:'exercise',category:'bike',...r});
-  ['bike-dur','bike-cal','bike-hr','bike-memo'].forEach(id=>document.getElementById(id).value='');
+  ['bike-dist','bike-dur','bike-cal','bike-hr','bike-memo'].forEach(id=>document.getElementById(id).value='');
   renderExHist('bike');showToast('🚴 자전거 저장됐어요!');
 }
 function saveBW(){
@@ -2093,9 +2199,9 @@ function renderExHist(type){
   document.getElementById('ex-hist-count').textContent=`총 ${total}회`;
   if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
   if(type==='run'||type==='walk')list.innerHTML=data.map((r,ri)=>{const i=exRecs[type].length-1-ri;const isWalk=type==='walk';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:${isWalk?'var(--skeletal)':'var(--run)'}">${isWalk?'🚶':'🏃'} ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('${type}',${i})">×</button></div>`;}).join('');
-  else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
+  else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;const durStr=r.duration?fmtDurStr(r.duration):'—';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.distance?r.distance+'km':'자전거'}</div><div class="hi-sub">⏱${durStr} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
   else if(type==='other')list.innerHTML=data.map((r,ri)=>{const i=(exRecs.other||[]).length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.distance?'· '+r.distance+'km':''} ${r.memo?'· '+r.memo:''}</div></div><button class="hi-del" onclick="delEx('other',${i})">×</button></div>`;}).join('');
-  else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises?.length||0}종목 ${r.duration?'⏱'+r.duration:''}</div><div class="hi-sub">${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')||''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
+  else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;const durStr=r.duration?fmtDurStr(r.duration):'';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises?.length||0}종목</div><div class="hi-sub">${durStr?'⏱'+durStr+' ':''}${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')||''}${r.cal?' · 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
 }
 function delEx(type,i){if(!confirm('삭제?'))return;exRecs[type].splice(i,1);localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));renderExHist(type);}
 
@@ -2719,6 +2825,7 @@ function saveSleep(){
   sheetSave({type:'sleep',sleepType:currentSleepType,...rec});
   document.getElementById('sl-bedtime').value='';
   document.getElementById('sl-waketime').value='';
+  ['sl-bedtime-h','sl-bedtime-m','sl-waketime-h','sl-waketime-m'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('sl-quality').value='';
   document.getElementById('sl-memo').value='';
   document.getElementById('sl-duration-display').textContent='—';
@@ -2771,8 +2878,8 @@ function editSleep(rid){
   const r=sleepRecs.find(r=>(r.id||r.date)==rid);
   if(!r)return;
   document.getElementById('sl-date').value=r.date||'';
-  document.getElementById('sl-bedtime').value=r.bedtime||'';
-  document.getElementById('sl-waketime').value=r.waketime||'';
+  setTimeInputVal('sl-bedtime',r.bedtime||'');
+  setTimeInputVal('sl-waketime',r.waketime||'');
   document.getElementById('sl-quality').value=r.quality||'';
   document.getElementById('sl-memo').value=r.memo||'';
   calcSleepDuration();
