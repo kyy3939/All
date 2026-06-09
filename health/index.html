@@ -454,6 +454,26 @@ select.inp{cursor:pointer;font-size:14px;}
 .eht-btn .eht-label{display:block!important;font-size:11px!important;line-height:1.15!important;white-space:nowrap!important;word-break:keep-all!important;}
 @media(max-width:420px){.eht-btn{min-width:60px!important;min-height:52px!important;padding:7px 9px!important}.eht-btn .eht-label{font-size:10px!important;}}
 
+
+/* ══ v1.5.7 추가: 식사 시간별 분리 / 모바일 PB 한줄 / 모바일 식사 히스토리 정렬 ══ */
+#d-pb-grid .pb-card-label{white-space:nowrap;word-break:keep-all;letter-spacing:.5px;}
+@media(max-width:768px){
+  #d-pb-grid .pb-card{padding:10px 6px;}
+  #d-pb-grid .pb-card-label{font-size:9px;letter-spacing:0;line-height:1.1;white-space:nowrap;}
+  #d-pb-grid .pb-card-val{font-size:15px!important;}
+  #d-pb-grid .pb-card-sub{font-size:9px;}
+  #d-pb-grid [data-pb-run-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}
+  #m-hist-list .meal-history-item{display:block;position:relative;padding-right:42px;}
+  #m-hist-list .meal-history-item .hi-date{width:auto;min-width:0;display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;}
+  #m-hist-list .meal-history-item .hi-date-d,#m-hist-list .meal-history-item .hi-date-t{font-size:11px;line-height:1.2;}
+  #m-hist-list .meal-history-item .hi-body{width:100%;}
+  #m-hist-list .meal-history-item .hi-main{display:block;line-height:1.55;}
+  #m-hist-list .meal-history-item .meal-badge{display:inline-flex;margin:0 0 6px 0!important;}
+  #m-hist-list .meal-history-item .hi-del{position:absolute;top:10px;}
+  #m-hist-list .meal-history-item .hi-del:nth-last-child(2){right:30px;}
+  #m-hist-list .meal-history-item .hi-del:last-child{right:8px;}
+}
+
 </style>
 </head>
 <body>
@@ -464,7 +484,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.6</span>
+  <span class="nav-ver">v1.5.7</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -972,15 +992,17 @@ function isMealSubset(a,b){
   return (bt.kcal||0)>=(at.kcal||0) && (bt.protein||0)>=(at.protein||0) && (bt.carb||0)>=(at.carb||0) && (bt.fat||0)>=(at.fat||0);
 }
 function normalizeMealRecords(records){
-  // 같은 날짜+식사구분은 화면/합계에서 1끼로 묶는다.
+  // 같은 날짜+식사구분+시간은 화면/합계에서 1회 식사로 묶는다.
+  // 예: 간식 15:00과 간식 18:00은 서로 다른 기록으로 유지한다.
+  // 단, 같은 시간에 여러 음식을 1개씩 저장한 경우에는 한 묶음으로 합산한다.
   // 기존 시트처럼 누적값(95 → 170 → 250)이 여러 행으로 저장된 경우에는
   // 하위 누적 행을 제외하고 최종 250kcal만 반영한다.
-  // 앞으로 저장되는 개별 항목(95, 75, 80)은 합산해서 250kcal로 묶는다.
   const groups={};
   (records||[]).forEach((r,i)=>{
     if(!r||!r.date) return;
-    const key=`${r.date}|${r.mealType||''}`;
-    (groups[key]||(groups[key]=[])).push({...r,_order:i});
+    const timeKey=String(r.time||'').slice(0,5);
+    const key=`${r.date}|${r.mealType||''}|${timeKey}`;
+    (groups[key]||(groups[key]=[])).push({...r,time:timeKey,_order:i});
   });
   const out=[];
   Object.values(groups).forEach(rows=>{
@@ -1267,7 +1289,7 @@ function renderDashboard(){
     <div class="nb-row"><div class="nb-label">단백질</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.protein,GOALS.protein)}%;background:var(--protein);"></div></div><div class="nb-vals">${Math.round(totals.protein)}g/${GOALS.protein}g</div></div>
     <div class="nb-row"><div class="nb-label">탄수화물</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.carb,GOALS.carb)}%;background:var(--carb);"></div></div><div class="nb-vals">${Math.round(totals.carb)}g/${GOALS.carb}g</div></div>
     <div class="nb-row"><div class="nb-label">지방</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.fat,60)}%;background:#e040fb;"></div></div><div class="nb-vals">${Math.round(totals.fat)}g/60g</div></div>`;
-  document.getElementById('d-meal-list').innerHTML=tmDisplay.length?tmDisplay.map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${m.total?.kcal||0}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
+  document.getElementById('d-meal-list').innerHTML=tmDisplay.length?[...tmDisplay].sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.time||''} ${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${m.total?.kcal||0}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
   renderDashExAll(er);
   renderAllPBs(er);
   renderHistPanel();
@@ -1761,7 +1783,7 @@ function renderAllPBs(er){
     const totalDist=runs.reduce((a,r)=>a+(parseFloat(r.distance)||0),0);
     const bestCal=Math.max(...runs.filter(r=>r.cal).map(r=>r.cal));
     html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--run);font-family:'DM Mono',monospace;margin-bottom:8px;">🏃 런닝</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+    <div data-pb-run-grid style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
       <div class="pb-card"><div class="pb-card-label">최장 거리</div><div class="pb-card-val">${isFinite(maxDist)?maxDist.toFixed(2):'—'}</div><div class="pb-card-sub">km</div></div>
       <div class="pb-card"><div class="pb-card-label">최고 페이스</div><div class="pb-card-val">${bestPace?.pace||'—'}</div><div class="pb-card-sub">/km</div></div>
       <div class="pb-card"><div class="pb-card-label">누적 거리</div><div class="pb-card-val">${totalDist.toFixed(1)}</div><div class="pb-card-sub">km · ${runs.length}회</div></div>
@@ -2035,7 +2057,7 @@ async function saveMeal(){
   const btn=document.getElementById('meal-save-btn');btn.disabled=true;btn.textContent='💾 저장 중...';
   const newRec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
   // 시트에는 방금 입력한 '개별 음식'만 저장한다. 기존 식사 누적값을 다시 저장하지 않는다.
-  // 화면/합계에서는 normalizeMealRecords()가 날짜+식사구분 기준으로 자동 묶음 처리한다.
+  // 화면/합계에서는 normalizeMealRecords()가 날짜+식사구분+시간 기준으로 자동 묶음 처리한다.
   mealRecs=normalizeMealRecords([...mealRecs,newRec]);
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
   await sheetSave({type:'meal',id:newRec.id,date:newRec.date,time:newRec.time,mealType:newRec.mealType,foodText:newRec.foodText,foods:newRec.foods,foodsJson:JSON.stringify(newRec.foods||[]),total:newRec.total});
@@ -2065,7 +2087,7 @@ function renderMealHist(){
   const list=document.getElementById('m-hist-list');
   document.getElementById('m-hist-count').textContent=showingToday?`${tm.length}건`:`최근 ${tm.length}건`;
   if(!tm.length){list.innerHTML='<div class="empty-state">식사 기록 없음</div>';return;}
-  list.innerHTML=tm.map(m=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>${foodDetailsHtml(m)}</div><button class="hi-del" onclick="editMeal(${m.id})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
+  list.innerHTML=tm.map(m=>`<div class="hi-item meal-history-item"><div class="hi-date"><div class="hi-date-d">${m.date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div><div class="hi-body"><div class="hi-main" style="font-size:13px;"><span class="meal-badge badge-${m.mealType}" style="margin-right:6px;">${m.mealType}</span>${esc(m.foodText)}</div><div class="hi-sub">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</div>${foodDetailsHtml(m)}</div><button class="hi-del" onclick="editMeal(${m.id})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delMeal(${m.id})">×</button></div>`).join('');
 }
 function delMeal(id){if(!confirm('삭제?'))return;mealRecs=mealRecs.filter(m=>m.id!==id);localStorage.setItem('mealRecords',JSON.stringify(mealRecs));updateMealSummary();renderMealHist();}
 function editMeal(id){
