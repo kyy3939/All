@@ -435,6 +435,14 @@ select.inp{cursor:pointer;font-size:14px;}
 .hist-sec-title .hst-text{display:block!important;white-space:nowrap!important;word-break:keep-all!important;}
 @media(max-width:420px){.hist-tab-dash{min-width:62px!important;padding:7px 9px!important}.hist-summary-chip{min-width:58px!important;padding:5px 7px!important}.hist-summary-chip .hsc-text{font-size:9px!important}.hist-sec-title{min-width:50px!important}}
 
+
+/* ══ v1.5.3 추가: 운동 히스토리 하위 탭 모바일 줄바꿈/기타 탭 안정화 ══ */
+.ex-subtabs-dash{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.ex-subtab-dash{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:70px;padding:8px 12px!important;line-height:1.15!important;white-space:normal!important;word-break:keep-all!important;text-align:center!important;}
+.ex-subtab-dash .est-icon{display:block;font-size:15px;line-height:1;}
+.ex-subtab-dash .est-label{display:block;font-size:11px;line-height:1.15;white-space:nowrap;word-break:keep-all;}
+@media(max-width:420px){.ex-subtab-dash{min-width:60px;padding:7px 9px!important}.ex-subtab-dash .est-label{font-size:10px;}}
+
 </style>
 </head>
 <body>
@@ -445,7 +453,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.2</span>
+  <span class="nav-ver">v1.5.3</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1069,20 +1077,19 @@ async function syncFromSheet(){
   localStorage.setItem('sleepRecords',JSON.stringify(srDeduped));
   bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=srDeduped;
   // 즐겨찾기 동기화 (시트 → 모든 기기)
+  // 시트가 기준이므로, 시트에서 삭제된 항목은 앱 localStorage에서도 즉시 삭제되도록 빈 배열도 반영한다.
   if(favRaw){
-    if(Array.isArray(favRaw.meal)&&favRaw.meal.length){
-      localStorage.setItem('favoriteMeals',JSON.stringify(favRaw.meal));
-      renderFoodFavorites();
-renderBWFavorites();
-    }
+    const mealFavs = Array.isArray(favRaw.meal) ? favRaw.meal : [];
+    localStorage.setItem('favoriteMeals', JSON.stringify(mealFavs));
+
     const bwFavs = Array.isArray(favRaw.bodyweight)?favRaw.bodyweight:
       Array.isArray(favRaw.bodyWeight)?favRaw.bodyWeight:
       Array.isArray(favRaw.bw)?favRaw.bw:
       Array.isArray(favRaw.exercise)?favRaw.exercise.filter(f=>f.favType==='bodyweight'||f.favType==='bw'||f.category==='bodyweight'):[];
-    if(bwFavs.length){
-      localStorage.setItem('favoriteBodyweight',JSON.stringify(bwFavs));
-      renderBWFavorites();
-    }
+    localStorage.setItem('favoriteBodyweight', JSON.stringify(bwFavs));
+
+    renderFoodFavorites();
+    renderBWFavorites();
   }
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
@@ -1459,16 +1466,29 @@ function renderHistPanel(){
 
 // ══ 운동 종목별 테이블 뷰 ══
 let exSortKey='date', exSortAsc=false, currentExHistSub='run';
+function histDurToMin(v){
+  if(!v)return 0;
+  if(typeof v==='number')return v;
+  const parts=String(v).split(':').map(Number);
+  if(parts.length>=2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
+  const n=parseFloat(v);return Number.isFinite(n)?n:0;
+}
+function histFmtMin(min){
+  min=Math.round(min||0);
+  if(!min)return '';
+  const h=Math.floor(min/60), m=min%60;
+  return h?`${h}시간 ${m?m+'분':''}`:`${m}분`;
+}
 function renderExHistTable(er){
   const el=document.getElementById('hist-content');
   if(!el)return;
   // 서브탭 버튼
-  const subTabs=`<div style="display:flex;gap:6px;margin-bottom:12px;">
-    <button onclick="switchExSub('run',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='run'?'var(--run)':'var(--border)'};background:${currentExHistSub==='run'?'rgba(0,229,160,.12)':'var(--s2)'};color:${currentExHistSub==='run'?'var(--run)':'var(--muted)'};font-size:12px;cursor:pointer;">🏃 런닝</button>
-    <button onclick="switchExSub('walk',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='walk'?'var(--skeletal)':'var(--border)'};background:${currentExHistSub==='walk'?'rgba(105,240,174,.12)':'var(--s2)'};color:${currentExHistSub==='walk'?'var(--skeletal)':'var(--muted)'};font-size:12px;cursor:pointer;">🚶 걷기</button>
-    <button onclick="switchExSub('bike',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='bike'?'var(--coach)':'var(--border)'};background:${currentExHistSub==='bike'?'rgba(79,195,247,.12)':'var(--s2)'};color:${currentExHistSub==='bike'?'var(--coach)':'var(--muted)'};font-size:12px;cursor:pointer;">🚴 자전거</button>
-    <button onclick="switchExSub('bodyweight',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='bodyweight'?'var(--cal)':'var(--border)'};background:${currentExHistSub==='bodyweight'?'rgba(255,112,67,.12)':'var(--s2)'};color:${currentExHistSub==='bodyweight'?'var(--cal)':'var(--muted)'};font-size:12px;cursor:pointer;">💪 복합</button>
-    <button onclick="switchExSub('other',this)" style="padding:5px 14px;border-radius:20px;border:1px solid ${currentExHistSub==='other'?'var(--accent)':'var(--border)'};background:${currentExHistSub==='other'?'rgba(108,99,255,.12)':'var(--s2)'};color:${currentExHistSub==='other'?'var(--accent)':'var(--muted)'};font-size:12px;cursor:pointer;">➕ 기타</button>
+  const subTabs=`<div class="ex-subtabs-dash">
+    <button class="ex-subtab-dash" onclick="switchExSub('run',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='run'?'var(--run)':'var(--border)'};background:${currentExHistSub==='run'?'rgba(0,229,160,.12)':'var(--s2)'};color:${currentExHistSub==='run'?'var(--run)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🏃</span><span class="est-label">런닝</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('walk',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='walk'?'var(--skeletal)':'var(--border)'};background:${currentExHistSub==='walk'?'rgba(105,240,174,.12)':'var(--s2)'};color:${currentExHistSub==='walk'?'var(--skeletal)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🚶</span><span class="est-label">걷기</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('bike',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='bike'?'var(--coach)':'var(--border)'};background:${currentExHistSub==='bike'?'rgba(79,195,247,.12)':'var(--s2)'};color:${currentExHistSub==='bike'?'var(--coach)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🚴</span><span class="est-label">자전거</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('bodyweight',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='bodyweight'?'var(--cal)':'var(--border)'};background:${currentExHistSub==='bodyweight'?'rgba(255,112,67,.12)':'var(--s2)'};color:${currentExHistSub==='bodyweight'?'var(--cal)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">💪</span><span class="est-label">복합</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('other',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='other'?'var(--accent)':'var(--border)'};background:${currentExHistSub==='other'?'rgba(108,99,255,.12)':'var(--s2)'};color:${currentExHistSub==='other'?'var(--accent)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">➕</span><span class="est-label">기타</span></button>
   </div>`;
   if(currentExHistSub==='run'||currentExHistSub==='walk'){
     const isWalk=currentExHistSub==='walk';
@@ -1556,10 +1576,10 @@ function renderExHistTable(er){
     if(!data.length){el.innerHTML=subTabs+'<div class="empty-state">기타 운동 기록 없음</div>';return;}
     const sorted=sortExData(data,'other');
     const totalCal=sorted.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
-    const totalMin=sorted.reduce((a,r)=>a+durToMin(r.duration),0);
+    const totalMin=sorted.reduce((a,r)=>a+histDurToMin(r.duration),0);
     const statBar=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
       <div class="pb-card"><div class="pb-card-label">총 기록</div><div class="pb-card-val" style="color:var(--accent);font-size:16px;">${sorted.length}회</div></div>
-      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--accent);font-size:16px;">${fmtMin(totalMin)||'—'}</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--accent);font-size:16px;">${histFmtMin(totalMin)||'—'}</div></div>
       <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:var(--accent);font-size:16px;">${totalCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
     </div>`;
     const table=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
