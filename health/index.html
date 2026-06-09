@@ -27,6 +27,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   flex-shrink:0;z-index:100;position:relative;overflow:hidden;
 }
 .nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--coach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px;white-space:nowrap;}
+.nav-logo{position:relative;z-index:105;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.nav-logo:active{opacity:.72;}
+@media(max-width:768px){.nav-logo{padding:14px 10px;margin:-14px -10px;min-height:52px;display:flex;align-items:center;}}
 .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--run);box-shadow:0 0 6px var(--run);animation:blink 2s infinite;flex-shrink:0;}
 .nav-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;display:none;}
 .nav-sync{padding:5px 10px;background:none;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;margin-left:auto;white-space:nowrap;flex-shrink:0;}
@@ -457,11 +460,11 @@ select.inp{cursor:pointer;font-size:14px;}
 
 <!-- 상단 헤더 -->
 <div class="topnav">
-  <div class="nav-logo" onclick="hardRefreshHealthCoach()" title="새로고침">HEALTH COACH</div>
+  <div class="nav-logo" id="healthCoachLogo" onclick="hardRefreshHealthCoach()" title="새로고침" role="button" tabindex="0" aria-label="헬스코치 새로고침">HEALTH COACH</div>
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.4</span>
+  <span class="nav-ver">v1.5.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1117,10 +1120,23 @@ const getNum=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 function nowTime(){const n=new Date();return`${pad(n.getHours())}:${pad(n.getMinutes())}`;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
-function hardRefreshHealthCoach(){
-  // 어느 탭에 있든 상단 로고 클릭 시 전체 페이지를 새로고침
+function hardRefreshHealthCoach(e){
+  // PC/모바일 어느 탭에 있든 상단 HEALTH COACH 로고 클릭/터치 시 전체 페이지 새로고침
+  if(e && typeof e.preventDefault==='function') e.preventDefault();
   window.location.reload();
 }
+
+// 모바일 브라우저에서 inline onclick 터치가 누락되는 경우를 방지하기 위한 보조 바인딩
+document.addEventListener('DOMContentLoaded',()=>{
+  const logo=document.getElementById('healthCoachLogo');
+  if(!logo) return;
+  logo.addEventListener('touchend',hardRefreshHealthCoach,{passive:false});
+  logo.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter' || e.key===' '){
+      hardRefreshHealthCoach(e);
+    }
+  });
+});
 function refreshTodayViews(){
   today=getKstDateString();
   initDates();
