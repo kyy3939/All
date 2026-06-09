@@ -476,6 +476,38 @@ select.inp{cursor:pointer;font-size:14px;}
   #hist-content .meal-history-item .meal-time-title{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:6px;}
 }
 
+
+/* ══ v1.5.9 추가: 모바일 운동 입력 탭 5개 항목 한 줄 고정 ══ */
+@media(max-width:480px){
+  #page-ex .type-tabs{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    gap:5px!important;
+    margin-bottom:14px!important;
+  }
+  #page-ex .type-tab{
+    min-width:0!important;
+    border-radius:10px!important;
+    padding:8px 2px!important;
+    gap:3px!important;
+  }
+  #page-ex .type-tab .tt-icon{
+    font-size:16px!important;
+    line-height:1!important;
+  }
+  #page-ex .type-tab .tt-label{
+    font-size:9px!important;
+    line-height:1.1!important;
+    letter-spacing:-.5px!important;
+    white-space:nowrap!important;
+  }
+}
+@media(max-width:360px){
+  #page-ex .type-tabs{gap:4px!important;}
+  #page-ex .type-tab{padding:7px 1px!important;}
+  #page-ex .type-tab .tt-icon{font-size:15px!important;}
+  #page-ex .type-tab .tt-label{font-size:8.5px!important;letter-spacing:-.7px!important;}
+}
+
 </style>
 </head>
 <body>
@@ -486,7 +518,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.8</span>
+  <span class="nav-ver">v1.5.9</span>
 </div>
 
 <!-- PC 상단 탭 -->
