@@ -462,6 +462,11 @@ select.inp{cursor:pointer;font-size:14px;}
   #d-pb-grid .pb-card-label{font-size:9px;letter-spacing:0;line-height:1.1;white-space:nowrap;}
   #d-pb-grid .pb-card-val{font-size:15px!important;}
   #d-pb-grid .pb-card-sub{font-size:9px;}
+  /* 히스토리 운동 요약 카드 모바일 최적화 */
+  .pb-card{padding:10px 6px;}
+  .pb-card-label{font-size:9px;letter-spacing:0;line-height:1.2;white-space:nowrap;word-break:keep-all;}
+  .pb-card-val{font-size:14px!important;}
+  .pb-card-sub{font-size:9px;}
   #d-pb-grid [data-pb-run-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}
   #m-hist-list .meal-history-item,#hist-content .meal-history-item{display:block;position:relative;padding-right:42px;}
   #m-hist-list .meal-history-item .hi-date,#hist-content .meal-history-item .hi-date{width:auto;min-width:0;display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;}
@@ -514,6 +519,22 @@ select.inp{cursor:pointer;font-size:14px;}
 .dash-ex-day-label{padding:10px 18px 4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);}
 @media(max-width:420px){#d-pb-grid [data-pb-walk-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}}
 
+/* ══ v1.7.0 추가: 날짜·시간 입력 UX 개선 / 복합운동 시간+칼로리 / 오늘운동 날짜 제거 ══ */
+input[type="date"].inp, input[type="time"].inp {
+  cursor:pointer;
+  position:relative;
+}
+input[type="date"].inp::-webkit-calendar-picker-indicator,
+input[type="time"].inp::-webkit-calendar-picker-indicator {
+  position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;
+}
+.dt-row{display:flex;gap:12px;flex-wrap:wrap;}
+.dt-row .inp-group{flex:1;min-width:140px;}
+.datetime-display{display:flex;align-items:center;gap:8px;background:var(--s2);border:1.5px solid var(--accent);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:'DM Mono',monospace;font-size:14px;color:var(--text);transition:all .2s;margin-bottom:4px;}
+.datetime-display:hover{border-color:var(--run);background:rgba(0,229,160,.06);}
+.datetime-display .dt-ico{font-size:16px;margin-right:4px;}
+.datetime-display .dt-val{font-weight:700;color:var(--accent);}
+
 </style>
 </head>
 <body>
@@ -524,7 +545,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.6.0</span>
+  <span class="nav-ver">v1.7.0</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -664,8 +685,8 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="card">
         <div class="card-title">📅 측정 일시 <div class="ct-line"></div></div>
         <div class="dt-row">
-          <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="b-date" style="font-size:13px;"></div>
-          <div class="inp-group"><div class="ig-label">시간</div><input type="time" class="inp" id="b-time" style="font-size:13px;"></div>
+          <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="b-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
+          <div class="inp-group"><div class="ig-label">시간</div><input type="time" class="inp" id="b-time" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
         </div>
         <!-- 측정 시점 선택 -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
@@ -714,8 +735,8 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="card">
         <div class="card-title">📅 운동 일시 <div class="ct-line"></div></div>
         <div class="dt-row">
-          <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="ex-date" style="font-size:13px;"></div>
-          <div class="inp-group"><div class="ig-label">시작 시간</div><input type="time" class="inp" id="ex-time" style="font-size:13px;"></div>
+          <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="ex-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
+          <div class="inp-group"><div class="ig-label">시작 시간</div><input type="time" class="inp" id="ex-time" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
         </div>
       </div>
       <div class="ex-section active" id="exs-run">
@@ -840,8 +861,8 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="card">
         <div class="card-title">✏️ 식사 입력 <div class="ct-line"></div></div>
         <div class="dt-row" style="margin-bottom:14px;">
-          <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="m-date" style="font-size:13px;"></div>
-          <div class="inp-group"><div class="ig-label">시간</div><input type="time" class="inp" id="m-time" style="font-size:13px;"></div>
+          <div class="inp-group"><div class="ig-label">날짜</div><input type="date" class="inp" id="m-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
+          <div class="inp-group"><div class="ig-label">시간</div><input type="time" class="inp" id="m-time" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}"></div>
         </div>
         <textarea class="food-textarea" id="food-input" placeholder="먹은 음식을 입력하세요&#10;예: 밥 한 공기, 된장찌개, 계란 후라이 2개"></textarea>
         <button class="analyze-btn" id="analyze-btn" onclick="analyzeFood()">🔍 영양소 자동 분석</button>
@@ -901,7 +922,7 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="inp-grid">
           <div class="inp-group">
             <div class="ig-label">날짜</div>
-            <input type="date" class="inp" id="sl-date" style="font-size:13px;">
+            <input type="date" class="inp" id="sl-date" style="font-size:13px;" onclick="try{this.showPicker()}catch(e){}">
           </div>
           <div class="inp-group">
             <div class="ig-label">수면 품질 <span class="ig-unit">1~5점</span></div>
@@ -916,11 +937,11 @@ select.inp{cursor:pointer;font-size:14px;}
           </div>
           <div class="inp-group">
             <div class="ig-label">취침 시간</div>
-            <input type="time" class="inp" id="sl-bedtime" style="font-size:15px;">
+            <input type="time" class="inp" id="sl-bedtime" style="font-size:15px;" onclick="try{this.showPicker()}catch(e){}">
           </div>
           <div class="inp-group">
             <div class="ig-label">기상 시간</div>
-            <input type="time" class="inp" id="sl-waketime" style="font-size:15px;">
+            <input type="time" class="inp" id="sl-waketime" style="font-size:15px;" onclick="try{this.showPicker()}catch(e){}">
           </div>
           <div class="inp-group full">
             <div class="ig-label">수면 시간 <span class="ig-unit">자동 계산</span></div>
@@ -1400,13 +1421,12 @@ function renderDashExAll(er){
   const total=runs.length+walks.length+bikes.length+bws.length+others.length;
   document.getElementById('d-ex-meta').textContent=total?`오늘 ${total}회`:'';
   if(!total){el.innerHTML='<div class="empty-state" style="padding:16px 18px;">오늘 운동 기록 없음</div>';return;}
-  let html=`<div class="dash-ex-day-label">${today}</div>`;
-  const dline=r=>`<div class="dash-ex-date">${r.date||today}</div>`;
-  runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div>${dline(r)}<div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div>${dline(r)}<div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div>${dline(r)}<div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
-  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목 ${r.duration?'⏱'+r.duration:''}</div>${dline(r)}<div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div>${dline(r)}<div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
+  let html=``;
+  runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div><div class="hi-sub">${r.duration?'⏱'+r.duration+'분':''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
+  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목</div><div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}${r.duration?' · ⏱'+r.duration:''}${r.cal?' · 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
   el.innerHTML=html;
 }
 // ══ 기록 히스토리 패널 ══
@@ -1684,7 +1704,7 @@ function renderExHistTable(er){
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead><tr style="border-bottom:1px solid var(--border);">
         <th ${thStyle('date')} onclick="sortEx('date')">날짜${arrow('date')}</th>
-        <th ${thStyle('duration')} onclick="sortEx('duration')">시간(분)${arrow('duration')}</th>
+        <th ${thStyle('duration')} onclick="sortEx('duration')">시간${arrow('duration')}</th>
         <th ${thStyle('hr')} onclick="sortEx('hr')">심박${arrow('hr')}</th>
         <th ${thStyle('cal')} onclick="sortEx('cal')">칼로리${arrow('cal')}</th>
       </tr></thead>
@@ -1692,7 +1712,7 @@ function renderExHistTable(er){
         const isPBDur=parseInt(r.duration)===maxDur;
         return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
           <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${r.duration||'—'}<span style="color:var(--muted);font-size:10px;">분</span>${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${r.duration?r.duration+'분':'—'}${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
           <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
           <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
         </tr>`;
@@ -1743,10 +1763,28 @@ function renderExHistTable(er){
         exMap[e.name].push({date:session.date,reps:e.reps||0,sets:e.sets||0,vol:(e.reps||0)*(e.sets||0)});
       });
     });
-    const statBar=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+    const totalBwCal=sorted.reduce((a,r)=>a+(parseInt(r.cal)||0),0);
+    const totalBwMin=sorted.reduce((a,r)=>a+histDurToMin(r.duration),0);
+    const statBar=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
       <div class="pb-card"><div class="pb-card-label">총 세션</div><div class="pb-card-val" style="color:var(--cal);font-size:16px;">${sorted.length}회</div></div>
       <div class="pb-card"><div class="pb-card-label">종목 수</div><div class="pb-card-val" style="color:var(--cal);font-size:16px;">${Object.keys(exMap).length}가지</div></div>
-    </div>`;
+      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--cal);font-size:16px;">${histFmtMin(totalBwMin)||'—'}</div></div>
+      <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:var(--cal);font-size:16px;">${totalBwCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:1px solid var(--border);">
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;">날짜</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">종목</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">시간</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">칼로리</th>
+      </tr></thead>
+      <tbody>${sorted.map((r,i)=>`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
+        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
+        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.exercises?.length||0}종목</td>
+        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.duration?r.duration+'분':'—'}</td>
+        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal?r.cal+'<span style="color:var(--muted);font-size:10px;">kcal</span>':'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
     // 종목별 PB 테이블
     const exTables=Object.entries(exMap).map(([name,records])=>{
       const maxReps=Math.max(...records.map(r=>r.reps));
