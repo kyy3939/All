@@ -441,7 +441,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.0</span>
+  <span class="nav-ver">v1.5.1</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -682,9 +682,8 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="ex-section" id="exs-bw">
         <div class="card">
           <div class="card-title">💪 복합운동 <div class="ct-line"></div></div>
-          <!-- 총 운동 시간 + 칼로리 -->
-          <div class="inp-grid" style="margin-bottom:12px;">
-            <div class="inp-group"><div class="ig-label">총 시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="bw-dur" placeholder="30:00" oninput="autoColon(this)"></div>
+          <div class="inp-grid" style="margin-bottom:14px;">
+            <div class="inp-group"><div class="ig-label">총 운동 시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="bw-dur" placeholder="30:00" oninput="autoColon(this)"></div>
             <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="bw-cal" placeholder="150"></div>
           </div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">종목 선택 후 추가하세요</div>
@@ -700,7 +699,6 @@ select.inp{cursor:pointer;font-size:14px;}
         </div>
         <button class="save-btn primary" onclick="saveBW()">💪 복합운동 저장</button>
       </div>
-      <!-- 기타 운동 섹션 -->
       <div class="ex-section" id="exs-other">
         <div class="card">
           <div class="card-title">➕ 기타 운동 <div class="ct-line"></div></div>
@@ -1026,16 +1024,7 @@ function parseSheetData(raw){
     } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
       exRecs.walk.push(parseRunLike());
     } else if(typeRaw.trim()){
-      // 기타 운동 — 종류가 런닝/걷기/자전거/복합운동이 아닌 경우 (예: 수영, 등산 등)
-      exRecs.other.push({
-        date, time,
-        name: typeRaw.trim(),
-        duration: String(r['시간(분)']||''),
-        cal: safeInt(r['칼로리']),
-        hr: safeInt(r['심박수']),
-        distance: safeFloat(r['거리(km)']),
-        memo: String(r['세부내용']||'')
-      });
+      exRecs.other.push({date,time,name:typeRaw.trim(),duration:String(r['시간(분)']||''),cal:safeInt(r['칼로리']),hr:safeInt(r['심박수']),distance:safeFloat(r['거리(km)']),memo:String(r['세부내용']||'')});
     }
   });
 
@@ -1064,7 +1053,6 @@ async function syncFromSheet(){
   const [raw, favRaw] = await Promise.all([sheetLoad(), sheetLoadFavs()]);
   if(!raw){showToast('⚠️ 동기화 실패. 네트워크를 확인해주세요.');return;}
   const{bodyRecs:br,mealRecs:mr,exRecs:er,sleepRecs:sr}=parseSheetData(raw);
-  // 수면: 날짜+타입 기준 중복 제거
   const srDeduped=[];const srSeen=new Set();
   [...sr].reverse().forEach(r=>{const key=`${r.date}_${r.sleepType||'밤잠'}`;if(!srSeen.has(key)){srSeen.add(key);srDeduped.unshift(r);}});
   localStorage.setItem('bodyRecords',JSON.stringify(br));
@@ -1072,9 +1060,12 @@ async function syncFromSheet(){
   localStorage.setItem('exerciseRecords',JSON.stringify(er));
   localStorage.setItem('sleepRecords',JSON.stringify(srDeduped));
   bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=srDeduped;
-  // 즐겨찾기 동기화 (시트 → 앱)
+  // 즐겨찾기 동기화 (시트 → 모든 기기)
   if(favRaw){
-    if(favRaw.meal){localStorage.setItem('favoriteMeals',JSON.stringify(favRaw.meal));renderFoodFavorites();}
+    if(Array.isArray(favRaw.meal)&&favRaw.meal.length){
+      localStorage.setItem('favoriteMeals',JSON.stringify(favRaw.meal));
+      renderFoodFavorites();
+    }
   }
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
@@ -1206,7 +1197,7 @@ function renderDashboard(){
     <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;">권장 수면 8시간 기준 ${Math.round(lastSleep.durationHours/8*100)}%</div>`;
   } else {
     document.getElementById('d-sleep-meta').textContent='';
-    sleepEl.innerHTML='<div class="empty-state">오늘 수면 기록 없음</div>';
+    sleepEl.innerHTML='<div class="empty-state">수면 기록 없음</div>';
   }
 }
 let chartWeight=null,chartSkeletal=null,chartFatRate=null,chartBMI=null,chartFatMass=null,chartWater=null;
@@ -1243,7 +1234,6 @@ function renderBodyCharts(br,days){
   chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#ffd740');
 }
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
-// ── 대시보드 오늘 운동 통합 (탭 없음, other 포함)
 function renderDashExAll(er){
   const el=document.getElementById('d-ex-list-all');if(!el)return;
   const runs=(er.run||[]).filter(r=>r.date===today);
@@ -1768,24 +1758,13 @@ function saveOther(){
   const dur=document.getElementById('other-dur').value;
   if(!name){showToast('⚠️ 운동 종류를 입력해주세요');return;}
   if(!dur&&!document.getElementById('other-cal').value){showToast('⚠️ 시간 또는 칼로리를 입력해주세요');return;}
-  const r={
-    date:document.getElementById('ex-date').value,
-    time:document.getElementById('ex-time').value,
-    name,
-    duration:dur||null,
-    cal:parseInt(document.getElementById('other-cal').value)||null,
-    hr:parseInt(document.getElementById('other-hr').value)||null,
-    distance:parseFloat(document.getElementById('other-dist').value)||null,
-    memo:document.getElementById('other-memo').value||null
-  };
+  const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,name,duration:dur||null,cal:parseInt(document.getElementById('other-cal').value)||null,hr:parseInt(document.getElementById('other-hr').value)||null,distance:parseFloat(document.getElementById('other-dist').value)||null,memo:document.getElementById('other-memo').value||null};
   if(!exRecs.other)exRecs.other=[];
-  exRecs.other.push(r);
-  exRecs.other.sort((a,b)=>a.date.localeCompare(b.date));
+  exRecs.other.push(r);exRecs.other.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
   sheetSave({type:'exercise',category:'other',...r});
   ['other-name','other-dur','other-cal','other-hr','other-dist','other-memo'].forEach(id=>document.getElementById(id).value='');
-  renderExHist('other');
-  showToast('➕ 기타 운동 저장됐어요!');
+  renderExHist('other');showToast('➕ 기타 운동 저장됐어요!');
 }
 function saveBike(){
   const dur=document.getElementById('bike-dur').value;if(!dur){showToast('⚠️ 시간 입력');return;}
@@ -1799,15 +1778,15 @@ function saveBike(){
 function saveBW(){
   const items=document.querySelectorAll('.added-ex-item');if(!items.length){showToast('⚠️ 종목을 추가해주세요');return;}
   const exercises=[...items].map(item=>{const inps=item.querySelectorAll('.aei-inp');return{name:item.dataset.added,reps:parseInt(inps[0].value)||null,sets:parseInt(inps[1].value)||null};});
-  const dur=document.getElementById('bw-dur').value||null;
-  const cal=parseInt(document.getElementById('bw-cal').value)||null;
+  const dur=document.getElementById('bw-dur')?.value||null;
+  const cal=parseInt(document.getElementById('bw-cal')?.value)||null;
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,exercises,duration:dur,cal};
   exRecs.bodyweight.push(r);exRecs.bodyweight.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
   sheetSave({type:'exercise',category:'bodyweight',...r});
   document.getElementById('added-exercises').innerHTML='';
-  document.getElementById('bw-dur').value='';
-  document.getElementById('bw-cal').value='';
+  if(document.getElementById('bw-dur'))document.getElementById('bw-dur').value='';
+  if(document.getElementById('bw-cal'))document.getElementById('bw-cal').value='';
   renderExHist('bodyweight');showToast('💪 복합운동 저장됐어요!');
 }
 function switchExHist(type,btn){currentExHistType=type;document.querySelectorAll('.eht-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderExHist(type);}
@@ -1985,14 +1964,36 @@ function applyManualNutrition(){
   fillAnalysisResult(pendingAnalysis);clearManualNutritionFields();showToast(pendingAnalysis===added?'✍️ 직접 입력값을 적용했어요':'➕ 직접 입력 음식을 추가했어요');
 }
 function saveCurrentFavorite(){
-  if(!pendingAnalysis){applyManualNutrition();if(!pendingAnalysis)return;}
-  // foods 배열 기준으로 표시명 재조합 (중복 방지)
-  const foods=pendingAnalysis.foods||[];
-  const displayName=foods.length
-    ? foods.map(f=>f.name).filter(Boolean).join(', ')
-    : pendingAnalysis.foodText||'음식';
+  // 직접입력 필드에 값이 있으면 그 항목만 독립적으로 즐겨찾기
+  const manualName=(document.getElementById('manual-name')?.value||'').trim();
+  const manualCal=document.getElementById('manual-cal')?.value;
+  let targetAnalysis=null;
+  if(manualName&&manualCal){
+    // 직접입력값이 있으면 해당 항목만 즐겨찾기 (이전 pendingAnalysis와 무관)
+    const total={
+      kcal:getNum(document.getElementById('manual-cal').value),
+      protein:getNum(document.getElementById('manual-prot').value),
+      carb:getNum(document.getElementById('manual-carb').value),
+      fat:getNum(document.getElementById('manual-fat').value)
+    };
+    targetAnalysis={
+      foods:[{name:manualName,kcal:total.kcal,protein:total.protein,carb:total.carb,fat:total.fat}],
+      total,
+      foodText:manualName
+    };
+  } else if(pendingAnalysis){
+    // foods 기준으로 이름 재조합 (중복 방지)
+    const foods=pendingAnalysis.foods||[];
+    const displayName=foods.length
+      ? foods.map(f=>f.name).filter(Boolean).join(', ')
+      : pendingAnalysis.foodText||'음식';
+    targetAnalysis={...pendingAnalysis,foodText:displayName};
+  } else {
+    showToast('⚠️ 저장할 음식 정보가 없어요. 분석하거나 직접 입력해주세요');
+    return;
+  }
   const id='mf_'+Date.now();
-  const item={id,favType:'meal',foodText:displayName,foods,total:pendingAnalysis.total,savedAt:Date.now()};
+  const item={id,favType:'meal',foodText:targetAnalysis.foodText,foods:targetAnalysis.foods,total:targetAnalysis.total,savedAt:Date.now()};
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');
   favs.unshift(item);
   localStorage.setItem('favoriteMeals',JSON.stringify(favs.slice(0,30)));
