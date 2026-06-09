@@ -464,7 +464,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.5</span>
+  <span class="nav-ver">v1.5.6</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -952,6 +952,52 @@ async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const 
 async function sheetLoadFavs(){try{const r=await fetch(`${GAS_URL}?type=favorites`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('즐겨찾기 불러오기 실패',e);}return null;}
 async function sheetSaveFav(fav){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favorite',...fav}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 저장실패',e);}}
 async function sheetDeleteFav(id){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favDelete',id}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 삭제실패',e);}}
+
+function mealFoodKeyText(rec){
+  const foods=(rec.foods||[]).map(f=>String(f.name||'').trim()).filter(Boolean);
+  return foods.length?foods.join(', '):String(rec.foodText||'').trim();
+}
+function mealNameSet(rec){
+  const names=(rec.foods||[]).map(f=>String(f.name||'').trim()).filter(Boolean);
+  if(!names.length && rec.foodText){
+    String(rec.foodText).split(',').map(s=>s.trim()).filter(Boolean).forEach(n=>names.push(n));
+  }
+  return new Set(names);
+}
+function isMealSubset(a,b){
+  const as=mealNameSet(a), bs=mealNameSet(b);
+  if(!as.size || !bs.size || as.size>=bs.size) return false;
+  for(const n of as){ if(!bs.has(n)) return false; }
+  const at=a.total||{}, bt=b.total||{};
+  return (bt.kcal||0)>=(at.kcal||0) && (bt.protein||0)>=(at.protein||0) && (bt.carb||0)>=(at.carb||0) && (bt.fat||0)>=(at.fat||0);
+}
+function normalizeMealRecords(records){
+  // 같은 날짜+식사구분은 화면/합계에서 1끼로 묶는다.
+  // 기존 시트처럼 누적값(95 → 170 → 250)이 여러 행으로 저장된 경우에는
+  // 하위 누적 행을 제외하고 최종 250kcal만 반영한다.
+  // 앞으로 저장되는 개별 항목(95, 75, 80)은 합산해서 250kcal로 묶는다.
+  const groups={};
+  (records||[]).forEach((r,i)=>{
+    if(!r||!r.date) return;
+    const key=`${r.date}|${r.mealType||''}`;
+    (groups[key]||(groups[key]=[])).push({...r,_order:i});
+  });
+  const out=[];
+  Object.values(groups).forEach(rows=>{
+    rows.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')) || (a.id||0)-(b.id||0) || a._order-b._order);
+    const keep=rows.filter((r,idx)=>!rows.some((later,j)=>j>idx && isMealSubset(r,later)));
+    const merged=keep.reduce((acc,r)=>{
+      const foods=(r.foods&&r.foods.length)?r.foods:[{name:r.foodText,kcal:r.total?.kcal||0,protein:r.total?.protein||0,carb:r.total?.carb||0,fat:r.total?.fat||0}];
+      const m=mergeMealAnalysis(acc,{foods,total:r.total||{},foodText:r.foodText||''});
+      return {...acc,...m};
+    },{...keep[0],foods:[],total:{kcal:0,protein:0,carb:0,fat:0},foodText:''});
+    delete merged._order;
+    merged.id=keep[0]?.id||Date.now();
+    merged.time=keep[0]?.time||'';
+    out.push(merged);
+  });
+  return out.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+}
 function parseSheetData(raw){
   // GAS가 이미 KST 기준 'yyyy-MM-dd' / 'HH:mm' 문자열로 반환하므로
   // 추가 변환 없이 그대로 사용. 빈값/null 방어만 처리.
@@ -974,7 +1020,7 @@ function parseSheetData(raw){
   })).filter(r=>r.date);
 
   // ── 식사: 날짜|시간|구분|음식내용|칼로리|단백질|탄수화물|지방
-  const mealRecs=(raw.meal||[]).map((r,i)=>({
+  const mealRecs=normalizeMealRecords((raw.meal||[]).map((r,i)=>({
     id:i+1,
     date:safeDate(r['날짜']),
     time:safeTime(r['시간']),
@@ -990,7 +1036,7 @@ function parseSheetData(raw){
       const rawFoods=r['세부음식']||r['foods']||r['foodsJson']||'';
       try{const parsed=JSON.parse(rawFoods);return Array.isArray(parsed)?parsed:[];}catch(e){return [];}
     })()
-  })).filter(r=>r.date);
+  })).filter(r=>r.date));
 
   // ── 운동: 날짜|시간|종류|세부내용|시간(분)|거리(km)|페이스|심박수|칼로리
   // 복합운동은 세부내용을 파싱해서 exercises 배열로 변환
@@ -1988,12 +2034,11 @@ async function saveMeal(){
   mealSaving=true;
   const btn=document.getElementById('meal-save-btn');btn.disabled=true;btn.textContent='💾 저장 중...';
   const newRec={id:Date.now(),date:document.getElementById('m-date').value,time:document.getElementById('m-time').value,mealType:currentMealType,foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total};
-  const existed=mealRecs.some(m=>m.date===newRec.date&&m.mealType===newRec.mealType);
-  const rec=mergeSameMealRecord(newRec);
-  if(!existed) mealRecs.push(rec);
-  mealRecs.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  // 시트에는 방금 입력한 '개별 음식'만 저장한다. 기존 식사 누적값을 다시 저장하지 않는다.
+  // 화면/합계에서는 normalizeMealRecords()가 날짜+식사구분 기준으로 자동 묶음 처리한다.
+  mealRecs=normalizeMealRecords([...mealRecs,newRec]);
   localStorage.setItem('mealRecords',JSON.stringify(mealRecs));
-  await sheetSave({type:'meal',id:rec.id,date:rec.date,time:rec.time,mealType:rec.mealType,foodText:rec.foodText,foods:rec.foods,foodsJson:JSON.stringify(rec.foods||[]),total:rec.total});
+  await sheetSave({type:'meal',id:newRec.id,date:newRec.date,time:newRec.time,mealType:newRec.mealType,foodText:newRec.foodText,foods:newRec.foods,foodsJson:JSON.stringify(newRec.foods||[]),total:newRec.total});
   document.getElementById('food-input').value='';document.getElementById('analysis-result').classList.remove('show');
   pendingAnalysis=null;
   updateMealSummary();renderMealHist();showToast('✅ 식사 저장됐어요!');
