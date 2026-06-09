@@ -441,7 +441,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.4.8</span>
+  <span class="nav-ver">v1.4.9</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -515,7 +515,7 @@ select.inp{cursor:pointer;font-size:14px;}
             </div>
           </div>
         </div>
-        <!-- 오른쪽: 수면→식사→운동→PB (모바일도 이 순서) -->
+        <!-- 오른쪽: 수면→오늘식사→오늘운동→칼로리밸런스→PB -->
         <div class="dash-right">
           <div class="section">
             <div class="sec-hdr"><div class="sec-title">😴 수면</div><div class="sec-meta" id="d-sleep-meta"></div></div>
@@ -527,12 +527,12 @@ select.inp{cursor:pointer;font-size:14px;}
             <div class="meal-list-dash" id="d-meal-list"></div>
           </div>
           <div class="section">
-            <div class="sec-hdr"><div class="sec-title">🔥 칼로리 밸런스</div><div class="sec-meta" id="d-balance-meta">BMR+운동</div></div>
-            <div class="cal-balance-grid" id="d-cal-balance"></div>
-          </div>
-          <div class="section">
             <div class="sec-hdr"><div class="sec-title">🏋️ 오늘 운동</div><div class="sec-meta" id="d-ex-meta"></div></div>
             <div id="d-ex-list-all" style="padding:4px 0;"></div>
+          </div>
+          <div class="section">
+            <div class="sec-hdr"><div class="sec-title">🔥 칼로리 밸런스</div><div class="sec-meta" id="d-balance-meta">BMR+운동</div></div>
+            <div class="cal-balance-grid" id="d-cal-balance"></div>
           </div>
           <div class="section">
             <div class="sec-hdr"><div class="sec-title">🏆 개인 최고 기록</div><div class="sec-meta">PB</div></div>
@@ -626,6 +626,7 @@ select.inp{cursor:pointer;font-size:14px;}
         <div class="type-tab" data-type="walk" onclick="switchExType('walk')"><div class="tt-icon">🚶</div><div class="tt-label">걷기</div></div>
         <div class="type-tab" data-type="bike" onclick="switchExType('bike')"><div class="tt-icon">🚴</div><div class="tt-label">실내자전거</div></div>
         <div class="type-tab" data-type="bodyweight" onclick="switchExType('bodyweight')"><div class="tt-icon">💪</div><div class="tt-label">복합운동</div></div>
+        <div class="type-tab" data-type="other" onclick="switchExType('other')"><div class="tt-icon">➕</div><div class="tt-label">기타</div></div>
       </div>
       <div class="card">
         <div class="card-title">📅 운동 일시 <div class="ct-line"></div></div>
@@ -639,7 +640,7 @@ select.inp{cursor:pointer;font-size:14px;}
           <div class="card-title">🏃 런닝 기록 <div class="ct-line"></div></div>
           <div class="inp-grid">
             <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km</span></div><input type="number" inputmode="decimal" class="inp" id="run-dist" placeholder="0.00" step="0.01"></div>
-            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="run-dur" placeholder="36:58" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="run-dur" placeholder="36:58" oninput="autoColon(this)"></div>
             <div class="inp-group"><div class="ig-label">페이스<span class="ig-unit">/km</span></div><input type="text" inputmode="numeric" class="inp" id="run-pace" placeholder="05:31" oninput="autoColon(this)"></div>
             <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" inputmode="numeric" class="inp" id="run-hr" placeholder="156"></div>
             <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="run-cal" placeholder="545"></div>
@@ -655,7 +656,7 @@ select.inp{cursor:pointer;font-size:14px;}
           <div class="card-title">🚶 걷기 기록 <div class="ct-line"></div></div>
           <div class="inp-grid">
             <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km</span></div><input type="number" inputmode="decimal" class="inp" id="walk-dist" placeholder="0.00" step="0.01"></div>
-            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="walk-dur" placeholder="30:00" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="walk-dur" placeholder="30:00" oninput="autoColon(this)"></div>
             <div class="inp-group"><div class="ig-label">페이스<span class="ig-unit">/km</span></div><input type="text" inputmode="numeric" class="inp" id="walk-pace" placeholder="10:00" oninput="autoColon(this)"></div>
             <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" inputmode="numeric" class="inp" id="walk-hr" placeholder="110"></div>
             <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="walk-cal" placeholder="150"></div>
@@ -681,13 +682,8 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="ex-section" id="exs-bw">
         <div class="card">
           <div class="card-title">💪 복합운동 <div class="ct-line"></div></div>
-          <!-- 즐겨찾기 루틴 -->
-          <div style="margin-bottom:12px;">
-            <div class="manual-nutri-title" style="margin-bottom:7px;"><span>⭐ 즐겨찾기 루틴</span><button class="mini-btn" onclick="saveCurrentRoutine()">현재 루틴 저장</button></div>
-            <div id="fav-ex-grid" style="display:flex;flex-wrap:wrap;gap:7px;"><span style="font-size:12px;color:var(--muted);">저장된 루틴 없음</span></div>
-          </div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">종목 선택 후 추가하세요</div>
-          <div class="exercise-chips" id="exercise-chips">
+          <div class="exercise-chips">
             <div class="ex-chip" data-ex="스쿼트" onclick="toggleExChip(this)">스쿼트</div>
             <div class="ex-chip" data-ex="윗몸일으키기" onclick="toggleExChip(this)">윗몸일으키기</div>
             <div class="ex-chip" data-ex="트위스트" onclick="toggleExChip(this)">트위스트</div>
@@ -699,6 +695,21 @@ select.inp{cursor:pointer;font-size:14px;}
         </div>
         <button class="save-btn primary" onclick="saveBW()">💪 복합운동 저장</button>
       </div>
+      <!-- 기타 운동 섹션 -->
+      <div class="ex-section" id="exs-other">
+        <div class="card">
+          <div class="card-title">➕ 기타 운동 <div class="ct-line"></div></div>
+          <div class="inp-grid">
+            <div class="inp-group full"><div class="ig-label">운동 종류<span class="ig-unit">직접 입력</span></div><input type="text" class="inp" id="other-name" placeholder="예: 수영, 등산, 줄넘기" style="font-size:13px;"></div>
+            <div class="inp-group"><div class="ig-label">시간<span class="ig-unit">h:mm:ss</span></div><input type="text" inputmode="numeric" class="inp" id="other-dur" placeholder="30:00" oninput="autoColon(this)"></div>
+            <div class="inp-group"><div class="ig-label">칼로리<span class="ig-unit">kcal</span></div><input type="number" inputmode="numeric" class="inp" id="other-cal" placeholder="200"></div>
+            <div class="inp-group"><div class="ig-label">심박수<span class="ig-unit">bpm</span></div><input type="number" inputmode="numeric" class="inp" id="other-hr" placeholder="130"></div>
+            <div class="inp-group"><div class="ig-label">거리<span class="ig-unit">km 선택</span></div><input type="number" inputmode="decimal" class="inp" id="other-dist" placeholder="0.00" step="0.01"></div>
+            <div class="inp-group"><div class="ig-label">메모<span class="ig-unit">선택</span></div><input type="text" class="inp" id="other-memo" placeholder="강도, 느낌 등" style="font-size:13px;"></div>
+          </div>
+        </div>
+        <button class="save-btn primary" onclick="saveOther()">➕ 기타 운동 저장</button>
+      </div>
       <div class="hist-card" style="margin-top:16px;">
         <div class="hc-header"><div class="hc-title">📋 운동 히스토리</div><div class="hc-count" id="ex-hist-count">0건</div></div>
         <div class="ex-hist-tabs" style="padding:12px 16px 0;">
@@ -706,6 +717,7 @@ select.inp{cursor:pointer;font-size:14px;}
           <button class="eht-btn" onclick="switchExHist('walk',this)">🚶 걷기</button>
           <button class="eht-btn" onclick="switchExHist('bike',this)">🚴 자전거</button>
           <button class="eht-btn" onclick="switchExHist('bodyweight',this)">💪 복합</button>
+          <button class="eht-btn" onclick="switchExHist('other',this)">➕ 기타</button>
         </div>
         <div class="hist-list" id="ex-hist-list" style="padding:8px 16px 16px;"></div>
       </div>
@@ -907,9 +919,6 @@ select.inp{cursor:pointer;font-size:14px;}
 const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0eDJa-fT_CCD15hq0vPooyIFZIXyYuqSA8Zwq0_pHVoKgA/exec';
 async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
-async function sheetLoadFavs(){try{const r=await fetch(`${GAS_URL}?type=favorites`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('즐겨찾기 불러오기 실패',e);}return null;}
-async function sheetSaveFav(fav){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favorite',...fav}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 저장실패',e);}}
-async function sheetDeleteFav(favType,id){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favDelete',favType,id}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 삭제실패',e);}}
 function parseSheetData(raw){
   // GAS가 이미 KST 기준 'yyyy-MM-dd' / 'HH:mm' 문자열로 반환하므로
   // 추가 변환 없이 그대로 사용. 빈값/null 방어만 처리.
@@ -952,7 +961,7 @@ function parseSheetData(raw){
 
   // ── 운동: 날짜|시간|종류|세부내용|시간(분)|거리(km)|페이스|심박수|칼로리
   // 복합운동은 세부내용을 파싱해서 exercises 배열로 변환
-  const exRecs={run:[],walk:[],bike:[],bodyweight:[]};
+  const exRecs={run:[],walk:[],bike:[],bodyweight:[],other:[]};
   (raw.exercise||[]).forEach(r=>{
     const date=safeDate(r['날짜']);
     const time=safeTime(r['시간']);
@@ -1008,6 +1017,17 @@ function parseSheetData(raw){
       }
     } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
       exRecs.walk.push(parseRunLike());
+    } else {
+      // 기타 운동 (수영, 등산 등)
+      exRecs.other.push({
+        date, time,
+        name: typeRaw||'기타',
+        duration: String(r['시간(분)']||''),
+        cal: safeInt(r['칼로리']),
+        hr: safeInt(r['심박수']),
+        distance: safeFloat(r['거리(km)']),
+        memo: String(r['세부내용']||'')
+      });
     }
   });
 
@@ -1033,22 +1053,18 @@ function parseSheetData(raw){
 
 async function syncFromSheet(){
   showToast('☁️ 동기화 중...');
-  const [raw, favRaw] = await Promise.all([sheetLoad(), sheetLoadFavs()]);
+  const raw=await sheetLoad();
   if(!raw){showToast('⚠️ 동기화 실패. 네트워크를 확인해주세요.');return;}
   const{bodyRecs:br,mealRecs:mr,exRecs:er,sleepRecs:sr}=parseSheetData(raw);
-  // 수면: 날짜+타입 기준 중복 제거
+  // 수면: 날짜+타입 기준 중복 제거 (같은 날짜+타입이면 마지막 것만 유지)
   const srDeduped=[];const srSeen=new Set();
   [...sr].reverse().forEach(r=>{const key=`${r.date}_${r.sleepType||'밤잠'}`;if(!srSeen.has(key)){srSeen.add(key);srDeduped.unshift(r);}});
+  // 시트 데이터로 전면 교체 (시트가 정보 원본)
   localStorage.setItem('bodyRecords',JSON.stringify(br));
   localStorage.setItem('mealRecords',JSON.stringify(mr));
   localStorage.setItem('exerciseRecords',JSON.stringify(er));
   localStorage.setItem('sleepRecords',JSON.stringify(srDeduped));
   bodyRecs=br; mealRecs=mr; exRecs=er; sleepRecs=srDeduped;
-  // 즐겨찾기 동기화
-  if(favRaw){
-    if(favRaw.meal){localStorage.setItem('favoriteMeals',JSON.stringify(favRaw.meal));renderFoodFavorites();}
-    if(favRaw.exercise){localStorage.setItem('favoriteExercises',JSON.stringify(favRaw.exercise));renderExFavorites();}
-  }
   showPrevHints();showLastBodyRec();renderBodyHist();
   renderExHist(currentExHistType);
   updateMealSummary();renderMealHist();
@@ -1121,7 +1137,7 @@ let currentPeriod=7,currentDashEx='run';
 function renderDashboard(){
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
   const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
-  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   const latest=br[br.length-1];const prev=br[br.length-2];
   function setV(id,val,unit=''){document.getElementById(id).innerHTML=val!=null?`${val}<span class="sc-unit">${unit}</span>`:`—<span class="sc-unit">${unit}</span>`;}
   function setC(id,cur,prv,bad){if(cur==null||prv==null)return;const d=(cur-prv).toFixed(1);const up=d>0;const cls=(bad?up:!up)?'up':'dn';const arr=up?'▲':'▼';document.getElementById(id).innerHTML=`<span class="${cls}">${arr}${Math.abs(d)}</span> 전일`;}
@@ -1216,14 +1232,15 @@ function renderBodyCharts(br,days){
   chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#ffd740');
 }
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
-// ── 대시보드 오늘 운동 전체 통합 표시 (탭 없음)
+// ── 대시보드 오늘 운동 전체 통합 표시 (탭 없음, other 포함)
 function renderDashExAll(er){
   const el=document.getElementById('d-ex-list-all');if(!el)return;
   const runs=(er.run||[]).filter(r=>r.date===today);
   const walks=(er.walk||[]).filter(r=>r.date===today);
   const bikes=(er.bike||[]).filter(r=>r.date===today);
   const bws=(er.bodyweight||[]).filter(r=>r.date===today);
-  const total=runs.length+walks.length+bikes.length+bws.length;
+  const others=(er.other||[]).filter(r=>r.date===today);
+  const total=runs.length+walks.length+bikes.length+bws.length+others.length;
   document.getElementById('d-ex-meta').textContent=total?`오늘 ${total}회`:'';
   if(!total){el.innerHTML='<div class="empty-state" style="padding:16px 18px;">오늘 운동 기록 없음</div>';return;}
   let html='';
@@ -1231,6 +1248,7 @@ function renderDashExAll(er){
   walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
   bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목</div><div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div></div>`;});
+  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
   el.innerHTML=html;
 }
 // ══ 기록 히스토리 패널 ══
@@ -1280,7 +1298,7 @@ function renderHistPanel(){
   if(!el)return;
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
   const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
-  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
   const durToMin=(v)=>{
     if(!v)return 0;
@@ -1563,12 +1581,12 @@ function renderExHistTable(er){
 }
 function switchExSub(type){
   currentExHistSub=type;exSortKey='date';exSortAsc=false;
-  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   renderExHistTable(er);
 }
 function sortEx(key){
   if(exSortKey===key)exSortAsc=!exSortAsc;else{exSortKey=key;exSortAsc=false;}
-  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   renderExHistTable(er);
 }
 function sortExData(data,type){
@@ -1689,16 +1707,28 @@ function editBodyRec(i){
 }
 
 // ══ 운동 ══
-let exRecs=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+let exRecs=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
 if(!exRecs.walk)exRecs.walk=[];
 let currentExType='run',currentExHistType='run';
-function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));document.getElementById('exs-'+(type==='bodyweight'?'bw':type)).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight'].indexOf(type)]);}
+function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));const sectionId={run:'run',walk:'walk',bike:'bike',bodyweight:'bw',other:'other'}[type]||type;document.getElementById('exs-'+sectionId).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight','other'].indexOf(type)]);}
 function toggleExChip(el){el.classList.toggle('selected');document.getElementById('add-ex-btn').classList.toggle('show',document.querySelectorAll('.ex-chip.selected').length>0);}
 function addSelectedEx(){document.querySelectorAll('.ex-chip.selected').forEach(c=>{const n=c.dataset.ex;if(!document.querySelector(`[data-added="${n}"]`)){const div=document.createElement('div');div.className='added-ex-item';div.dataset.added=n;div.innerHTML=`<div class="aei-name">${n}</div><div class="aei-inputs"><input type="number" class="aei-inp" placeholder="15" min="1"><div class="aei-sep">회×</div><input type="number" class="aei-inp" placeholder="3" min="1"><div class="aei-sep">세트</div></div><button class="aei-x" onclick="this.parentElement.remove()">×</button>`;document.getElementById('added-exercises').appendChild(div);}c.classList.remove('selected');});document.getElementById('add-ex-btn').classList.remove('show');}
+// 시간 자동 포맷: 숫자 입력 → mm:ss 또는 h:mm:ss
+// 4자리: 3558 → 35:58 / 6자리: 10135 → 1:01:35
 function autoColon(el){
   let v=el.value.replace(/[^0-9]/g,'');
-  if(v.length>=4){el.value=v.slice(0,2)+':'+v.slice(2,4);}
-  else{el.value=v;}
+  if(v.length>=6){
+    // h:mm:ss
+    const h=parseInt(v.slice(0,v.length-4));
+    const mm=v.slice(v.length-4,v.length-2);
+    const ss=v.slice(v.length-2);
+    el.value=h+':'+mm+':'+ss;
+  } else if(v.length>=4){
+    // mm:ss
+    el.value=v.slice(0,v.length-2)+':'+v.slice(v.length-2);
+  } else {
+    el.value=v;
+  }
 }
 function saveRun(){
   const dist=document.getElementById('run-dist').value;const dur=document.getElementById('run-dur').value;
@@ -1726,6 +1756,30 @@ async function saveWalk(){
   renderExHist('walk');showToast('🚶 걷기 저장됐어요!');
 }
 
+function saveOther(){
+  const name=(document.getElementById('other-name').value||'').trim();
+  const dur=document.getElementById('other-dur').value;
+  if(!name){showToast('⚠️ 운동 종류를 입력해주세요');return;}
+  if(!dur&&!document.getElementById('other-cal').value){showToast('⚠️ 시간 또는 칼로리를 입력해주세요');return;}
+  const r={
+    date:document.getElementById('ex-date').value,
+    time:document.getElementById('ex-time').value,
+    name,
+    duration:dur||null,
+    cal:parseInt(document.getElementById('other-cal').value)||null,
+    hr:parseInt(document.getElementById('other-hr').value)||null,
+    distance:parseFloat(document.getElementById('other-dist').value)||null,
+    memo:document.getElementById('other-memo').value||null
+  };
+  if(!exRecs.other)exRecs.other=[];
+  exRecs.other.push(r);
+  exRecs.other.sort((a,b)=>a.date.localeCompare(b.date));
+  localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
+  sheetSave({type:'exercise',category:'other',...r});
+  ['other-name','other-dur','other-cal','other-hr','other-dist','other-memo'].forEach(id=>document.getElementById(id).value='');
+  renderExHist('other');
+  showToast('➕ 기타 운동 저장됐어요!');
+}
 function saveBike(){
   const dur=document.getElementById('bike-dur').value;if(!dur){showToast('⚠️ 시간 입력');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,duration:parseInt(dur),cal:parseInt(document.getElementById('bike-cal').value)||null,hr:parseInt(document.getElementById('bike-hr').value)||null,memo:document.getElementById('bike-memo').value||null};
@@ -1748,11 +1802,12 @@ function saveBW(){
 function switchExHist(type,btn){currentExHistType=type;document.querySelectorAll('.eht-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderExHist(type);}
 function renderExHist(type){
   const list=document.getElementById('ex-hist-list');const data=[...(exRecs[type]||[])].reverse();
-  const total=(exRecs.run?.length||0)+(exRecs.walk?.length||0)+(exRecs.bike?.length||0)+(exRecs.bodyweight?.length||0);
+  const total=(exRecs.run?.length||0)+(exRecs.walk?.length||0)+(exRecs.bike?.length||0)+(exRecs.bodyweight?.length||0)+(exRecs.other?.length||0);
   document.getElementById('ex-hist-count').textContent=`총 ${total}회`;
   if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
   if(type==='run'||type==='walk')list.innerHTML=data.map((r,ri)=>{const i=exRecs[type].length-1-ri;const isWalk=type==='walk';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:${isWalk?'var(--skeletal)':'var(--run)'}">${isWalk?'🚶':'🏃'} ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('${type}',${i})">×</button></div>`;}).join('');
   else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.duration}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
+  else if(type==='other')list.innerHTML=data.map((r,ri)=>{const i=exRecs.other.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.distance?'· '+r.distance+'km':''} ${r.memo?'· '+r.memo:''}</div></div><button class="hi-del" onclick="delEx('other',${i})">×</button></div>`;}).join('');
   else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises.length}종목</div><div class="hi-sub">${r.exercises.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
 }
 function delEx(type,i){if(!confirm('삭제?'))return;exRecs[type].splice(i,1);localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));renderExHist(type);}
@@ -1888,7 +1943,6 @@ function deleteFavoriteMeal(i){
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');
   const f=favs[i];if(!f)return;
   if(!confirm(`즐겨찾기에서 '${f.foodText||'음식'}'을 삭제할까요?`))return;
-  if(f.id) sheetDeleteFav('meal', f.id);
   favs.splice(i,1);
   localStorage.setItem('favoriteMeals',JSON.stringify(favs));
   renderFoodFavorites();
@@ -1920,66 +1974,19 @@ function applyManualNutrition(){
 }
 function saveCurrentFavorite(){
   if(!pendingAnalysis){applyManualNutrition();if(!pendingAnalysis)return;}
+  // foods 배열 기준으로 표시명 재구성 (중복 방지)
+  const foods=pendingAnalysis.foods||[];
+  const displayName=foods.length
+    ? foods.map(f=>f.name).filter(Boolean).join(', ')
+    : pendingAnalysis.foodText||'음식';
+  const item={foodText:displayName,foods,total:pendingAnalysis.total,savedAt:Date.now()};
   const favs=JSON.parse(localStorage.getItem('favoriteMeals')||'[]');
-  const id='mf_'+Date.now();
-  const item={id,favType:'meal',foodText:pendingAnalysis.foodText,foods:pendingAnalysis.foods,total:pendingAnalysis.total,savedAt:Date.now()};
   favs.unshift(item);
   localStorage.setItem('favoriteMeals',JSON.stringify(favs.slice(0,30)));
   renderFoodFavorites();
-  sheetSaveFav(item);
   showToast('⭐ 즐겨찾기에 저장했어요');
 }
-
-// ── 복합운동 즐겨찾기(루틴) ──
-function renderExFavorites(){
-  const el=document.getElementById('fav-ex-grid');if(!el)return;
-  const favs=JSON.parse(localStorage.getItem('favoriteExercises')||'[]');
-  if(!favs.length){el.innerHTML='<span style="font-size:12px;color:var(--muted);">저장된 루틴 없음</span>';return;}
-  el.innerHTML=favs.map((f,i)=>`<button class="fav-food-chip" onclick="useExFavorite(${i})"><span>${esc(f.routineName||'루틴')}</span><span class="fav-food-x" onclick="event.stopPropagation();deleteExFavorite(${i})" title="삭제">×</span></button>`).join('');
-}
-function saveCurrentRoutine(){
-  const items=document.querySelectorAll('.added-ex-item');
-  if(!items.length){showToast('⚠️ 먼저 종목을 추가해주세요');return;}
-  const exercises=[...items].map(el=>({
-    name:el.dataset.added,
-    reps:parseInt(el.querySelectorAll('.aei-inp')[0]?.value)||null,
-    sets:parseInt(el.querySelectorAll('.aei-inp')[1]?.value)||null
-  }));
-  const routineName=exercises.map(e=>e.name).join('+');
-  const id='ef_'+Date.now();
-  const item={id,favType:'exercise',routineName,exercises,savedAt:Date.now()};
-  const favs=JSON.parse(localStorage.getItem('favoriteExercises')||'[]');
-  favs.unshift(item);
-  localStorage.setItem('favoriteExercises',JSON.stringify(favs.slice(0,20)));
-  renderExFavorites();
-  sheetSaveFav(item);
-  showToast('⭐ 루틴이 저장됐어요');
-}
-function useExFavorite(i){
-  const favs=JSON.parse(localStorage.getItem('favoriteExercises')||'[]');
-  const f=favs[i];if(!f)return;
-  document.getElementById('added-exercises').innerHTML='';
-  (f.exercises||[]).forEach(e=>{
-    if(!document.querySelector(`[data-added="${e.name}"]`)){
-      const div=document.createElement('div');
-      div.className='added-ex-item';div.dataset.added=e.name;
-      div.innerHTML=`<div class="aei-name">${e.name}</div><div class="aei-inputs"><input type="number" inputmode="numeric" class="aei-inp" placeholder="15" min="1" value="${e.reps||''}"><div class="aei-sep">회×</div><input type="number" inputmode="numeric" class="aei-inp" placeholder="3" min="1" value="${e.sets||''}"><div class="aei-sep">세트</div></div><button class="aei-x" onclick="this.parentElement.remove()">×</button>`;
-      document.getElementById('added-exercises').appendChild(div);
-    }
-  });
-  showToast(`⭐ '${f.routineName}' 루틴을 불러왔어요`);
-}
-function deleteExFavorite(i){
-  const favs=JSON.parse(localStorage.getItem('favoriteExercises')||'[]');
-  const f=favs[i];if(!f)return;
-  if(!confirm(`'${f.routineName||'루틴'}'을 삭제할까요?`))return;
-  if(f.id) sheetDeleteFav('exercise', f.id);
-  favs.splice(i,1);
-  localStorage.setItem('favoriteExercises',JSON.stringify(favs));
-  renderExFavorites();
-  showToast('🗑️ 루틴을 삭제했어요');
-}
-function getTodayExerciseCalories(er){return ['run','walk','bike','bodyweight'].reduce((sum,type)=>sum+(er[type]||[]).filter(r=>r.date===today).reduce((a,r)=>a+(r.cal||0),0),0);}
+function getTodayExerciseCalories(er){return ['run','walk','bike','bodyweight','other'].reduce((sum,type)=>sum+(er[type]||[]).filter(r=>r.date===today).reduce((a,r)=>a+(r.cal||0),0),0);}
 function renderCalorieBalance(latest,mealTotals,er){
   const el=document.getElementById('d-cal-balance');if(!el)return;
   const bmr=Math.round(latest?.bmr||0);
@@ -2022,7 +2029,7 @@ function renderBodyHistTable(br){
   el.innerHTML=data.map(r=>`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main">⚖️ ${r.weight||'—'}kg</div><div class="hi-sub">골격근량 ${r.skeletal||'—'}kg · 체지방량 ${r.fatMass||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div></div>`).join('');
 }
 function generateDailyReport(){
-  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
   const latest=br[br.length-1];const tm=mr.filter(m=>m.date===today);const meal=tm.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),protein:a.protein+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0),fat:a.fat+(m.total?.fat||0)}),{cal:0,protein:0,carb:0,fat:0});
   const exCal=getTodayExerciseCalories(er);const bmr=Math.round(latest?.bmr||0);const net=Math.round(meal.cal-(bmr+exCal));const lastSleep=sr[sr.length-1];
   const box=document.getElementById('daily-report-box');box.style.display='block';
@@ -2049,7 +2056,7 @@ const CHAT_SYSTEM=`당신은 4명의 전문가로 구성된 통합 헬스 코치
 function loadChatContext(){
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
   const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
-  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   const tm=mr.filter(m=>m.date===today);const latest=br[br.length-1];
   if(latest){document.getElementById('ctx-body-val').textContent=`${latest.weight||'—'}kg`;document.getElementById('ctx-body-val').classList.remove('no-data');document.getElementById('ctx-body-sub').textContent=`체지방 ${latest.fatRate||'—'}%`;}
   const tc=Math.round(tm.reduce((a,m)=>a+(m.total?.kcal||0),0));
@@ -2074,7 +2081,7 @@ function loadChatContext(){
   }
 }
 function buildChatContext(){
-  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[]}');
+  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   const latest=br[br.length-1];const tm=mr.filter(m=>m.date===today);
   const tRun=(er.run||[]).filter(r=>r.date===today);const tWalk=(er.walk||[]).filter(r=>r.date===today);const tBike=(er.bike||[]).filter(r=>r.date===today);const tBW=(er.bodyweight||[]).filter(r=>r.date===today);
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
@@ -2483,7 +2490,6 @@ renderMealHist();
 renderSleepHist();
 renderDashboard();
 applyDashLayout();
-renderExFavorites();
 syncFromSheet();
 </script>
 </body>
