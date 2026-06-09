@@ -443,6 +443,14 @@ select.inp{cursor:pointer;font-size:14px;}
 .ex-subtab-dash .est-label{display:block;font-size:11px;line-height:1.15;white-space:nowrap;word-break:keep-all;}
 @media(max-width:420px){.ex-subtab-dash{min-width:60px;padding:7px 9px!important}.ex-subtab-dash .est-label{font-size:10px;}}
 
+
+/* ══ v1.5.4 추가: 운동 탭 하단 운동 히스토리 탭 아이콘/텍스트 2줄 분리 ══ */
+.ex-hist-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.eht-btn{display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;min-width:70px!important;min-height:54px!important;padding:8px 12px!important;line-height:1.15!important;white-space:normal!important;word-break:keep-all!important;text-align:center!important;border-radius:20px;}
+.eht-btn .eht-icon{display:block!important;font-size:16px!important;line-height:1!important;}
+.eht-btn .eht-label{display:block!important;font-size:11px!important;line-height:1.15!important;white-space:nowrap!important;word-break:keep-all!important;}
+@media(max-width:420px){.eht-btn{min-width:60px!important;min-height:52px!important;padding:7px 9px!important}.eht-btn .eht-label{font-size:10px!important;}}
+
 </style>
 </head>
 <body>
@@ -453,7 +461,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.3</span>
+  <span class="nav-ver">v1.5.4</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -732,11 +740,11 @@ select.inp{cursor:pointer;font-size:14px;}
       <div class="hist-card" style="margin-top:16px;">
         <div class="hc-header"><div class="hc-title">📋 운동 히스토리</div><div class="hc-count" id="ex-hist-count">0건</div></div>
         <div class="ex-hist-tabs" style="padding:12px 16px 0;">
-          <button class="eht-btn active" onclick="switchExHist('run',this)">🏃 런닝</button>
-          <button class="eht-btn" onclick="switchExHist('walk',this)">🚶 걷기</button>
-          <button class="eht-btn" onclick="switchExHist('bike',this)">🚴 자전거</button>
-          <button class="eht-btn" onclick="switchExHist('bodyweight',this)">💪 복합</button>
-          <button class="eht-btn" onclick="switchExHist('other',this)">➕ 기타</button>
+          <button class="eht-btn active" onclick="switchExHist('run',this)"><span class="eht-icon">🏃</span><span class="eht-label">런닝</span></button>
+          <button class="eht-btn" onclick="switchExHist('walk',this)"><span class="eht-icon">🚶</span><span class="eht-label">걷기</span></button>
+          <button class="eht-btn" onclick="switchExHist('bike',this)"><span class="eht-icon">🚴</span><span class="eht-label">자전거</span></button>
+          <button class="eht-btn" onclick="switchExHist('bodyweight',this)"><span class="eht-icon">💪</span><span class="eht-label">복합</span></button>
+          <button class="eht-btn" onclick="switchExHist('other',this)"><span class="eht-icon">➕</span><span class="eht-label">기타</span></button>
         </div>
         <div class="hist-list" id="ex-hist-list" style="padding:8px 16px 16px;"></div>
       </div>
