@@ -508,6 +508,12 @@ select.inp{cursor:pointer;font-size:14px;}
   #page-ex .type-tab .tt-label{font-size:8.5px!important;letter-spacing:-.7px!important;}
 }
 
+
+/* ══ v1.6.0 추가: 대시보드 운동 날짜/PB 걷기/히스토리 날짜 헤더 정리 ══ */
+.dash-ex-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin:2px 0 4px;}
+.dash-ex-day-label{padding:10px 18px 4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);}
+@media(max-width:420px){#d-pb-grid [data-pb-walk-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}}
+
 </style>
 </head>
 <body>
@@ -518,7 +524,7 @@ select.inp{cursor:pointer;font-size:14px;}
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.5.9</span>
+  <span class="nav-ver">v1.6.0</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1394,12 +1400,13 @@ function renderDashExAll(er){
   const total=runs.length+walks.length+bikes.length+bws.length+others.length;
   document.getElementById('d-ex-meta').textContent=total?`오늘 ${total}회`:'';
   if(!total){el.innerHTML='<div class="empty-state" style="padding:16px 18px;">오늘 운동 기록 없음</div>';return;}
-  let html='';
-  runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div><div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
-  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목 ${r.duration?'⏱'+r.duration:''}</div><div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
+  let html=`<div class="dash-ex-day-label">${today}</div>`;
+  const dline=r=>`<div class="dash-ex-date">${r.date||today}</div>`;
+  runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div>${dline(r)}<div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div>${dline(r)}<div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 자전거 ${r.duration||'—'}분</div>${dline(r)}<div class="hi-sub">${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
+  bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 복합운동 ${r.exercises?.length||0}종목 ${r.duration?'⏱'+r.duration:''}</div>${dline(r)}<div class="hi-sub">${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}`).join(' · ')} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div>${dline(r)}<div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
   el.innerHTML=html;
 }
 // ══ 기록 히스토리 패널 ══
@@ -1519,12 +1526,8 @@ function renderHistPanel(){
       const exHtml=exLines.length?section('🏋️','운동',`${exCal?exCal+'kcal':''}${exMin?` · ${fmtMin(exMin)}`:''}${!exCal&&!exMin?exLines.length+'건':''}`,exLines.join('<br>'),'var(--run)'):'';
       const bodyHtml=bodies.length?section('⚖️','체성분',body?.time?`기록 ${body.time}`:'',bodies.map(b=>`체중 <span style="color:var(--weight);font-weight:700;">${b.weight||'—'}kg</span> · 골격근량 <span style="color:var(--skeletal);font-weight:700;">${b.skeletal||'—'}kg</span> · 체지방량 <span style="color:var(--fat-c);font-weight:700;">${b.fatMass||'—'}kg</span> · 체수분 ${b.water||'—'}kg · 체지방률 <span style="color:var(--fat-c);font-weight:700;">${b.fatRate||'—'}%</span> · BMI <span style="color:var(--fatrate);font-weight:700;">${b.bmi||'—'}</span>${b.timing?` <span style="color:var(--muted);">(${b.timing})</span>`:''}`).join('<br>'),'var(--bio)'):'';
       return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
-        <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);margin-right:auto;">${date}</span>
-          ${body?`<span class="hist-summary-chip" style="color:var(--bio);"><span class="hsc-icon">⚖️</span><span class="hsc-text">${body.weight||'—'}kg</span></span>`:''}
-          ${sleepTotal?`<span class="hist-summary-chip" style="color:var(--fatrate);"><span class="hsc-icon">😴</span><span class="hsc-text">${sleepTotal.toFixed(1)}h</span></span>`:''}
-          ${totalCal?`<span class="hist-summary-chip" style="color:var(--cal);"><span class="hsc-icon">🔥</span><span class="hsc-text">${totalCal}kcal</span></span>`:''}
-          ${exCal||exMin?`<span class="hist-summary-chip" style="color:var(--run);"><span class="hsc-icon">🏋️</span><span class="hsc-text">${exCal?exCal+'kcal':''}${exMin?` · ${fmtMin(exMin)}`:''}</span></span>`:''}
+        <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;border-bottom:1px solid var(--border);">
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
         </div>
         <div style="padding:6px 14px 10px;display:flex;flex-direction:column;">
           ${sleepHtml}${mealHtml}${exHtml}${bodyHtml}
@@ -1824,6 +1827,21 @@ function renderAllPBs(er){
       <div class="pb-card"><div class="pb-card-label">최고 소모</div><div class="pb-card-val">${isFinite(bestCal)&&bestCal>0?bestCal:'—'}</div><div class="pb-card-sub">kcal</div></div>
     </div>`;
   }
+  // 걷기 PB
+  if(walks.length){
+    const maxDist=Math.max(...walks.filter(r=>r.distance).map(r=>parseFloat(r.distance)));
+    const bestPace=walks.filter(r=>r.pace).sort((a,b)=>toS(a.pace)-toS(b.pace))[0];
+    const totalDist=walks.reduce((a,r)=>a+(parseFloat(r.distance)||0),0);
+    const bestCal=Math.max(...walks.filter(r=>r.cal).map(r=>r.cal));
+    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--skeletal);font-family:'DM Mono',monospace;margin-bottom:8px;">🚶 걷기</div>
+    <div data-pb-walk-grid style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+      <div class="pb-card"><div class="pb-card-label">최장 거리</div><div class="pb-card-val">${isFinite(maxDist)?maxDist.toFixed(2):'—'}</div><div class="pb-card-sub">km</div></div>
+      <div class="pb-card"><div class="pb-card-label">최고 페이스</div><div class="pb-card-val">${bestPace?.pace||'—'}</div><div class="pb-card-sub">/km</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 거리</div><div class="pb-card-val">${totalDist.toFixed(1)}</div><div class="pb-card-sub">km · ${walks.length}회</div></div>
+      <div class="pb-card"><div class="pb-card-label">최고 소모</div><div class="pb-card-val">${isFinite(bestCal)&&bestCal>0?bestCal:'—'}</div><div class="pb-card-sub">kcal</div></div>
+    </div>`;
+  }
+  
   // 자전거 PB
   if(bikes.length){
     const maxDur=Math.max(...bikes.filter(r=>r.duration).map(r=>r.duration));
