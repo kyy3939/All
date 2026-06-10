@@ -520,6 +520,7 @@ select.inp{cursor:pointer;font-size:14px;}
 @media(max-width:420px){#d-pb-grid [data-pb-walk-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}}
 
 /* ══ v1.8.0 추가: 시간입력 UX / 자전거 통일 / 운동 히스토리 통일 / 대시보드 요약카드 ══ */
+/* ══ v1.8.1 추가: 복합운동 시간 누락 버그 수정 / duration 표시 전면 통일 ══ */
 input[type="date"].inp {
   cursor:pointer;
   position:relative;
@@ -554,7 +555,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.8.0</span>
+  <span class="nav-ver">v1.8.1</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1507,8 +1508,8 @@ function renderDashExAll(er){
       <div class="tes-card"><div class="tes-card-label">총 소모</div><div class="tes-card-val" style="color:var(--cal)">${totalCal||'—'}</div><div class="tes-card-sub">kcal</div></div>`;
   }
   let html=``;
-  runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
-  walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  runs.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--run)">🏃 런닝 ${r.distance||'—'}km ${isPBRun(r,er.run)?'<span class="pb-badge">PB</span>':''}</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
+  walks.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--skeletal)">🚶 걷기 ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   bikes.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.distance?r.distance+'km':'자전거'}</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div></div>`;});
   bws.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises?.length||0}종목</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration)+' ':''}${(r.exercises||[]).map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')}${r.cal?' · 🔥'+r.cal+'kcal':''}</div></div></div>`;});
   others.forEach(r=>{html+=`<div class="hi-item"><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.memo?'· '+r.memo:''}</div></div></div>`;});
@@ -1611,8 +1612,9 @@ function renderHistPanel(){
       const runMin=runs.reduce((a,r)=>a+durToMin(r.duration),0);
       const walkMin=walks.reduce((a,r)=>a+durToMin(r.duration),0);
       const bikeMin=bikes.reduce((a,r)=>a+durToMin(r.duration),0);
+      const bwMin=bws.reduce((a,r)=>a+durToMin(r.duration),0);
       const otherMin=others.reduce((a,r)=>a+durToMin(r.duration),0);
-      const exMin=runMin+walkMin+bikeMin+otherMin;
+      const exMin=runMin+walkMin+bikeMin+bwMin+otherMin;
       const section=(icon,title,meta,bodyHtml,color)=>`<div style="padding:7px 0;border-top:1px dashed var(--border);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
           <span class="hist-sec-title" style="color:${color};"><span class="hst-icon">${icon}</span><span class="hst-text">${title}</span></span>
@@ -1623,11 +1625,11 @@ function renderHistPanel(){
       const sleepHtml=sleeps.length?section('😴','수면',`총 ${sleepTotal.toFixed(1)}h`,sleeps.map(r=>`취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'} <span style="color:var(--fatrate);font-weight:700;">${r.durationHours||'—'}h</span>${r.quality?` · 품질${r.quality}점`:''}`).join('<br>'),'var(--fatrate)'):'';
       const mealHtml=meals.length?section('🥗','식사',`총 ${totalCal}kcal · 단${totalProt}g · 탄${totalCarb}g · 지${totalFat}g`,meals.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<span class="meal-time-title">${m.time||''}</span> <span class="meal-badge badge-${m.mealType}">${m.mealType}</span><br><span style="display:inline-block;margin:4px 0 2px;">${esc(m.foodText||'')}</span><br><span style="color:var(--cal);font-family:'DM Mono',monospace;">🔥${m.total?.kcal||0}kcal · 단${m.total?.protein||0}g · 탄${m.total?.carb||0}g · 지${m.total?.fat||0}g</span>`).join('<div style="height:8px"></div>'),'var(--cal)'):'';
       const exLines=[
-        ...runs.map(r=>`🏃 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
-        ...walks.map(r=>`🚶 ${r.distance||'—'}km ${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
+        ...runs.map(r=>`🏃 ${r.distance||'—'}km ${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
+        ...walks.map(r=>`🚶 ${r.distance||'—'}km ${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
         ...bikes.map(r=>`🚴 ${r.distance?r.distance+'km ':''}${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}`),
         ...bws.map(r=>`💪 ${r.exercises?.length||0}종목${r.duration?' ⏱'+fmtDurStr(r.duration):''} ${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')||''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
-        ...others.map(r=>`➕ ${r.name||'기타'} ${r.duration?'⏱'+r.duration:''} ${r.distance?'· '+r.distance+'km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.memo?'· '+esc(r.memo):''}`)
+        ...others.map(r=>`➕ ${r.name||'기타'} ${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.distance?'· '+r.distance+'km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.memo?'· '+esc(r.memo):''}`)
       ];
       const exHtml=exLines.length?section('🏋️','운동',`${exCal?exCal+'kcal':''}${exMin?` · ${fmtMin(exMin)}`:''}${!exCal&&!exMin?exLines.length+'건':''}`,exLines.join('<br>'),'var(--run)'):'';
       const bodyHtml=bodies.length?section('⚖️','체성분',body?.time?`기록 ${body.time}`:'',bodies.map(b=>`체중 <span style="color:var(--weight);font-weight:700;">${b.weight||'—'}kg</span> · 골격근량 <span style="color:var(--skeletal);font-weight:700;">${b.skeletal||'—'}kg</span> · 체지방량 <span style="color:var(--fat-c);font-weight:700;">${b.fatMass||'—'}kg</span> · 체수분 ${b.water||'—'}kg · 체지방률 <span style="color:var(--fat-c);font-weight:700;">${b.fatRate||'—'}%</span> · BMI <span style="color:var(--fatrate);font-weight:700;">${b.bmi||'—'}</span>${b.timing?` <span style="color:var(--muted);">(${b.timing})</span>`:''}`).join('<br>'),'var(--bio)'):'';
@@ -1711,15 +1713,25 @@ function histDurToMin(v){
 }
 // duration 값을 읽기 좋은 문자열로 변환
 function fmtDurStr(v){
-  if(!v)return '';
-  if(typeof v==='number'){const h=Math.floor(v/60),m=v%60,s=0;return h?(m||s)?(s?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${h}:${String(m).padStart(2,'0')}:00`):`${h}:00:00`:String(v)+'분';}
-  const str=String(v);
-  // 이미 h:mm:ss 형식이면 그대로
+  // duration 값을 읽기 좋은 문자열로 변환
+  // 입력: number(분), "H:MM:SS", "MM:SS", "N분", "N" 등 → 출력: "H:MM:SS" or "MM:SS" or "N분"
+  if(!v&&v!==0)return '';
+  if(typeof v==='number'){
+    if(v===0)return '0분';
+    const h=Math.floor(v/60),m=Math.round(v%60);
+    return h?`${h}:${String(m).padStart(2,'0')}:00`:`${m}분`;
+  }
+  const str=String(v).trim();
+  if(!str)return '';
   const parts=str.split(':');
-  if(parts.length===3)return str;
-  if(parts.length===2)return str;
-  // 숫자만 있으면 분으로 처리
-  const n=parseFloat(str);return Number.isFinite(n)&&n>0?n+'분':str;
+  if(parts.length===3)return str;  // H:MM:SS 그대로
+  if(parts.length===2)return str;  // MM:SS 그대로
+  // "N분" 형식
+  if(str.endsWith('분')){const n=parseFloat(str);return Number.isFinite(n)&&n>0?(n>=60?`${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,'0')}:00`:`${Math.round(n)}분`):str;}
+  // 순수 숫자 → 분으로 처리
+  const n=parseFloat(str);
+  if(Number.isFinite(n)&&n>0)return n>=60?`${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,'0')}:00`:`${Math.round(n)}분`;
+  return str;
 }
 function histFmtMin(min){
   min=Math.round(min||0);
@@ -2198,9 +2210,9 @@ function renderExHist(type){
   const total=(exRecs.run?.length||0)+(exRecs.walk?.length||0)+(exRecs.bike?.length||0)+(exRecs.bodyweight?.length||0)+(exRecs.other?.length||0);
   document.getElementById('ex-hist-count').textContent=`총 ${total}회`;
   if(!data.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
-  if(type==='run'||type==='walk')list.innerHTML=data.map((r,ri)=>{const i=exRecs[type].length-1-ri;const isWalk=type==='walk';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:${isWalk?'var(--skeletal)':'var(--run)'}">${isWalk?'🚶':'🏃'} ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('${type}',${i})">×</button></div>`;}).join('');
+  if(type==='run'||type==='walk')list.innerHTML=data.map((r,ri)=>{const i=exRecs[type].length-1-ri;const isWalk=type==='walk';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:${isWalk?'var(--skeletal)':'var(--run)'}">${isWalk?'🚶':'🏃'} ${r.distance||'—'}km</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+r.pace+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('${type}',${i})">×</button></div>`;}).join('');
   else if(type==='bike')list.innerHTML=data.map((r,ri)=>{const i=exRecs.bike.length-1-ri;const durStr=r.duration?fmtDurStr(r.duration):'—';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--coach)">🚴 ${r.distance?r.distance+'km':'자전거'}</div><div class="hi-sub">⏱${durStr} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''}</div></div><button class="hi-del" onclick="delEx('bike',${i})">×</button></div>`;}).join('');
-  else if(type==='other')list.innerHTML=data.map((r,ri)=>{const i=(exRecs.other||[]).length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+r.duration:''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.distance?'· '+r.distance+'km':''} ${r.memo?'· '+r.memo:''}</div></div><button class="hi-del" onclick="delEx('other',${i})">×</button></div>`;}).join('');
+  else if(type==='other')list.innerHTML=data.map((r,ri)=>{const i=(exRecs.other||[]).length-1-ri;return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--accent)">➕ ${r.name||'기타'}</div><div class="hi-sub">${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.cal?'· 🔥'+r.cal+'kcal':''} ${r.hr?'· ♥'+r.hr+'bpm':''} ${r.distance?'· '+r.distance+'km':''} ${r.memo?'· '+r.memo:''}</div></div><button class="hi-del" onclick="delEx('other',${i})">×</button></div>`;}).join('');
   else list.innerHTML=data.map((r,ri)=>{const i=exRecs.bodyweight.length-1-ri;const durStr=r.duration?fmtDurStr(r.duration):'';return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main" style="color:var(--cal)">💪 ${r.exercises?.length||0}종목</div><div class="hi-sub">${durStr?'⏱'+durStr+' ':''}${r.exercises?.map(e=>`${e.name} ${e.reps||'?'}×${e.sets||'?'}세트`).join(' · ')||''}${r.cal?' · 🔥'+r.cal+'kcal':''}</div></div><button class="hi-del" onclick="delEx('bodyweight',${i})">×</button></div>`;}).join('');
 }
 function delEx(type,i){if(!confirm('삭제?'))return;exRecs[type].splice(i,1);localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));renderExHist(type);}
