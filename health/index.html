@@ -724,7 +724,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.9.9</span>
+  <span class="nav-ver">v1.9.10</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1272,7 +1272,15 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
 
 <script>
 const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0eDJa-fT_CCD15hq0vPooyIFZIXyYuqSA8Zwq0_pHVoKgA/exec';
-async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
+async function sheetSave(p){try{
+  // 운동시간(duration)은 Google Sheets가 1:10:10을 시간값으로 자동 변환하지 않도록
+  // 전송할 때만 앞에 apostrophe(')를 붙인다. 시트 화면에는 apostrophe 없이 1:10:10으로 보인다.
+  const payload={...p};
+  if(payload.type==='exercise' && payload.duration && /^\d+:\d{2}(?::\d{2})?$/.test(String(payload.duration))){
+    payload.duration="'"+String(payload.duration).replace(/^'+/,'');
+  }
+  await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),mode:'no-cors'});
+}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 async function sheetLoadFavs(){try{const r=await fetch(`${GAS_URL}?type=favorites`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('즐겨찾기 불러오기 실패',e);}return null;}
 async function sheetSaveFav(fav){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favorite',...fav}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 저장실패',e);}}
@@ -1386,7 +1394,7 @@ function parseSheetData(raw){
     const parseRunLike=()=>({
         date,time,
         distance:safeFloat(r['거리(km)']),
-        duration:String(r['시간(분)']||''),
+        duration:normalizeDurationValue(r['시간(분)']),
         pace:String(r['페이스']||''),
         hr:safeInt(r['심박수']),
         cal:safeInt(r['칼로리']),
@@ -1401,7 +1409,7 @@ function parseSheetData(raw){
     } else if(type.includes('자전거')||type.toLowerCase().includes('bike')){
       exRecs.bike.push({
         date,time,
-        duration:safeInt(r['시간(분)']),
+        duration:normalizeDurationValue(r['시간(분)']),
         hr:safeInt(r['심박수']),
         cal:safeInt(r['칼로리']),
         memo:String(r['세부내용']||'')
@@ -1430,7 +1438,7 @@ function parseSheetData(raw){
     } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
       exRecs.walk.push(parseRunLike());
     } else if(typeRaw.trim()){
-      exRecs.other.push({date,time,name:typeRaw.trim(),duration:String(r['시간(분)']||''),cal:safeInt(r['칼로리']),hr:safeInt(r['심박수']),distance:safeFloat(r['거리(km)']),memo:String(r['세부내용']||'')});
+      exRecs.other.push({date,time,name:typeRaw.trim(),duration:normalizeDurationValue(r['시간(분)']),cal:safeInt(r['칼로리']),hr:safeInt(r['심박수']),distance:safeFloat(r['거리(km)']),memo:String(r['세부내용']||'')});
     }
   });
 
@@ -2171,35 +2179,19 @@ function renderHistPanel(){
 
 // ══ 운동 종목별 테이블 뷰 ══
 let exSortKey='date', exSortAsc=false, currentExHistSub='run';
-function histDurToMin(v){
-  if(!v)return 0;
-  if(typeof v==='number')return v;
-  const parts=String(v).split(':').map(Number);
-  if(parts.length===3 && !Number.isNaN(parts[0]))return parts[0]*60+parts[1]+(parts[2]||0)/60;
-  if(parts.length===2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
-  const n=parseFloat(v);return Number.isFinite(n)?n:0;
-}
+function histDurToMin(v){return durationToMinutes(v);}
 // duration 값을 읽기 좋은 문자열로 변환
 function fmtDurStr(v){
-  // duration 값을 읽기 좋은 문자열로 변환
-  // 입력: number(분), "H:MM:SS", "MM:SS", "N분", "N" 등 → 출력: "H:MM:SS" or "MM:SS" or "N분"
   if(!v&&v!==0)return '';
-  if(typeof v==='number'){
-    if(v===0)return '0분';
-    const h=Math.floor(v/60),m=Math.round(v%60);
-    return h?`${h}:${String(m).padStart(2,'0')}:00`:`${m}분`;
-  }
-  const str=String(v).trim();
-  if(!str)return '';
-  const parts=str.split(':');
-  if(parts.length===3)return str;  // H:MM:SS 그대로
-  if(parts.length===2)return str;  // MM:SS 그대로
-  // "N분" 형식
-  if(str.endsWith('분')){const n=parseFloat(str);return Number.isFinite(n)&&n>0?(n>=60?`${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,'0')}:00`:`${Math.round(n)}분`):str;}
-  // 순수 숫자 → 분으로 처리
-  const n=parseFloat(str);
-  if(Number.isFinite(n)&&n>0)return n>=60?`${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,'0')}:00`:`${Math.round(n)}분`;
-  return str;
+  const min=durationToMinutes(v);
+  if(!min)return String(v||'');
+  const totalSec=Math.round(min*60);
+  const h=Math.floor(totalSec/3600);
+  const m=Math.floor((totalSec%3600)/60);
+  const sec=totalSec%60;
+  if(h)return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  if(sec)return `${m}분 ${sec}초`;
+  return `${m}분`;
 }
 function histFmtMin(min){
   min=Math.round(min||0);
@@ -2609,8 +2601,55 @@ function autoColon(el){
     el.value=v;
   }
 }
+
+// 운동 시간은 앱 내부/구글시트 모두 1:10:10 같은 콜론 문자열로 유지한다.
+// Google Sheets 전송 시에는 sheetSave()에서만 apostrophe(')를 붙여 일반 텍스트로 강제한다.
+function durationToMinutes(v){
+  if(v===undefined||v===null||v==='')return 0;
+  if(typeof v==='number')return v;
+  let str=String(v).trim().replace(/^'+/,'');
+  if(!str)return 0;
+
+  // Google Sheets에서 시간값으로 넘어온 경우: Sat Dec 30 1899 01:10:10 ...
+  if(/GMT|UTC|KST|\d{4}/i.test(str) && /\d{1,2}:\d{2}/.test(str)){
+    const m=str.match(/(?:^|\s)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if(m){
+      const h=parseInt(m[1])||0, mm=parseInt(m[2])||0, ss=parseInt(m[3]||'0')||0;
+      if(/1899|1970|GMT|UTC|KST/i.test(str))return h*60+mm+ss/60;
+    }
+  }
+
+  const hm=str.match(/(?:(\d+(?:\.\d+)?)\s*시간)?\s*(?:(\d+(?:\.\d+)?)\s*분)?\s*(?:(\d+(?:\.\d+)?)\s*초)?/);
+  if(hm && (hm[1]||hm[2]||hm[3]))return (parseFloat(hm[1]||0)*60)+(parseFloat(hm[2]||0))+(parseFloat(hm[3]||0)/60);
+
+  const parts=str.split(':').map(x=>parseFloat(x));
+  if(parts.length===3 && parts.every(n=>Number.isFinite(n)))return parts[0]*60+parts[1]+parts[2]/60;
+  if(parts.length===2 && parts.every(n=>Number.isFinite(n)))return parts[0]+parts[1]/60;
+
+  const n=parseFloat(str);
+  return Number.isFinite(n)?n:0;
+}
+function durationToSheetText(v){
+  if(v===undefined||v===null)return '';
+  let str=String(v).trim().replace(/^'+/,'');
+  if(!str)return '';
+  // 사용자가 입력한 1:10:10 / 30:00 형태는 그대로 텍스트로 유지
+  if(/^\d+:\d{1,2}(?::\d{1,2})?$/.test(str)){
+    const parts=str.split(':').map(x=>parseInt(x,10)||0);
+    if(parts.length===3)return `${parts[0]}:${String(parts[1]).padStart(2,'0')}:${String(parts[2]).padStart(2,'0')}`;
+    if(parts.length===2)return `${parts[0]}:${String(parts[1]).padStart(2,'0')}`;
+  }
+  const min=durationToMinutes(str);
+  if(!min)return '';
+  const totalSec=Math.round(min*60);
+  const h=Math.floor(totalSec/3600), m=Math.floor((totalSec%3600)/60), sec=totalSec%60;
+  return h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${m}:${String(sec).padStart(2,'0')}`;
+}
+function normalizeDurationValue(v){
+  return durationToSheetText(v) || '';
+}
 function saveRun(){
-  const dist=document.getElementById('run-dist').value;const dur=document.getElementById('run-dur').value;
+  const dist=document.getElementById('run-dist').value;const dur=durationToSheetText(document.getElementById('run-dur').value);
   if(!dist&&!dur){showToast('⚠️ 거리 또는 시간 입력');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,pace:document.getElementById('run-pace').value||null,hr:parseInt(document.getElementById('run-hr').value)||null,cal:parseInt(document.getElementById('run-cal').value)||null,cadence:parseInt(document.getElementById('run-cadence').value)||null,steps:parseInt(document.getElementById('run-steps').value)||null,sweat:parseInt(document.getElementById('run-sweat').value)||null};
   exRecs.run.push(r);exRecs.run.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2621,7 +2660,7 @@ function saveRun(){
 }
 
 async function saveWalk(){
-  const dist=document.getElementById('walk-dist').value;const dur=document.getElementById('walk-dur').value;
+  const dist=document.getElementById('walk-dist').value;const dur=durationToSheetText(document.getElementById('walk-dur').value);
   if(!dist&&!dur){showToast('⚠️ 거리 또는 시간 입력');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,pace:document.getElementById('walk-pace').value||null,hr:parseInt(document.getElementById('walk-hr').value)||null,cal:parseInt(document.getElementById('walk-cal').value)||null,cadence:parseInt(document.getElementById('walk-cadence').value)||null,steps:parseInt(document.getElementById('walk-steps').value)||null,sweat:parseInt(document.getElementById('walk-sweat').value)||null};
   if(!exRecs.walk)exRecs.walk=[];
@@ -2637,7 +2676,7 @@ async function saveWalk(){
 
 function saveOther(){
   const name=(document.getElementById('other-name').value||'').trim();
-  const dur=document.getElementById('other-dur').value;
+  const dur=durationToSheetText(document.getElementById('other-dur').value);
   if(!name){showToast('⚠️ 운동 종류를 입력해주세요');return;}
   if(!dur&&!document.getElementById('other-cal').value){showToast('⚠️ 시간 또는 칼로리를 입력해주세요');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,name,duration:dur||null,cal:parseInt(document.getElementById('other-cal').value)||null,hr:parseInt(document.getElementById('other-hr').value)||null,distance:parseFloat(document.getElementById('other-dist').value)||null,memo:document.getElementById('other-memo').value||null};
@@ -2649,7 +2688,7 @@ function saveOther(){
   renderExHist('other');showToast('➕ 기타 운동 저장됐어요!');
 }
 function saveBike(){
-  const dur=document.getElementById('bike-dur').value;if(!dur){showToast('⚠️ 시간 입력');return;}
+  const dur=durationToSheetText(document.getElementById('bike-dur').value);if(!dur){showToast('⚠️ 시간 입력');return;}
   const dist=document.getElementById('bike-dist').value;
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,cal:parseInt(document.getElementById('bike-cal').value)||null,hr:parseInt(document.getElementById('bike-hr').value)||null,memo:document.getElementById('bike-memo').value||null};
   exRecs.bike.push(r);exRecs.bike.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2661,7 +2700,7 @@ function saveBike(){
 function saveBW(){
   const items=document.querySelectorAll('.added-ex-item');if(!items.length){showToast('⚠️ 종목을 추가해주세요');return;}
   const exercises=[...items].map(item=>{const inps=item.querySelectorAll('.aei-inp');return{name:item.dataset.added,reps:parseInt(inps[0].value)||null,sets:parseInt(inps[1].value)||null};});
-  const dur=document.getElementById('bw-dur')?.value||null;
+  const dur=durationToSheetText(document.getElementById('bw-dur')?.value)||null;
   const cal=parseInt(document.getElementById('bw-cal')?.value)||null;
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,exercises,duration:dur,cal};
   exRecs.bodyweight.push(r);exRecs.bodyweight.sort((a,b)=>a.date.localeCompare(b.date));
