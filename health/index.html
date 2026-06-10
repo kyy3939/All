@@ -6,6 +6,9 @@
 <title>헬스 코치</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {
   --bg:#080b14; --s1:#0e1220; --s2:#141829; --s3:#1b2035;
@@ -173,7 +176,7 @@ select.inp{cursor:pointer;font-size:14px;}
 .sum-card.sk::before{background:var(--skeletal);}
 .sum-card.ft::before{background:var(--fat-c);}
 .sum-card.cc::before{background:var(--cal);}
-.sc-label{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:8px;}
+.sc-label{font-size:11px;letter-spacing:.3px;color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-weight:700;margin-bottom:8px;}
 .sc-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;line-height:1;}
 .sc-unit{font-size:11px;color:var(--muted);margin-left:2px;}
 .sc-chg{font-size:11px;margin-top:5px;font-family:'DM Mono',monospace;}
@@ -202,8 +205,11 @@ select.inp{cursor:pointer;font-size:14px;}
   .body-chart-grid .chart-wrap:nth-last-child(-n+2){border-bottom:none;}
   #d-body-stat-cards{grid-template-columns:repeat(3,1fr)!important;}
 }
+/* 소형 차트 높이: 기본 120px → 클릭 힌트 포함해 조금 더 크게 */
+.body-chart-grid .chart-container{height:130px;}
 .chart-wrap{padding:16px 18px;}
 .chart-container{position:relative;height:200px;}
+.body-chart-grid .chart-container canvas{pointer-events:none;} /* 소형차트 캔버스는 클릭 통과 → div가 받음 */
 .nb-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
 .nb-label{font-size:11px;color:var(--dim);width:52px;flex-shrink:0;}
 .nb-bar-bg{flex:1;height:7px;background:var(--s3);border-radius:4px;overflow:hidden;}
@@ -521,6 +527,169 @@ select.inp{cursor:pointer;font-size:14px;}
 
 /* ══ v1.8.0 추가: 시간입력 UX / 자전거 통일 / 운동 히스토리 통일 / 대시보드 요약카드 ══ */
 /* ══ v1.8.1 추가: 복합운동 시간 누락 버그 수정 / duration 표시 전면 통일 ══ */
+/* ══ v1.9.0 추가: 체성분 차트 확대 모달 / 줌인아웃 / 핀치터치 ══ */
+/* ══ v1.9.2 추가: AI코치 전체기록 컨텍스트 / 기록통계 바 ══ */
+
+/* 차트 클릭 커서 */
+.chart-wrap{cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.chart-wrap:hover{background:rgba(255,255,255,.025);}
+.chart-wrap:active{background:rgba(255,255,255,.04);}
+
+/* 차트 모달 오버레이 */
+/* ══ 차트 확대 모달 ══ */
+#chartModal{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(5,7,20,.88);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+  /* 모바일 기본: 하단 바텀시트 */
+  align-items:flex-end;justify-content:center;
+  padding:0;
+  overscroll-behavior:contain;
+}
+#chartModal.open{display:flex;}
+
+/* ── 모달 박스 ── */
+#chartModal .cm-box{
+  background:var(--s1);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px 24px 0 0;
+  width:100%;
+  max-height:92dvh;
+  padding:0 0 env(safe-area-inset-bottom,16px);
+  box-shadow:0 -12px 60px rgba(0,0,0,.8);
+  display:flex;flex-direction:column;
+  touch-action:none;
+  overscroll-behavior:contain;
+  /* 슬라이드업 애니메이션 */
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.32,0,.67,0);
+}
+#chartModal.open .cm-box{
+  transform:translateY(0);
+  transition:transform .35s cubic-bezier(.33,1,.68,1);
+}
+
+/* 모바일 드래그 핸들 */
+#chartModal .cm-box::before{
+  content:'';display:block;
+  width:44px;height:4px;
+  background:rgba(255,255,255,.15);border-radius:2px;
+  margin:12px auto 4px;flex-shrink:0;
+}
+
+/* ── 내부 레이아웃 ── */
+#chartModal .cm-inner{
+  padding:4px 20px 16px;
+  display:flex;flex-direction:column;
+  flex:1;min-height:0;overflow:hidden;
+}
+#chartModal .cm-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;flex-shrink:0;padding-top:4px;
+}
+#chartModal .cm-title{
+  font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:700;
+  color:var(--text);letter-spacing:0;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* ── X 닫기 버튼 ── */
+#chartModal .cm-close{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:50%;
+  color:var(--dim);
+  font-size:18px;
+  font-weight:700;
+  cursor:pointer;
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;
+  flex-shrink:0;
+  line-height:1;
+  -webkit-tap-highlight-color:transparent;
+  /* 클릭 영역 넉넉하게 */
+  position:relative;
+}
+#chartModal .cm-close::after{
+  content:'';position:absolute;inset:-8px;
+}
+#chartModal .cm-close:hover{background:rgba(255,255,255,.15);color:var(--text);}
+#chartModal .cm-close:active{background:rgba(255,255,255,.22);transform:scale(.93);}
+
+/* ── 차트 영역 ── */
+#chartModal .cm-chart-wrap{
+  position:relative;
+  flex:1;min-height:180px;
+  max-height:52dvh;
+  touch-action:none;
+  user-select:none;-webkit-user-select:none;
+  cursor:grab;
+}
+#chartModal .cm-chart-wrap:active{cursor:grabbing;}
+
+/* ── 하단 컨트롤 ── */
+#chartModal .cm-controls{
+  display:flex;align-items:center;gap:6px;
+  margin-top:12px;flex-wrap:wrap;flex-shrink:0;
+}
+#chartModal .cm-btn{
+  padding:8px 16px;
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;
+  font-family:'DM Mono',monospace;font-weight:500;
+  transition:all .15s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+  min-height:36px;
+}
+#chartModal .cm-btn:hover{border-color:var(--dim);color:var(--text);}
+#chartModal .cm-btn:active{background:var(--s3);}
+#chartModal .cm-btn.active{background:var(--s3);color:var(--text);border-color:var(--dim);}
+#chartModal .cm-hint{
+  font-size:10px;color:var(--muted);margin-left:auto;
+  font-family:'DM Mono',monospace;text-align:right;line-height:1.6;
+}
+
+/* ══ PC (769px 이상): 화면 최대 활용 ══ */
+@media(min-width:769px){
+  #chartModal{
+    align-items:center;
+    justify-content:center;
+    padding:16px;          /* 여백 최소화 */
+  }
+  #chartModal .cm-box{
+    border-radius:18px;
+    width:min(96vw, 1300px);   /* 더 넓게 */
+    max-height:94vh;            /* 더 높게 */
+    min-height:560px;
+    padding:0;
+    box-shadow:0 32px 80px rgba(0,0,0,.8);
+    border:1px solid rgba(255,255,255,.1);
+    transform:none;
+    transition:none;
+  }
+  #chartModal.open .cm-box{transform:none;}
+  #chartModal .cm-box::before{display:none;}
+  #chartModal .cm-inner{padding:22px 28px 20px;}
+  #chartModal .cm-title{font-size:22px;gap:8px;}
+  #chartModal .cm-close{width:42px;height:42px;font-size:22px;}
+  #chartModal .cm-chart-wrap{
+    max-height:none;
+    min-height:400px;   /* 차트 최소 높이 더 크게 */
+  }
+  #chartModal .cm-btn{padding:9px 20px;font-size:12px;min-height:38px;}
+  #chartModal .cm-controls{margin-top:16px;gap:8px;}
+  #chartModal .cm-hint{font-size:11px;}
+}
+
+/* ══ 태블릿 (600~768px): 바텀시트 크게 ══ */
+@media(min-width:600px) and (max-width:768px){
+  #chartModal .cm-box{max-height:85dvh;}
+  #chartModal .cm-chart-wrap{max-height:58dvh;}
+  #chartModal .cm-inner{padding:8px 22px 18px;}
+}
+/* ══ v1.8.1 추가: 복합운동 시간 누락 버그 수정 / duration 표시 전면 통일 ══ */
 input[type="date"].inp {
   cursor:pointer;
   position:relative;
@@ -555,7 +724,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.8.1</span>
+  <span class="nav-ver">v1.9.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -602,28 +771,46 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
             <div id="d-body-stat-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:14px 18px 4px;"></div>
             <!-- 그래프 2열 3행 (모바일 1열) -->
             <div class="body-chart-grid">
-              <div class="chart-wrap">
-                <div class="sc-label" style="margin-bottom:6px;color:var(--weight);">⚖ 체중 (kg)</div>
+              <div class="chart-wrap" onclick="openChartModal('chartWeight','⚖ 체중 (kg)')" title="⚖ 체중 (kg) 클릭하면 확대">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div class="sc-label" style="color:var(--weight);">⚖ 체중 (kg)</div>
+                  <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
+                </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartWeight"></canvas></div>
               </div>
-              <div class="chart-wrap">
-                <div class="sc-label" style="margin-bottom:6px;color:var(--skeletal);">💪 골격근량 (kg)</div>
+              <div class="chart-wrap" onclick="openChartModal('chartSkeletal','💪 골격근량 (kg)')" title="💪 골격근량 (kg) 클릭하면 확대">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div class="sc-label" style="color:var(--skeletal);">💪 골격근량 (kg)</div>
+                  <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
+                </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartSkeletal"></canvas></div>
               </div>
-              <div class="chart-wrap">
-                <div class="sc-label" style="margin-bottom:6px;color:var(--fat-c);">🔥 체지방률 (%)</div>
+              <div class="chart-wrap" onclick="openChartModal('chartFatRate','🔥 체지방률 (%)')" title="🔥 체지방률 (%) 클릭하면 확대">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div class="sc-label" style="color:var(--fat-c);">🔥 체지방률 (%)</div>
+                  <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
+                </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartFatRate"></canvas></div>
               </div>
-              <div class="chart-wrap">
-                <div class="sc-label" style="margin-bottom:6px;color:#ff6e8a;">📉 체지방량 (kg)</div>
+              <div class="chart-wrap" onclick="openChartModal('chartFatMass','📉 체지방량 (kg)')" title="📉 체지방량 (kg) 클릭하면 확대">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div class="sc-label" style="color:#ff6e8a;">📉 체지방량 (kg)</div>
+                  <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
+                </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartFatMass"></canvas></div>
               </div>
-              <div class="chart-wrap">
-                <div class="sc-label" style="margin-bottom:6px;color:var(--coach);">💧 체수분 (kg)</div>
+              <div class="chart-wrap" onclick="openChartModal('chartWater','💧 체수분 (kg)')" title="💧 체수분 (kg) 클릭하면 확대">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div class="sc-label" style="color:var(--coach);">💧 체수분 (kg)</div>
+                  <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
+                </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartWater"></canvas></div>
               </div>
-              <div class="chart-wrap">
-                <div class="sc-label" style="margin-bottom:6px;color:var(--fatrate);">📊 BMI</div>
+              <div class="chart-wrap" onclick="openChartModal('chartBMI','📊 BMI')" title="📊 BMI 클릭하면 확대">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div class="sc-label" style="color:var(--fatrate);">📊 BMI</div>
+                  <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
+                </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartBMI"></canvas></div>
               </div>
             </div>
@@ -1019,11 +1206,21 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
     <div class="page-inner">
       <div class="hdr"><div class="hdr-eyebrow">AI Coaching</div><div class="hdr-title">AI <span class="hl">코치</span></div></div>
       <!-- 컨텍스트 카드 -->
-      <div class="ctx-cards" style="margin-bottom:16px;">
-        <div class="ctx-card"><div class="cc-label">체성분</div><div class="cc-val no-data" id="ctx-body-val">—</div><div class="cc-sub" id="ctx-body-sub"></div></div>
+      <div class="ctx-cards" style="margin-bottom:10px;">
+        <div class="ctx-card"><div class="cc-label">최신 체성분</div><div class="cc-val no-data" id="ctx-body-val">—</div><div class="cc-sub" id="ctx-body-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">오늘 식사</div><div class="cc-val no-data" id="ctx-meal-val">—</div><div class="cc-sub" id="ctx-meal-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">오늘 운동</div><div class="cc-val no-data" id="ctx-ex-val">—</div><div class="cc-sub" id="ctx-ex-sub"></div></div>
-        <div class="ctx-card"><div class="cc-label">전날 수면</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub">밤잠+낮잠</div></div>
+        <div class="ctx-card"><div class="cc-label">수면</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub"></div></div>
+      </div>
+      <div id="ctx-history-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);">
+        <span>📊 전체기록</span>
+        <span id="ctx-hist-body" style="color:var(--weight);">체성분 —건</span>
+        <span style="color:var(--border);">·</span>
+        <span id="ctx-hist-ex" style="color:var(--run);">운동 —회</span>
+        <span style="color:var(--border);">·</span>
+        <span id="ctx-hist-meal" style="color:var(--cal);">식사 —건</span>
+        <span style="color:var(--border);">·</span>
+        <span id="ctx-hist-sleep" style="color:var(--fatrate);">수면 —회</span>
       </div>
       <!-- 상태 표시 -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
@@ -1480,6 +1677,222 @@ function renderBodyCharts(br,days){
   chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#ffd740');
 }
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
+
+// ══ 차트 확대 모달 v1.9.1 ══
+let modalChart=null, cmCurrentPeriod=7, cmCurrentId=null;
+const CM_MAP={
+  chartWeight:  {key:'weight',   label:'⚖ 체중 (kg)',     color:'#00e5ff'},
+  chartSkeletal:{key:'skeletal', label:'💪 골격근량 (kg)', color:'#69f0ae'},
+  chartFatRate: {key:'fatRate',  label:'🔥 체지방률 (%)', color:'#ff4081'},
+  chartFatMass: {key:'fatMass',  label:'📉 체지방량 (kg)',color:'#ff6e8a'},
+  chartWater:   {key:'water',    label:'💧 체수분 (kg)',   color:'#4fc3f7'},
+  chartBMI:     {key:'bmi',      label:'📊 BMI',           color:'#ffd740'},
+};
+
+function openChartModal(chartId, label){
+  cmCurrentId=chartId;
+  // 이모지와 텍스트 분리하여 렌더링 (폰트 혼용 방지)
+  const titleEl=document.getElementById('cm-title');
+  const emojiMatch=label.match(/^(\S+\s)/);
+  if(emojiMatch){
+    const emoji=emojiMatch[1].trim();
+    const text=label.slice(emojiMatch[0].length);
+    titleEl.innerHTML=`<span style="font-size:1.1em;line-height:1;">${emoji}</span><span>${text}</span>`;
+  } else {
+    titleEl.textContent=label;
+  }
+  // 기간 버튼 동기화
+  ['cmBtn7','cmBtn30','cmBtnAll'].forEach((id,i)=>{
+    document.getElementById(id)?.classList.toggle('active',[7,30,0][i]===cmCurrentPeriod);
+  });
+  document.getElementById('chartModal').classList.add('open');
+  document.body.style.overflow='hidden';
+  document.body.style.position='fixed';
+  document.body.style.width='100%';
+  renderModalChart();
+}
+
+function closeChartModal(){
+  document.getElementById('chartModal').classList.remove('open');
+  document.body.style.overflow='';
+  document.body.style.position='';
+  document.body.style.width='';
+  if(modalChart){modalChart.destroy();modalChart=null;}
+}
+
+function setCmPeriod(d,btn){
+  cmCurrentPeriod=d;
+  document.querySelectorAll('#chartModal .cm-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderModalChart();
+}
+
+function resetCmZoom(){
+  if(modalChart){
+    modalChart.resetZoom();
+    document.getElementById('cm-hint').textContent='핀치·드래그로 탐색';
+  }
+}
+
+function renderModalChart(){
+  if(!cmCurrentId)return;
+  const meta=CM_MAP[cmCurrentId];
+  if(!meta)return;
+  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
+  let data=cmCurrentPeriod===0?br:br.filter(r=>{
+    const cut=new Date(Date.now()+9*3600*1000);
+    cut.setDate(cut.getDate()-cmCurrentPeriod);
+    return r.date>=cut.toISOString().slice(0,10);
+  });
+  const labels=data.map(r=>r.date.slice(5));
+  const vals=data.map(r=>r[meta.key]);
+  const color=meta.color;
+  if(modalChart){modalChart.destroy();modalChart=null;}
+  const canvas=document.getElementById('chartModalCanvas');
+  modalChart=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:meta.label,
+        data:vals,
+        borderColor:color,
+        backgroundColor:color+'22',
+        borderWidth:2.5,
+        pointRadius:vals.length<=40?4:2,
+        pointHoverRadius:8,
+        pointBackgroundColor:color,
+        pointBorderColor:'#080b14',
+        pointBorderWidth:2,
+        tension:0.35,
+        fill:true,
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:{duration:300,easing:'easeOutQuart'},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(14,18,40,.96)',
+          borderColor:color,
+          borderWidth:1.5,
+          titleColor:color,
+          bodyColor:'#c8d0e8',
+          titleFont:{family:'DM Mono',size:13,weight:'bold'},
+          bodyFont:{family:'DM Mono',size:13},
+          padding:12,
+          cornerRadius:10,
+          displayColors:false,
+          callbacks:{
+            title: items => items[0]?.label || '',
+            label: ctx=>{
+              const v=ctx.parsed.y;
+              const unit=meta.label.match(/\(([^)]+)\)/)?.[1]||'';
+              return v!=null ? ` ${v}${unit?' '+unit:''}` : ' —';
+            }
+          }
+        },
+        datalabels:{
+          display: ctx => vals.length<=20,
+          color:color,
+          font:{size:11,family:'DM Mono',weight:'bold'},
+          formatter:v=>v!=null?v:'',
+          anchor:'end',align:'top',offset:5,clamp:true,
+          backgroundColor: 'rgba(8,11,20,.5)',
+          borderRadius:4,
+          padding:{top:2,bottom:2,left:4,right:4},
+        },
+        zoom:{
+          pan:{enabled:true,mode:'x',threshold:3},
+          zoom:{
+            wheel:{enabled:true,speed:0.06},
+            pinch:{enabled:true},
+            mode:'x',
+            onZoomComplete:()=>{
+              const hint=document.getElementById('cm-hint');
+              if(hint)hint.textContent='🔍 초기화로 전체 보기';
+            }
+          },
+          limits:{x:{minRange:2}},
+        }
+      },
+      scales:{
+        x:{
+          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:8,maxRotation:0},
+          grid:{color:'rgba(255,255,255,.05)'},
+          border:{color:'rgba(255,255,255,.08)'}
+        },
+        y:{
+          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:6},
+          grid:{color:'rgba(255,255,255,.05)'},
+          border:{color:'rgba(255,255,255,.08)'}
+        }
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
+  // 데이터 많으면 최근 14개 구간부터 표시
+  if(vals.length>14){
+    try{modalChart.zoomScale('x',{min:vals.length-14,max:vals.length-1},'none');}catch(e){}
+  }
+}
+
+// ── 차트 모달 이벤트 등록 (DOM 완성 후 실행 보장) ──
+function initChartModalEvents(){
+  const modal   = document.getElementById('chartModal');
+  const box     = document.getElementById('chartModalBox');
+  const closeBtn= document.getElementById('cmCloseBtn');
+  const chartWrap= document.getElementById('cmChartWrap');
+  if(!modal||!box||!closeBtn){
+    // DOM 아직 미완성이면 재시도
+    requestAnimationFrame(initChartModalEvents);
+    return;
+  }
+
+  // ① X 닫기 버튼
+  closeBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    closeChartModal();
+  });
+
+  // ② 오버레이(배경) 클릭 닫기
+  modal.addEventListener('click', e=>{
+    if(e.target === modal) closeChartModal();
+  });
+
+  // ③ 박스 내부 클릭은 닫기 방지
+  box.addEventListener('click', e=> e.stopPropagation());
+
+  // ④ ESC 키
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape' && modal.classList.contains('open'))
+      closeChartModal();
+  });
+
+  // ⑤ 모바일: 스와이프 다운 → 닫기 (차트 영역 제외)
+  let touchStartY = 0;
+  box.addEventListener('touchstart', e=>{
+    touchStartY = e.touches[0].clientY;
+  }, {passive:true});
+  box.addEventListener('touchmove', e=>{
+    if(chartWrap && e.target.closest('#cmChartWrap')) return; // 차트 핀치/팬 허용
+    e.preventDefault();
+  }, {passive:false});
+  box.addEventListener('touchend', e=>{
+    if(chartWrap && e.target.closest('#cmChartWrap')) return;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if(dy > 60) closeChartModal();
+  }, {passive:true});
+}
+// 실행: document가 이미 로드됐으면 즉시, 아니면 DOMContentLoaded 후
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', initChartModalEvents);
+} else {
+  initChartModalEvents();
+}
 function renderDashExAll(er){
   const el=document.getElementById('d-ex-list-all');if(!el)return;
   const runs=(er.run||[]).filter(r=>r.date===today);
@@ -2468,16 +2881,20 @@ function generateDailyReport(){
 // ══ 채팅 ══
 let chatHistory=[],chatLoading=false;
 const CHAT_SYSTEM=`당신은 4명의 전문가로 구성된 통합 헬스 코치입니다:
-🧬 생리학 코치: 운동생리학, 내분비학, 대사학 전문. 글리코겐·젖산·단백질합성·코르티솔·인슐린 등 신체 내부 메커니즘 전문가
+🧬 생리학 코치: 운동생리학, 내분비학, 대사학 전문. 글리코겐·젖산·단백질합성·코르티솔·인슐린 등 신체 메커니즘 전문가
 🏋️ 운동 코치: 운동역학, 해부학, 트레이닝 과학 전문. 운동 종류·순서·강도·타이밍·자세·부상 예방 전문가
 🥗 영양 코치: 스포츠 영양학, 생화학 전문. 영양소 대사, 칼로리, 식사 타이밍 전문가
 ⚡ 종합 코치: 세 전문가 의견을 통합해 실행 가능한 최적 조언 제공
 
-[코칭 질문] 오늘 데이터 기반 구체적 실행 지침
-[학습/원리 질문] 교과서 수준의 깊이 있는 설명, 분량 제한 없음
-[일반 대화] overall만 채움
+[데이터 분석 능력] 컨텍스트에는 오늘 데이터뿐 아니라 전체 기록 통계(체중 최저/최고/변화 추이, 운동 누적 기록, 수면 평균 등)가 포함됩니다. 기록 조회·분석 질문(예: "체중이 가장 적을 때", "운동 총 몇 회", "수면 평균")에 정확히 답하세요.
 
-반드시 아래 형식의 "유효한 JSON 객체"만 응답하세요. 마크다운, 설명문, 코드블록, 따옴표 밖의 문장 금지. 각 항목은 2~4문장으로 간결하게 작성하세요.
+[응답 규칙]
+- 기록 조회/통계 질문 → overall에 정확한 수치와 날짜 포함
+- 코칭 질문 → 오늘 데이터 기반 구체적 실행 지침
+- 학습/원리 질문 → 교과서 수준의 깊이 있는 설명
+- 단순 대화 → overall만 채움
+
+반드시 아래 형식의 "유효한 JSON 객체"만 응답하세요. 마크다운, 설명문, 코드블록 금지.
 {"bio":"신체상태/생리학 조언","exercise":"운동 코칭","nutrition":"영양 코칭","overall":"종합 조언"}
 
 핵심: 남성 만39세 175cm, 목표 체중2-3kg감량+근육증가+유지, 목표섭취~2100kcal, 단백질150g/일`;
@@ -2503,31 +2920,141 @@ function loadChatContext(){
     document.getElementById('ctx-fast-sub').textContent=lastSleep.durationHours>=7?'회복 충분':lastSleep.durationHours>=6?'수면 부족':' 심각한 부족';
     document.querySelector('.ctx-card:last-child .cc-label').textContent='수면';
   }
+  // 전체 기록 카운트 업데이트
+  const totalEx=(er.run?.length||0)+(er.walk?.length||0)+(er.bike?.length||0)+(er.bodyweight?.length||0)+(er.other?.length||0);
+  const eBody=document.getElementById('ctx-hist-body');
+  const eEx=document.getElementById('ctx-hist-ex');
+  const eMeal=document.getElementById('ctx-hist-meal');
+  const eSleep=document.getElementById('ctx-hist-sleep');
+  if(eBody) eBody.textContent=`체성분 ${br.length}건`;
+  if(eEx) eEx.textContent=`운동 ${totalEx}회`;
+  if(eMeal) eMeal.textContent=`식사 ${mr.length}건`;
+  if(eSleep) eSleep.textContent=`수면 ${sr.length}회`;
   document.getElementById('chat-status').textContent='4 에이전트 준비 완료';
   if(document.getElementById('messages').children.length===0){
     const ds=[];if(latest)ds.push('체성분 ✓');if(tm.length)ds.push(`식사 ${tm.length}끼 ✓`);if(tex)ds.push(`운동 ${tex}회 ✓`);
-    addAiChatMsg({overall:ds.length?`안녕하세요! 오늘 데이터 불러왔어요 (${ds.join(', ')})\n\n운동 전후, 식사 전 언제든 물어보세요! 운동생리학·영양학 원리도 자세히 설명해드려요 💪`:`안녕하세요! 아직 오늘 데이터가 없어요.\n체성분·식사·운동을 먼저 입력하면 더 정확한 코칭이 가능해요! 😊`});
+    addAiChatMsg({overall:ds.length?`안녕하세요! 오늘 데이터 불러왔어요 (${ds.join(', ')})\n\n전체 기록도 확인할 수 있어요. "체중이 가장 낮았던 날은?", "운동 총 몇 회 했어?" 같은 기록 조회도 가능합니다 💪`:`안녕하세요! 아직 오늘 데이터가 없어요.\n체성분·식사·운동을 먼저 입력하면 더 정확한 코칭이 가능해요!\n저장된 전체 기록에 대한 질문도 물어보세요 😊`});
   }
 }
 function buildChatContext(){
-  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
-  const latest=br[br.length-1];const tm=mr.filter(m=>m.date===today);
-  const tRun=(er.run||[]).filter(r=>r.date===today);const tWalk=(er.walk||[]).filter(r=>r.date===today);const tBike=(er.bike||[]).filter(r=>r.date===today);const tBW=(er.bodyweight||[]).filter(r=>r.date===today);const tOther=(er.other||[]).filter(r=>r.date===today);
+  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
+  const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
+  const latest=br[br.length-1];
+  const tm=mr.filter(m=>m.date===today);
+  const tRun=(er.run||[]).filter(r=>r.date===today);
+  const tWalk=(er.walk||[]).filter(r=>r.date===today);
+  const tBike=(er.bike||[]).filter(r=>r.date===today);
+  const tBW=(er.bodyweight||[]).filter(r=>r.date===today);
+  const tOther=(er.other||[]).filter(r=>r.date===today);
   const lastSleep=sr[sr.length-1];
+
+  // ── 기본 컨텍스트 ──
   let ctx=`[오늘 ${today} ${nowTime()}]\n[사용자] 남성 만39세 175cm / 목표: 체중2-3kg↓+근육↑ / 목표섭취~2100kcal / 단백질150g\n`;
-  if(lastSleep)ctx+=`[수면(${lastSleep.date})] 취침${lastSleep.bedtime} 기상${lastSleep.waketime} 수면시간${lastSleep.durationHours}h${lastSleep.quality?' 품질'+lastSleep.quality+'점':''}\n`;
-  else ctx+=`[수면] 기록 없음\n`;
-  if(latest)ctx+=`[체성분(${latest.date})] 체중${latest.weight}kg 골격근${latest.skeletal}kg 체지방량${latest.fatMass}kg 체지방률${latest.fatRate}% BMI${latest.bmi} 기초대사량${latest.bmr}kcal\n`;
+
+  // ── 오늘 수면 ──
+  if(lastSleep) ctx+=`[수면(${lastSleep.date})] 취침${lastSleep.bedtime} 기상${lastSleep.waketime} ${lastSleep.durationHours}h${lastSleep.quality?' 품질'+lastSleep.quality:''}\n`;
+  else ctx+=`[수면] 없음\n`;
+
+  // ── 최신 체성분 ──
+  if(latest) ctx+=`[최신체성분(${latest.date})] 체중${latest.weight}kg 골격근${latest.skeletal}kg 체지방량${latest.fatMass}kg 체지방률${latest.fatRate}% BMI${latest.bmi} 기초대사량${latest.bmr}kcal\n`;
   else ctx+=`[체성분] 없음\n`;
-  if(tm.length){const t=tm.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),prot:a.prot+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0)}),{cal:0,prot:0,carb:0});ctx+=`[식사] ${tm.map(m=>`${m.mealType}(${m.time}):${m.foodText}`).join(' / ')} / 총${Math.round(t.cal)}kcal 단백질${Math.round(t.prot)}g\n`;}
-  else ctx+=`[식사] 없음\n`;
-  if(tRun.length)ctx+=`[런닝] ${tRun.map(r=>`${r.time} ${r.distance}km 페이스${r.pace}`).join(' / ')}\n`;
-  if(tBike.length)ctx+=`[자전거] ${tBike.map(r=>`${r.time} ${r.duration}분`).join(' / ')}\n`;
-  if(tBW.length)ctx+=`[복합운동] ${tBW.map(r=>r.exercises.map(e=>`${e.name}${e.reps}×${e.sets}`).join(',')).join(' / ')}\n`;
-  if(tOther.length)ctx+=`[기타운동] ${tOther.map(r=>`${r.time||''} ${r.name||'기타'} ${r.duration||''} ${r.cal?('🔥'+r.cal+'kcal'):''}`).join(' / ')}\n`;
+
+  // ── 오늘 식사 ──
+  if(tm.length){
+    const t=tm.reduce((a,m)=>({cal:a.cal+(m.total?.kcal||0),prot:a.prot+(m.total?.protein||0),carb:a.carb+(m.total?.carb||0),fat:a.fat+(m.total?.fat||0)}),{cal:0,prot:0,carb:0,fat:0});
+    ctx+=`[오늘식사] ${tm.map(m=>`${m.mealType}(${m.time}):${m.foodText}`).join(' / ')} / 총${Math.round(t.cal)}kcal 단백질${Math.round(t.prot)}g 탄수${Math.round(t.carb)}g 지방${Math.round(t.fat)}g\n`;
+  } else ctx+=`[오늘식사] 없음\n`;
+
+  // ── 오늘 운동 ──
+  if(tRun.length) ctx+=`[오늘런닝] ${tRun.map(r=>`${r.distance}km 페이스${r.pace} ${r.cal?r.cal+'kcal':''}`).join(' / ')}\n`;
+  if(tWalk.length) ctx+=`[오늘걷기] ${tWalk.map(r=>`${r.distance}km ${fmtDurStr(r.duration)} ${r.cal?r.cal+'kcal':''}`).join(' / ')}\n`;
+  if(tBike.length) ctx+=`[오늘자전거] ${tBike.map(r=>`${fmtDurStr(r.duration)} ${r.cal?r.cal+'kcal':''}`).join(' / ')}\n`;
+  if(tBW.length) ctx+=`[오늘복합운동] ${tBW.map(r=>`${r.exercises?.map(e=>`${e.name}${e.reps}×${e.sets}`).join(',')||''} ${r.duration?fmtDurStr(r.duration):''} ${r.cal?r.cal+'kcal':''}`).join(' / ')}\n`;
+  if(tOther.length) ctx+=`[오늘기타운동] ${tOther.map(r=>`${r.name||'기타'} ${r.duration?fmtDurStr(r.duration):''} ${r.cal?r.cal+'kcal':''}`).join(' / ')}\n`;
   const lm=[...tm].sort((a,b)=>b.time.localeCompare(a.time))[0];
-  if(lm){const[h,m]=lm.time.split(':').map(Number);const fh=(Date.now()-new Date().setHours(h,m,0,0))/3600000;if(fh>=0)ctx+=`[공복] 마지막식사(${lm.mealType} ${lm.time}) 이후 ${fh.toFixed(1)}h\n`;}
+  if(lm){const[h,m]=lm.time.split(':').map(Number);const fh=(Date.now()-new Date().setHours(h,m,0,0))/3600000;if(fh>=0)ctx+=`[공복] 마지막식사 이후 ${fh.toFixed(1)}h\n`;}
+
+  // ── 전체 체성분 기록 요약 (AI가 통계 질문에 답할 수 있도록) ──
+  if(br.length>0){
+    const weights=br.filter(r=>r.weight).map(r=>({d:r.date,v:parseFloat(r.weight)}));
+    const fats=br.filter(r=>r.fatRate).map(r=>({d:r.date,v:parseFloat(r.fatRate)}));
+    const skels=br.filter(r=>r.skeletal).map(r=>({d:r.date,v:parseFloat(r.skeletal)}));
+    if(weights.length){
+      const minW=weights.reduce((a,b)=>a.v<b.v?a:b);
+      const maxW=weights.reduce((a,b)=>a.v>b.v?a:b);
+      const first=weights[0]; const last=weights[weights.length-1];
+      ctx+=`[체성분_전체통계] 기록수${br.length}건 첫기록(${first.d}) 최근기록(${last.d})\n`;
+      ctx+=`  체중: 최저 ${minW.v}kg(${minW.d}) 최고 ${maxW.v}kg(${maxW.d}) 첫기록 ${first.v}kg 최근 ${last.v}kg 변화${(last.v-first.v>0?'+':'')+(last.v-first.v).toFixed(1)}kg\n`;
+    }
+    if(fats.length){
+      const minF=fats.reduce((a,b)=>a.v<b.v?a:b);
+      const maxF=fats.reduce((a,b)=>a.v>b.v?a:b);
+      const last=fats[fats.length-1];
+      ctx+=`  체지방률: 최저 ${minF.v}%(${minF.d}) 최고 ${maxF.v}%(${maxF.d}) 최근 ${last.v}%\n`;
+    }
+    if(skels.length){
+      const maxS=skels.reduce((a,b)=>a.v>b.v?a:b);
+      const last=skels[skels.length-1];
+      ctx+=`  골격근량: 최고 ${maxS.v}kg(${maxS.d}) 최근 ${last.v}kg\n`;
+    }
+    // 최근 7일 체성분
+    const cut7=new Date(Date.now()+9*3600*1000);cut7.setDate(cut7.getDate()-7);
+    const cut7s=cut7.toISOString().slice(0,10);
+    const recent7=br.filter(r=>r.date>=cut7s);
+    if(recent7.length>1) ctx+=`  최근7일체성분: ${recent7.map(r=>`${r.date.slice(5)} 체중${r.weight}kg`).join(' → ')}\n`;
+  }
+
+  // ── 전체 운동 기록 요약 ──
+  const allRuns=er.run||[];const allWalks=er.walk||[];const allBikes=er.bike||[];
+  const allBW=er.bodyweight||[];const allOther=er.other||[];
+  const totalEx=allRuns.length+allWalks.length+allBikes.length+allBW.length+allOther.length;
+  if(totalEx>0){
+    ctx+=`[운동_전체통계] 총${totalEx}회`;
+    if(allRuns.length){
+      const dists=allRuns.filter(r=>r.distance).map(r=>parseFloat(r.distance));
+      const paces=allRuns.filter(r=>r.pace).map(r=>r.pace).sort();
+      const totalDist=dists.reduce((a,b)=>a+b,0);
+      ctx+=` 런닝${allRuns.length}회(누적${totalDist.toFixed(1)}km${paces.length?' 최고페이스'+paces[0]:''})`;}
+    if(allWalks.length) ctx+=` 걷기${allWalks.length}회`;
+    if(allBikes.length) ctx+=` 자전거${allBikes.length}회`;
+    if(allBW.length) ctx+=` 복합운동${allBW.length}회`;
+    if(allOther.length) ctx+=` 기타${allOther.length}회`;
+    ctx+='\n';
+    // 최근 7일 운동
+    const cut7=new Date(Date.now()+9*3600*1000);cut7.setDate(cut7.getDate()-7);
+    const cut7s=cut7.toISOString().slice(0,10);
+    const rec7=[...allRuns,...allWalks,...allBikes,...allBW,...allOther].filter(r=>r.date>=cut7s).sort((a,b)=>a.date.localeCompare(b.date));
+    const rec7show=rec7.slice(-14); // 최대 14개만 표시
+    if(rec7show.length) ctx+=`  최근7일운동: ${rec7show.map(r=>`${r.date.slice(5)}(${r.distance?r.distance+'km':r.duration?fmtDurStr(r.duration):r.exercises?r.exercises.length+'종목':r.name||'기타'})`).join(' ')}\n`;
+    // 복합운동 PB
+    if(allBW.length){
+      const exMap={};
+      allBW.forEach(s=>s.exercises?.forEach(e=>{
+        if(!exMap[e.name])exMap[e.name]={maxReps:0,maxSets:0};
+        if((e.reps||0)>exMap[e.name].maxReps)exMap[e.name].maxReps=e.reps||0;
+        if((e.sets||0)>exMap[e.name].maxSets)exMap[e.name].maxSets=e.sets||0;
+      }));
+      const pbStr=Object.entries(exMap).map(([n,v])=>`${n}최고${v.maxReps}×${v.maxSets}세트`).join(' ');
+      if(pbStr) ctx+=`  복합운동PB: ${pbStr}\n`;
+    }
+  }
+
+  // ── 수면 통계 ──
+  if(sr.length>0){
+    const hrs=sr.filter(r=>r.durationHours).map(r=>parseFloat(r.durationHours));
+    const avgH=(hrs.reduce((a,b)=>a+b,0)/hrs.length).toFixed(1);
+    const minH=Math.min(...hrs); const maxH=Math.max(...hrs);
+    ctx+=`[수면_전체통계] 총${sr.length}회 평균${avgH}h 최소${minH}h 최대${maxH}h\n`;
+    // 최근 7일 수면
+    const cut7=new Date(Date.now()+9*3600*1000);cut7.setDate(cut7.getDate()-7);
+    const cut7s=cut7.toISOString().slice(0,10);
+    const rec7s=sr.filter(r=>r.date>=cut7s);
+    const rec7sShow=rec7s.slice(-7);
+    if(rec7sShow.length) ctx+=`  최근7일수면: ${rec7sShow.map(r=>`${r.date.slice(5)} ${r.durationHours}h`).join(' ')}\n`;
+  }
+
   return ctx;
 }
 
@@ -2755,30 +3282,75 @@ async function fetchAiWithRetry(payload){
   }
   throw lastErr||new Error('AI 호출 실패');
 }
+const CHAT_MAX_TURNS = 10; // 최근 10턴(질문10+답변10)만 유지
+
 async function sendChat(){
   if(chatLoading)return;
   const inp=document.getElementById('chat-inp');const text=inp.value.trim();if(!text)return;
   inp.value='';inp.style.height='48px';chatLoading=true;document.getElementById('send-btn').disabled=true;
   addUserChatMsg(text);loadChatContext();
-  const ctx=buildChatContext();chatHistory.push({role:'user',content:`${ctx}\n[질문] ${text}`});
+
+  // ── 컨텍스트 처리 ──
+  // 첫 메시지일 때만 전체 기록 통계를 포함, 이후엔 질문만
+  const isFirst = chatHistory.length === 0;
+  const userContent = isFirst
+    ? `${buildChatContext()}\n[질문] ${text}`  // 첫 메시지: 전체 기록 통계 포함
+    : `[질문] ${text}`;                          // 이후: 질문만
+
+  chatHistory.push({role:'user', content: userContent});
+
+  // ── 슬라이딩 윈도우: 최근 N턴만 유지 ──
+  // system prompt에 최신 컨텍스트를 항상 포함하므로 대화 맥락은 유지됨
+  const MAX_MSG = CHAT_MAX_TURNS * 2; // 질문+답변 쌍
+  const trimmedHistory = chatHistory.length > MAX_MSG
+    ? chatHistory.slice(-MAX_MSG)
+    : chatHistory;
+
+  // ── system prompt에 최신 기록 통계 항상 포함 ──
+  // (첫 메시지 아닐 때도 system에서 데이터를 볼 수 있게)
+  const systemWithCtx = chatHistory.length <= 2
+    ? CHAT_SYSTEM  // 첫 메시지는 이미 user content에 ctx 포함
+    : `${CHAT_SYSTEM}\n\n[현재 데이터 스냅샷]\n${buildContextSnapshot()}`;
+
   showTyping();
   try{
     const data=await fetchAiWithRetry({
       type:'ai',
-      system:CHAT_SYSTEM,
-      messages:chatHistory
+      system: systemWithCtx,
+      messages: trimmedHistory
     });
     hideTyping();
     const raw=data.result||'{}';
     const result=normalizeAiResult(raw);
     chatHistory.push({role:'assistant',content:typeof raw==='string'?raw:JSON.stringify(raw)});
     addAiChatMsg(result);
+    // 토큰 사용량 디버그 (개발용)
+    console.log(`[AI] 전송 메시지 ${trimmedHistory.length}개, 총 대화 ${chatHistory.length}개`);
   }catch(e){
     hideTyping();
     console.error('코치 오류:',e);
     addAiChatMsg({overall:detectAiError(e.message)||`⚠️ AI 코치 응답을 받지 못했어요. 데이터 저장과 동기화는 정상입니다.\n\n오류 내용: ${e.message}\n\n잠시 후 다시 시도해주세요.`});
+    // 오류 시 마지막 메시지 제거 (재전송 가능하도록)
+    chatHistory.pop();
   }
   chatLoading=false;document.getElementById('send-btn').disabled=false;
+}
+
+// ── 가벼운 스냅샷: 현재 체중/목표 대비 핵심 수치만 (대화 중 참조용) ──
+function buildContextSnapshot(){
+  const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
+  const latest=br[br.length-1];
+  const today_=today; // 전역 today 변수
+  const er=JSON.parse(localStorage.getItem('exerciseRecords')||'{}');
+  const mr=JSON.parse(localStorage.getItem('mealRecords')||'[]');
+  const tm=mr.filter(m=>m.date===today_);
+  const tCal=Math.round(tm.reduce((a,m)=>a+(m.total?.kcal||0),0));
+  let snap=`날짜: ${today_}\n`;
+  if(latest) snap+=`최신체성분(${latest.date}): 체중${latest.weight}kg 체지방률${latest.fatRate}% 골격근${latest.skeletal}kg\n`;
+  if(tCal) snap+=`오늘섭취: ${tCal}kcal\n`;
+  const texToday=[...(er.run||[]),...(er.walk||[]),...(er.bike||[]),...(er.bodyweight||[]),...(er.other||[])].filter(r=>r.date===today_);
+  if(texToday.length) snap+=`오늘운동: ${texToday.length}회\n`;
+  return snap;
 }
 
 // ══ 수면 ══
@@ -2923,5 +3495,27 @@ renderDashboard();
 applyDashLayout();
 syncFromSheet();
 </script>
+<!-- ══ 차트 확대 모달 ══ -->
+<div id="chartModal" id="chartModalBackdrop">
+  <div class="cm-box" id="chartModalBox">
+    <div class="cm-inner">
+      <div class="cm-header">
+        <div class="cm-title" id="cm-title">체중 변화</div>
+        <button class="cm-close" id="cmCloseBtn">✕</button>
+      </div>
+      <div class="cm-chart-wrap" id="cmChartWrap">
+        <canvas id="chartModalCanvas"></canvas>
+      </div>
+      <div class="cm-controls">
+        <button class="cm-btn active" id="cmBtn7" onclick="setCmPeriod(7,this)">7일</button>
+        <button class="cm-btn" id="cmBtn30" onclick="setCmPeriod(30,this)">30일</button>
+        <button class="cm-btn" id="cmBtnAll" onclick="setCmPeriod(0,this)">전체</button>
+        <button class="cm-btn" onclick="resetCmZoom()">🔍 초기화</button>
+        <span class="cm-hint" id="cm-hint">핀치·드래그로 탐색</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
