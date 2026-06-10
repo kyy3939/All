@@ -1273,11 +1273,20 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
 <script>
 const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0eDJa-fT_CCD15hq0vPooyIFZIXyYuqSA8Zwq0_pHVoKgA/exec';
 async function sheetSave(p){try{
-  // 운동시간(duration)은 Google Sheets가 1:10:10을 시간값으로 자동 변환하지 않도록
-  // 전송할 때만 앞에 apostrophe(')를 붙인다. 시트 화면에는 apostrophe 없이 1:10:10으로 보인다.
+  // Google Sheets가 1:10:10, 5:30 같은 값을 시간값으로 자동 변환하지 않도록
+  // 전송 직전에 콜론형 시간 문자열 앞에 apostrophe(')를 붙인다.
+  // 시트 화면에는 apostrophe 없이 입력값 그대로 보인다.
+  const forceTextTime=(v)=>{
+    if(v===undefined||v===null)return v;
+    if(typeof v!=='string')return v;
+    const cleaned=v.trim().replace(/^'+/,'');
+    return /^\d{1,3}:\d{1,2}(?::\d{1,2})?$/.test(cleaned) ? "'"+cleaned : v;
+  };
   const payload={...p};
-  if(payload.type==='exercise' && payload.duration && /^\d+:\d{2}(?::\d{2})?$/.test(String(payload.duration))){
-    payload.duration="'"+String(payload.duration).replace(/^'+/,'');
+  if(['exercise','sleep','meal'].includes(payload.type)){
+    ['time','duration','pace','bedtime','waketime'].forEach(k=>{
+      if(payload[k])payload[k]=forceTextTime(String(payload[k]));
+    });
   }
   await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),mode:'no-cors'});
 }catch(e){console.warn('저장실패',e);}}
@@ -1409,6 +1418,7 @@ function parseSheetData(raw){
     } else if(type.includes('자전거')||type.toLowerCase().includes('bike')){
       exRecs.bike.push({
         date,time,
+        distance:safeFloat(r['거리(km)']),
         duration:normalizeDurationValue(r['시간(분)']),
         hr:safeInt(r['심박수']),
         cal:safeInt(r['칼로리']),
@@ -1429,10 +1439,14 @@ function parseSheetData(raw){
         }).filter(e=>e.name);
         // 같은 날짜+시간 복합운동 세션 합치기 (시트에 여러 행으로 저장된 경우)
         const existing=exRecs.bodyweight.find(e=>e.date===date&&e.time===time);
+        const bwDuration=normalizeDurationValue(r['시간(분)']);
+        const bwCal=safeInt(r['칼로리']);
         if(existing){
           existing.exercises.push(...exercises);
+          if(!existing.duration&&bwDuration)existing.duration=bwDuration;
+          if(!existing.cal&&bwCal)existing.cal=bwCal;
         } else {
-          exRecs.bodyweight.push({date,time,exercises});
+          exRecs.bodyweight.push({date,time,exercises,duration:bwDuration||null,cal:bwCal||null});
         }
       }
     } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
@@ -1604,6 +1618,9 @@ function syncTimeVal(baseId){
   const mv=String(m.value||'').padStart(2,'0');
   if(h.value!==''&&m.value!=='')hidden.value=`${hv}:${mv}`;
   else hidden.value='';
+  if(baseId==='sl-bedtime'||baseId==='sl-waketime'){
+    try{calcSleepDuration();}catch(e){}
+  }
 }
 function setTimeInputVal(baseId,timeStr){
   // "HH:MM" 형식을 커스텀 입력에 설정
@@ -1621,7 +1638,12 @@ function initDates(){
   const ds=now.toISOString().slice(0,10);
   const hh=pad(now.getUTCHours());
   const mm=pad(now.getUTCMinutes());
-  ['b-date','ex-date','m-date','sl-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
+  ['b-date','ex-date','m-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
+  const sleepDateEl=document.getElementById('sl-date');
+  if(sleepDateEl){
+    const yd=new Date(now);yd.setUTCDate(yd.getUTCDate()-1);
+    sleepDateEl.value=(currentSleepType==='낮잠')?ds:yd.toISOString().slice(0,10);
+  }
   ['b-time','ex-time','m-time'].forEach(id=>setTimeInputVal(id,`${hh}:${mm}`));
   const days=['일','월','화','수','목','금','토'];
   document.getElementById('navDate').textContent=`${ds} ${days[now.getUTCDay()]}요일`;
@@ -3642,6 +3664,17 @@ function selectSleepType(t,btn){
   currentSleepType=t;
   document.querySelectorAll('[data-sleeptype]').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  const dateEl=document.getElementById('sl-date');
+  if(dateEl){
+    const now=new Date(Date.now()+9*3600*1000);
+    if(t==='낮잠'){
+      dateEl.value=now.toISOString().slice(0,10);
+    }else{
+      const yd=new Date(now);yd.setUTCDate(yd.getUTCDate()-1);
+      dateEl.value=yd.toISOString().slice(0,10);
+    }
+  }
+  try{calcSleepDuration();}catch(e){}
 }
 
 function initSleepListeners(){
@@ -3657,6 +3690,11 @@ function calcSleepDuration(){
   const[bh,bm]=bed.split(':').map(Number);
   const[wh,wm]=wake.split(':').map(Number);
   let bedMins=bh*60+bm;let wakeMins=wh*60+wm;
+  const crossesMidnight=wakeMins<=bedMins;
+  if(currentSleepType==='밤잠' && crossesMidnight && date===today){
+    const yd=new Date(today);yd.setDate(yd.getDate()-1);date=yd.toISOString().slice(0,10);
+    const dateEl=document.getElementById('sl-date');if(dateEl)dateEl.value=date;
+  }
   if(wakeMins<=bedMins)wakeMins+=1440;
   const total=wakeMins-bedMins;
   const h=Math.floor(total/60);const m=total%60;
@@ -3670,7 +3708,7 @@ function calcSleepDuration(){
 }
 
 function saveSleep(){
-  const date=document.getElementById('sl-date').value;
+  let date=document.getElementById('sl-date').value;
   const bedtime=document.getElementById('sl-bedtime').value;
   const waketime=document.getElementById('sl-waketime').value;
   const quality=document.getElementById('sl-quality').value;
