@@ -416,8 +416,8 @@ select.inp{cursor:pointer;font-size:14px;}
 .ai-fallback-note{font-size:12px;color:var(--muted);margin-top:8px;}
 @media(max-width:768px){
   .page.chat-page,.page#page-chat{padding-bottom:92px;}
-  .chat-frame{height:auto;min-height:360px;max-height:none;}
-  .messages{overflow:visible;max-height:none;}
+  .chat-frame{height:auto;min-height:360px;max-height:none;overflow:visible;flex-direction:column;}
+  .messages{overflow:visible;max-height:none;flex:none;}
   .msg.ai{max-width:100%;}
   .bubble{font-size:13px;line-height:1.75;}
   .cs-section{padding:14px 15px;}
@@ -724,7 +724,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v1.9.10</span>
+  <span class="nav-ver">v2.0.2</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1272,24 +1272,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
 
 <script>
 const GAS_URL='https://script.google.com/macros/s/AKfycbwWr5CaWJ30c7-aRkbFXnXM0eDJa-fT_CCD15hq0vPooyIFZIXyYuqSA8Zwq0_pHVoKgA/exec';
-async function sheetSave(p){try{
-  // Google Sheets가 1:10:10, 5:30 같은 값을 시간값으로 자동 변환하지 않도록
-  // 전송 직전에 콜론형 시간 문자열 앞에 apostrophe(')를 붙인다.
-  // 시트 화면에는 apostrophe 없이 입력값 그대로 보인다.
-  const forceTextTime=(v)=>{
-    if(v===undefined||v===null)return v;
-    if(typeof v!=='string')return v;
-    const cleaned=v.trim().replace(/^'+/,'');
-    return /^\d{1,3}:\d{1,2}(?::\d{1,2})?$/.test(cleaned) ? "'"+cleaned : v;
-  };
-  const payload={...p};
-  if(['exercise','sleep','meal'].includes(payload.type)){
-    ['time','duration','pace','bedtime','waketime'].forEach(k=>{
-      if(payload[k])payload[k]=forceTextTime(String(payload[k]));
-    });
-  }
-  await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),mode:'no-cors'});
-}catch(e){console.warn('저장실패',e);}}
+async function sheetSave(p){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),mode:'no-cors'});}catch(e){console.warn('저장실패',e);}}
 async function sheetLoad(){try{const r=await fetch(`${GAS_URL}?type=all`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('불러오기실패',e);}return null;}
 async function sheetLoadFavs(){try{const r=await fetch(`${GAS_URL}?type=favorites`);const d=await r.json();if(d.status==='ok')return d.data;}catch(e){console.warn('즐겨찾기 불러오기 실패',e);}return null;}
 async function sheetSaveFav(fav){try{await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'favorite',...fav}),mode:'no-cors'});}catch(e){console.warn('즐겨찾기 저장실패',e);}}
@@ -1352,7 +1335,7 @@ function parseSheetData(raw){
   // GAS가 이미 KST 기준 'yyyy-MM-dd' / 'HH:mm' 문자열로 반환하므로
   // 추가 변환 없이 그대로 사용. 빈값/null 방어만 처리.
   function safeDate(v){ return normalizeRecordDate(v); }
-  function safeTime(v){ return String(v||'').trim().replace(/^'+/,'').slice(0,5)||''; }
+  function safeTime(v){ return String(v||'').slice(0,5)||''; }
   function safeFloat(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
   function safeInt(v){ const n=parseInt(v); return isNaN(n)?null:n; }
 
@@ -1403,7 +1386,7 @@ function parseSheetData(raw){
     const parseRunLike=()=>({
         date,time,
         distance:safeFloat(r['거리(km)']),
-        duration:normalizeDurationValue(r['시간(분)']),
+        duration:String(r['시간(분)']||''),
         pace:String(r['페이스']||''),
         hr:safeInt(r['심박수']),
         cal:safeInt(r['칼로리']),
@@ -1418,8 +1401,7 @@ function parseSheetData(raw){
     } else if(type.includes('자전거')||type.toLowerCase().includes('bike')){
       exRecs.bike.push({
         date,time,
-        distance:safeFloat(r['거리(km)']),
-        duration:normalizeDurationValue(r['시간(분)']),
+        duration:safeInt(r['시간(분)']),
         hr:safeInt(r['심박수']),
         cal:safeInt(r['칼로리']),
         memo:String(r['세부내용']||'')
@@ -1439,33 +1421,28 @@ function parseSheetData(raw){
         }).filter(e=>e.name);
         // 같은 날짜+시간 복합운동 세션 합치기 (시트에 여러 행으로 저장된 경우)
         const existing=exRecs.bodyweight.find(e=>e.date===date&&e.time===time);
-        const bwDuration=normalizeDurationValue(r['시간(분)']);
-        const bwCal=safeInt(r['칼로리']);
         if(existing){
           existing.exercises.push(...exercises);
-          if(!existing.duration&&bwDuration)existing.duration=bwDuration;
-          if(!existing.cal&&bwCal)existing.cal=bwCal;
         } else {
-          exRecs.bodyweight.push({date,time,exercises,duration:bwDuration||null,cal:bwCal||null});
+          exRecs.bodyweight.push({date,time,exercises});
         }
       }
     } else if(isWalkMarker || (hasRunLikeFields && (String(r['세부내용']||'').includes('걷')||String(r['메모']||'').includes('걷')))){
       exRecs.walk.push(parseRunLike());
     } else if(typeRaw.trim()){
-      exRecs.other.push({date,time,name:typeRaw.trim(),duration:normalizeDurationValue(r['시간(분)']),cal:safeInt(r['칼로리']),hr:safeInt(r['심박수']),distance:safeFloat(r['거리(km)']),memo:String(r['세부내용']||'')});
+      exRecs.other.push({date,time,name:typeRaw.trim(),duration:String(r['시간(분)']||''),cal:safeInt(r['칼로리']),hr:safeInt(r['심박수']),distance:safeFloat(r['거리(km)']),memo:String(r['세부내용']||'')});
     }
   });
 
   // ── 수면: 날짜|취침시간|기상시간|수면시간(h)|품질(1-5)|메모
-  const sleepRecs=(raw.sleep||[]).map(r=>{
-    const date=safeDate(r['날짜']);
-    const bedtime=safeTime(r['취침시간']);
-    const waketime=safeTime(r['기상시간']);
-    const sleepType=String(r['수면구분']||r['sleepType']||'밤잠')||'밤잠';
-    const mins=calcSleepTotalMinutes(bedtime,waketime);
-    const durationHours=safeFloat(r['수면시간(h)']) || (mins?Math.round(mins/60*10)/10:null);
-    return {date,bedtime,waketime,durationHours,quality:safeInt(r['품질(1-5)']),memo:String(r['메모']||'')||null,sleepType,wakeDate:getSleepWakeDate({date,sleepType})};
-  }).filter(r=>r.date);
+  const sleepRecs=(raw.sleep||[]).map(r=>({
+    date:safeDate(r['날짜']),
+    bedtime:safeTime(r['취침시간']),
+    waketime:safeTime(r['기상시간']),
+    durationHours:safeFloat(r['수면시간(h)']),
+    quality:safeInt(r['품질(1-5)']),
+    memo:String(r['메모']||'')||null
+  })).filter(r=>r.date);
 
   // 수면 중복 제거 (같은 날짜면 마지막 것 유지)
   const sleepDeduped=[];
@@ -1619,9 +1596,6 @@ function syncTimeVal(baseId){
   const mv=String(m.value||'').padStart(2,'0');
   if(h.value!==''&&m.value!=='')hidden.value=`${hv}:${mv}`;
   else hidden.value='';
-  if(baseId==='sl-bedtime'||baseId==='sl-waketime'){
-    try{calcSleepDuration();}catch(e){}
-  }
 }
 function setTimeInputVal(baseId,timeStr){
   // "HH:MM" 형식을 커스텀 입력에 설정
@@ -1639,11 +1613,7 @@ function initDates(){
   const ds=now.toISOString().slice(0,10);
   const hh=pad(now.getUTCHours());
   const mm=pad(now.getUTCMinutes());
-  ['b-date','ex-date','m-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
-  const sleepDateEl=document.getElementById('sl-date');
-  if(sleepDateEl){
-    sleepDateEl.value=(currentSleepType==='낮잠')?ds:getNightSleepDefaultDate();
-  }
+  ['b-date','ex-date','m-date','sl-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=ds;});
   ['b-time','ex-time','m-time'].forEach(id=>setTimeInputVal(id,`${hh}:${mm}`));
   const days=['일','월','화','수','목','금','토'];
   document.getElementById('navDate').textContent=`${ds} ${days[now.getUTCDay()]}요일`;
@@ -1708,7 +1678,8 @@ function renderDashboard(){
   // 수면 대시보드
   const sr=JSON.parse(localStorage.getItem('sleepRecords')||'[]');
   const yesterday=(()=>{const d=new Date(today);d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);})();
-  const lastSleep=sr.filter(r=>getSleepWakeDate(r)===today).sort((a,b)=>String(a.date).localeCompare(String(b.date))).pop()||null;
+  function isWakeToday(rec){if(!rec.bedtime||!rec.waketime)return false;const[bh,bm]=rec.bedtime.split(':').map(Number);const[wh,wm]=rec.waketime.split(':').map(Number);return(wh*60+wm)<(bh*60+bm);}
+  const lastSleep=sr.filter(r=>r.date===today||(r.date===yesterday&&isWakeToday(r))).sort((a,b)=>a.date.localeCompare(b.date)).pop()||null;
   const sleepEl=document.getElementById('d-sleep-content');
   if(lastSleep){
     const sc=lastSleep.durationHours>=7?'var(--run)':lastSleep.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
@@ -2200,19 +2171,35 @@ function renderHistPanel(){
 
 // ══ 운동 종목별 테이블 뷰 ══
 let exSortKey='date', exSortAsc=false, currentExHistSub='run';
-function histDurToMin(v){return durationToMinutes(v);}
+function histDurToMin(v){
+  if(!v)return 0;
+  if(typeof v==='number')return v;
+  const parts=String(v).split(':').map(Number);
+  if(parts.length===3 && !Number.isNaN(parts[0]))return parts[0]*60+parts[1]+(parts[2]||0)/60;
+  if(parts.length===2 && !Number.isNaN(parts[0]))return parts[0]+(parts[1]||0)/60;
+  const n=parseFloat(v);return Number.isFinite(n)?n:0;
+}
 // duration 값을 읽기 좋은 문자열로 변환
 function fmtDurStr(v){
+  // duration 값을 읽기 좋은 문자열로 변환
+  // 입력: number(분), "H:MM:SS", "MM:SS", "N분", "N" 등 → 출력: "H:MM:SS" or "MM:SS" or "N분"
   if(!v&&v!==0)return '';
-  const min=durationToMinutes(v);
-  if(!min)return String(v||'');
-  const totalSec=Math.round(min*60);
-  const h=Math.floor(totalSec/3600);
-  const m=Math.floor((totalSec%3600)/60);
-  const sec=totalSec%60;
-  if(h)return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-  if(sec)return `${m}분 ${sec}초`;
-  return `${m}분`;
+  if(typeof v==='number'){
+    if(v===0)return '0분';
+    const h=Math.floor(v/60),m=Math.round(v%60);
+    return h?`${h}:${String(m).padStart(2,'0')}:00`:`${m}분`;
+  }
+  const str=String(v).trim();
+  if(!str)return '';
+  const parts=str.split(':');
+  if(parts.length===3)return str;  // H:MM:SS 그대로
+  if(parts.length===2)return str;  // MM:SS 그대로
+  // "N분" 형식
+  if(str.endsWith('분')){const n=parseFloat(str);return Number.isFinite(n)&&n>0?(n>=60?`${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,'0')}:00`:`${Math.round(n)}분`):str;}
+  // 순수 숫자 → 분으로 처리
+  const n=parseFloat(str);
+  if(Number.isFinite(n)&&n>0)return n>=60?`${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,'0')}:00`:`${Math.round(n)}분`;
+  return str;
 }
 function histFmtMin(min){
   min=Math.round(min||0);
@@ -2622,55 +2609,8 @@ function autoColon(el){
     el.value=v;
   }
 }
-
-// 운동 시간은 앱 내부/구글시트 모두 1:10:10 같은 콜론 문자열로 유지한다.
-// Google Sheets 전송 시에는 sheetSave()에서만 apostrophe(')를 붙여 일반 텍스트로 강제한다.
-function durationToMinutes(v){
-  if(v===undefined||v===null||v==='')return 0;
-  if(typeof v==='number')return v;
-  let str=String(v).trim().replace(/^'+/,'');
-  if(!str)return 0;
-
-  // Google Sheets에서 시간값으로 넘어온 경우: Sat Dec 30 1899 01:10:10 ...
-  if(/GMT|UTC|KST|\d{4}/i.test(str) && /\d{1,2}:\d{2}/.test(str)){
-    const m=str.match(/(?:^|\s)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-    if(m){
-      const h=parseInt(m[1])||0, mm=parseInt(m[2])||0, ss=parseInt(m[3]||'0')||0;
-      if(/1899|1970|GMT|UTC|KST/i.test(str))return h*60+mm+ss/60;
-    }
-  }
-
-  const hm=str.match(/(?:(\d+(?:\.\d+)?)\s*시간)?\s*(?:(\d+(?:\.\d+)?)\s*분)?\s*(?:(\d+(?:\.\d+)?)\s*초)?/);
-  if(hm && (hm[1]||hm[2]||hm[3]))return (parseFloat(hm[1]||0)*60)+(parseFloat(hm[2]||0))+(parseFloat(hm[3]||0)/60);
-
-  const parts=str.split(':').map(x=>parseFloat(x));
-  if(parts.length===3 && parts.every(n=>Number.isFinite(n)))return parts[0]*60+parts[1]+parts[2]/60;
-  if(parts.length===2 && parts.every(n=>Number.isFinite(n)))return parts[0]+parts[1]/60;
-
-  const n=parseFloat(str);
-  return Number.isFinite(n)?n:0;
-}
-function durationToSheetText(v){
-  if(v===undefined||v===null)return '';
-  let str=String(v).trim().replace(/^'+/,'');
-  if(!str)return '';
-  // 사용자가 입력한 1:10:10 / 30:00 형태는 그대로 텍스트로 유지
-  if(/^\d+:\d{1,2}(?::\d{1,2})?$/.test(str)){
-    const parts=str.split(':').map(x=>parseInt(x,10)||0);
-    if(parts.length===3)return `${parts[0]}:${String(parts[1]).padStart(2,'0')}:${String(parts[2]).padStart(2,'0')}`;
-    if(parts.length===2)return `${parts[0]}:${String(parts[1]).padStart(2,'0')}`;
-  }
-  const min=durationToMinutes(str);
-  if(!min)return '';
-  const totalSec=Math.round(min*60);
-  const h=Math.floor(totalSec/3600), m=Math.floor((totalSec%3600)/60), sec=totalSec%60;
-  return h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${m}:${String(sec).padStart(2,'0')}`;
-}
-function normalizeDurationValue(v){
-  return durationToSheetText(v) || '';
-}
 function saveRun(){
-  const dist=document.getElementById('run-dist').value;const dur=durationToSheetText(document.getElementById('run-dur').value);
+  const dist=document.getElementById('run-dist').value;const dur=document.getElementById('run-dur').value;
   if(!dist&&!dur){showToast('⚠️ 거리 또는 시간 입력');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,pace:document.getElementById('run-pace').value||null,hr:parseInt(document.getElementById('run-hr').value)||null,cal:parseInt(document.getElementById('run-cal').value)||null,cadence:parseInt(document.getElementById('run-cadence').value)||null,steps:parseInt(document.getElementById('run-steps').value)||null,sweat:parseInt(document.getElementById('run-sweat').value)||null};
   exRecs.run.push(r);exRecs.run.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2681,7 +2621,7 @@ function saveRun(){
 }
 
 async function saveWalk(){
-  const dist=document.getElementById('walk-dist').value;const dur=durationToSheetText(document.getElementById('walk-dur').value);
+  const dist=document.getElementById('walk-dist').value;const dur=document.getElementById('walk-dur').value;
   if(!dist&&!dur){showToast('⚠️ 거리 또는 시간 입력');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,pace:document.getElementById('walk-pace').value||null,hr:parseInt(document.getElementById('walk-hr').value)||null,cal:parseInt(document.getElementById('walk-cal').value)||null,cadence:parseInt(document.getElementById('walk-cadence').value)||null,steps:parseInt(document.getElementById('walk-steps').value)||null,sweat:parseInt(document.getElementById('walk-sweat').value)||null};
   if(!exRecs.walk)exRecs.walk=[];
@@ -2697,7 +2637,7 @@ async function saveWalk(){
 
 function saveOther(){
   const name=(document.getElementById('other-name').value||'').trim();
-  const dur=durationToSheetText(document.getElementById('other-dur').value);
+  const dur=document.getElementById('other-dur').value;
   if(!name){showToast('⚠️ 운동 종류를 입력해주세요');return;}
   if(!dur&&!document.getElementById('other-cal').value){showToast('⚠️ 시간 또는 칼로리를 입력해주세요');return;}
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,name,duration:dur||null,cal:parseInt(document.getElementById('other-cal').value)||null,hr:parseInt(document.getElementById('other-hr').value)||null,distance:parseFloat(document.getElementById('other-dist').value)||null,memo:document.getElementById('other-memo').value||null};
@@ -2709,7 +2649,7 @@ function saveOther(){
   renderExHist('other');showToast('➕ 기타 운동 저장됐어요!');
 }
 function saveBike(){
-  const dur=durationToSheetText(document.getElementById('bike-dur').value);if(!dur){showToast('⚠️ 시간 입력');return;}
+  const dur=document.getElementById('bike-dur').value;if(!dur){showToast('⚠️ 시간 입력');return;}
   const dist=document.getElementById('bike-dist').value;
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,distance:parseFloat(dist)||null,duration:dur||null,cal:parseInt(document.getElementById('bike-cal').value)||null,hr:parseInt(document.getElementById('bike-hr').value)||null,memo:document.getElementById('bike-memo').value||null};
   exRecs.bike.push(r);exRecs.bike.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2721,7 +2661,7 @@ function saveBike(){
 function saveBW(){
   const items=document.querySelectorAll('.added-ex-item');if(!items.length){showToast('⚠️ 종목을 추가해주세요');return;}
   const exercises=[...items].map(item=>{const inps=item.querySelectorAll('.aei-inp');return{name:item.dataset.added,reps:parseInt(inps[0].value)||null,sets:parseInt(inps[1].value)||null};});
-  const dur=durationToSheetText(document.getElementById('bw-dur')?.value)||null;
+  const dur=document.getElementById('bw-dur')?.value||null;
   const cal=parseInt(document.getElementById('bw-cal')?.value)||null;
   const r={date:document.getElementById('ex-date').value,time:document.getElementById('ex-time').value,exercises,duration:dur,cal};
   exRecs.bodyweight.push(r);exRecs.bodyweight.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2997,24 +2937,59 @@ function generateDailyReport(){
 
 // ══ 채팅 ══
 let chatHistory=[],chatLoading=false;
-const CHAT_SYSTEM=`당신은 4명의 전문가로 구성된 통합 헬스 코치입니다:
-🧬 생리학 코치: 운동생리학, 내분비학, 대사학 전문. 글리코겐·젖산·단백질합성·코르티솔·인슐린 등 신체 메커니즘 전문가
-🏋️ 운동 코치: 운동역학, 해부학, 트레이닝 과학 전문. 운동 종류·순서·강도·타이밍·자세·부상 예방 전문가
-🥗 영양 코치: 스포츠 영양학, 생화학 전문. 영양소 대사, 칼로리, 식사 타이밍 전문가
-⚡ 종합 코치: 세 전문가 의견을 통합해 실행 가능한 최적 조언 제공
+const CHAT_SYSTEM=`당신은 4명의 전문가로 구성된 통합 헬스 코치입니다. 사용자: 남성 만39세 175cm, 목표=체중 2-3kg 감량+근육량 유지·증가, 목표섭취 ~2100kcal/일, 단백질 150g/일.
 
-[데이터 분석 능력] 컨텍스트에는 오늘 데이터뿐 아니라 전체 기록 통계(체중 최저/최고/변화 추이, 운동 누적 기록, 수면 평균 등)가 포함됩니다. 기록 조회·분석 질문(예: "체중이 가장 적을 때", "운동 총 몇 회", "수면 평균")에 정확히 답하세요.
+🧬 생리학 코치 (bio 필드 담당)
+- 운동생리학·내분비학·대사학 전문가
+- 글리코겐 소모량, 젖산 역치, 단백질 합성 타이밍, 코르티솔·인슐린 반응, 기초대사량 기반 분석
+- 반드시 오늘 체성분 수치(체중, 체지방률, 골격근량)를 언급하고 최근 추세와 생리학적 의미를 구체적으로 설명
+- 예시 수준의 깊이: "현재 체지방률 22.7%는 지방 산화 효율이 낮아져 같은 운동량에도 지방 소모가 감소하는 구간입니다"
 
-[응답 규칙]
-- 기록 조회/통계 질문 → overall에 정확한 수치와 날짜 포함
-- 코칭 질문 → 오늘 데이터 기반 구체적 실행 지침
-- 학습/원리 질문 → 교과서 수준의 깊이 있는 설명
-- 단순 대화 → overall만 채움
+🏋️ 운동 코치 (exercise 필드 담당)
+- 운동역학·해부학·트레이닝 과학 전문가
+- 반드시 구체적 운동 처방 제공: 운동명, 세트 수, 반복 횟수, 휴식 시간, 총 소요 시간, 강도(심박수 목표 또는 RPE 1-10)
+- 오늘 한 운동이 있으면 그 데이터를 분석 후 다음 단계 제안
+- 운동 순서 반드시 번호로 명시: "1. 워밍업 5분 → 2. 스쿼트 4세트×12회(휴식 90초) → 3. 푸시업 3세트×15회" 형식
+- 부상 위험·근육 피로도·회복 상태를 고려한 맞춤 조언 포함
 
-반드시 아래 형식의 "유효한 JSON 객체"만 응답하세요. 마크다운, 설명문, 코드블록 금지.
-{"bio":"신체상태/생리학 조언","exercise":"운동 코칭","nutrition":"영양 코칭","overall":"종합 조언"}
+🥗 영양 코치 (nutrition 필드 담당)
+- 스포츠 영양학·생화학 전문가
+- 오늘 섭취 칼로리·단백질·탄수화물·지방을 목표 대비 수치로 분석: "단백질 87g 섭취(목표 150g 대비 63g 부족)" 형식
+- 남은 칼로리와 영양소 목표를 계산해 다음 식사 구체적 권장: 음식명+gram+칼로리+단백질 명시
+- 운동 전후 타이밍 영양 전략, 수분 섭취량(ml 단위)도 포함
+- 식사 기록이 없으면 오늘 목표 기준 시간대별 식단 플랜 제시
 
-핵심: 남성 만39세 175cm, 목표 체중2-3kg감량+근육증가+유지, 목표섭취~2100kcal, 단백질150g/일`;
+⚡ 종합 코치 (overall 필드 담당)
+- 세 전문가 의견 통합해 오늘 당장 실행할 Top 3 액션을 번호로 제시
+- 장기 목표(체지방 감량+근육 증가) 달성을 위한 이번 주 핵심 포인트 한 줄 추가
+- 기록 조회/통계 질문이면 overall에 정확한 수치·날짜 포함
+
+[데이터 분석]
+컨텍스트에 전체 기록 통계(체중 최저/최고/추이, 운동 누적, 수면 평균 등) 포함됨.
+"체중이 가장 낮았던 날", "운동 총 몇 회", "수면 평균" 질문 → 컨텍스트 수치 그대로 정확히 답할 것.
+
+[기록 비교 분석 질문 처리 방식]
+컨텍스트에 월별 평균 추세, 최저/최고 기록, 변화율이 모두 포함됨.
+비교·추세 질문 시 반드시:
+1. 구체적 수치와 날짜를 인용 ("3월 평균 체중 76.2kg → 6월 평균 74.8kg, -1.4kg 감소")
+2. 변화의 생리학적 의미 설명 ("골격근량이 동시에 감소한 것은 칼로리 적자 과다로 근손실이 동반된 케이스")
+3. 현재 상태 평가 + 앞으로의 방향 제시
+
+[운동생리학 질문 처리 방식]
+원리·메커니즘·이유 질문은 bio 필드에서 교과서 수준으로 깊이 있게 설명:
+1. 분자·세포 수준 메커니즘 (예: mTOR 경로, AMPK 활성화, 글리코겐 분해 효소)
+2. 사용자의 실제 기록 수치와 연결 (예: "현재 골격근 31.3kg 기준으로...")
+3. 실생활 적용 방법 (타이밍, 강도, 빈도)
+- 운동생리학 질문도 exercise·nutrition 필드를 함께 채워 실행 가능한 프로토콜 제시
+
+[응답 품질 기준 - 반드시 준수]
+❌ 금지: 막연한 조언("운동하세요", "단백질 드세요"), 2문장 이하 짧은 답변
+✅ 필수: 수치 기반 구체적 처방("스쿼트 4세트×12회, 휴식 90초", "닭가슴살 150g=단백질 35g 추가")
+- 코칭·분석·생리학 질문: 각 관련 필드 최소 4~6문장, 수치·날짜·실행 방법 포함
+- 단순 대화·기록 조회: overall만 채우고 나머지는 ""
+
+반드시 유효한 JSON 객체만 응답. 마크다운·설명문·코드블록 절대 금지.
+{"bio":"생리학 분석","exercise":"운동 처방","nutrition":"영양 분석","overall":"종합 액션 플랜"}`;
 
 function loadChatContext(){
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
@@ -3502,34 +3477,101 @@ function buildFullHealthContext(userQuestion=''){
   const {br,mr,er,sr}=stores;
   const ex=allExercises(er);
   const latest=br[br.length-1];
+  const first=br[0];
+
   let ctx=`[앱 내부 건강기록 요약]\n체성분 ${br.length}건 · 운동 ${ex.length}회 · 식사 ${mr.length}건 · 수면 ${sr.length}회\n`;
-  if(latest)ctx+=`최신 체성분: ${latest.date} 체중${latest.weight||'—'}kg 골격근${latest.skeletal||'—'}kg 체지방량${latest.fatMass||'—'}kg 체지방률${latest.fatRate||'—'}% BMI${latest.bmi||'—'}\n`;
-  const metrics=[['weight','체중','kg'],['fatRate','체지방률','%'],['fatMass','체지방량','kg'],['skeletal','골격근량','kg']];
+
+  // ── 최신 체성분 ──
+  if(latest)ctx+=`최신 체성분(${latest.date}): 체중${latest.weight||'—'}kg 골격근${latest.skeletal||'—'}kg 체지방량${latest.fatMass||'—'}kg 체지방률${latest.fatRate||'—'}% BMI${latest.bmi||'—'} 기초대사량${latest.bmr||'—'}kcal\n`;
+
+  // ── 전체 기간 최저/최고 + 첫기록→최신 변화량 ──
+  const metrics=[['weight','체중','kg'],['fatRate','체지방률','%'],['fatMass','체지방량','kg'],['skeletal','골격근량','kg'],['water','체수분','kg'],['bmi','BMI','']];
+  ctx+=`\n[전체 기간 최저/최고/변화]\n`;
   metrics.forEach(([k,label,unit])=>{
     const min=findMetricRecord(k,'min'), max=findMetricRecord(k,'max');
-    if(min&&max)ctx+=`${label}: 최저 ${min.v}${unit}(${min.r.date}) / 최고 ${max.v}${unit}(${max.r.date})\n`;
+    if(!min||!max)return;
+    const fv=first?parseFloat(first[k]):null;
+    const lv=latest?parseFloat(latest[k]):null;
+    const diff=(fv!==null&&lv!==null&&!isNaN(fv)&&!isNaN(lv))?(lv-fv>0?'+':'')+(lv-fv).toFixed(1):'—';
+    ctx+=`  ${label}: 최저 ${min.v}${unit}(${min.r.date}) / 최고 ${max.v}${unit}(${max.r.date}) / 첫→최신 변화 ${diff}${unit}\n`;
   });
+
+  // ── 월별 체성분 평균 추세 (최근 6개월) ──
+  if(br.length>=3){
+    const monthMap={};
+    br.forEach(r=>{
+      const ym=String(r.date||'').slice(0,7);
+      if(!ym)return;
+      if(!monthMap[ym])monthMap[ym]={w:[],f:[],s:[]};
+      if(r.weight)monthMap[ym].w.push(parseFloat(r.weight));
+      if(r.fatRate)monthMap[ym].f.push(parseFloat(r.fatRate));
+      if(r.skeletal)monthMap[ym].s.push(parseFloat(r.skeletal));
+    });
+    const months=Object.keys(monthMap).sort().slice(-6);
+    if(months.length>=2){
+      ctx+=`\n[월별 평균 추세 (최근 ${months.length}개월)]\n`;
+      months.forEach(ym=>{
+        const d=monthMap[ym];
+        const avg=(arr)=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—';
+        ctx+=`  ${ym}: 체중${avg(d.w)}kg 체지방률${avg(d.f)}% 골격근${avg(d.s)}kg\n`;
+      });
+      const fm=monthMap[months[0]], lm=monthMap[months[months.length-1]];
+      const avgN=(arr)=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
+      const fw=avgN(fm.w),lw=avgN(lm.w),ff=avgN(fm.f),lf=avgN(lm.f),fs=avgN(fm.s),ls=avgN(lm.s);
+      if(fw&&lw)ctx+=`  → ${months[0]}→${months[months.length-1]} 변화: 체중 ${(lw-fw>0?'+':'')+(lw-fw).toFixed(1)}kg / 체지방률 ${lf&&ff?(lf-ff>0?'+':'')+(lf-ff).toFixed(1)+'%':'—'} / 골격근 ${ls&&fs?(ls-fs>0?'+':'')+(ls-fs).toFixed(1)+'kg':'—'}\n`;
+    }
+  }
+
+  // ── 체지방률 최저일 상세 + 최신 비교 ──
   const minFat=findMetricRecord('fatRate','min');
   if(minFat){
     const day=recordsOnDate(minFat.r.date,stores);
-    ctx+=`\n[체지방률 최저일 상세]\n${formatLinkedDay(day)}\n`;
-    if(latest)ctx+=`\n[체지방률 최저일 vs 최신 체성분 비교]\n${compareBodyRecords(minFat.r,latest)}\n`;
+    ctx+=`\n[체지방률 최저일 상세 (${minFat.r.date})]\n${formatLinkedDay(day)}\n`;
+    if(latest)ctx+=`\n[체지방률 최저일 vs 최신 비교]\n${compareBodyRecords(minFat.r,latest)}\n`;
   }
+
+  // ── 체중 최저일 상세 (체지방률 최저일과 다른 경우만) ──
+  const minW=findMetricRecord('weight','min');
+  if(minW&&(!minFat||minW.r.date!==minFat.r.date)){
+    ctx+=`\n[체중 최저일 상세 (${minW.r.date})]\n체중${minW.r.weight}kg 골격근${minW.r.skeletal||'—'}kg 체지방률${minW.r.fatRate||'—'}%\n`;
+    if(latest)ctx+=`[체중 최저일 vs 최신 비교]\n${compareBodyRecords(minW.r,latest)}\n`;
+  }
+
+  // ── 오늘 기록 ──
   const todayDay=recordsOnDate(today,stores);
-  ctx+=`\n[오늘 연결 기록]\n${formatLinkedDay(todayDay)}\n`;
-  const recentBody=br.slice(-10).map(r=>`${r.date} 체중${r.weight||'—'}kg 골격근${r.skeletal||'—'}kg 체지방률${r.fatRate||'—'}%`).join(' | ');
-  if(recentBody)ctx+=`\n최근 체성분 10건: ${recentBody}\n`;
+  ctx+=`\n[오늘(${today}) 기록]\n${formatLinkedDay(todayDay)}\n`;
+
+  // ── 최근 체성분 20건 ──
+  const recentBody=br.slice(-20).map(r=>`${r.date} 체중${r.weight||'—'}kg 골격근${r.skeletal||'—'}kg 체지방률${r.fatRate||'—'}% 체지방량${r.fatMass||'—'}kg`).join(' | ');
+  if(recentBody)ctx+=`\n[최근 체성분 20건]\n${recentBody}\n`;
+
+  // ── 최근 운동 15건 ──
+  const sortedEx=ex.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).slice(-15);
+  const recentEx=sortedEx.map(e=>`${e.date} ${exerciseLine(e)}`).join(' | ');
+  if(recentEx)ctx+=`\n[최근 운동 15건]\n${recentEx}\n`;
+
+  // ── 운동 통계 ──
+  const allRuns=(er.run||[]);
+  if(allRuns.length){
+    const dists=allRuns.filter(r=>r.distance).map(r=>parseFloat(r.distance));
+    const totalDist=dists.reduce((a,b)=>a+b,0);
+    const paces=allRuns.filter(r=>r.pace).map(r=>r.pace).sort();
+    ctx+=`\n[런닝 통계] 총${allRuns.length}회 누적${totalDist.toFixed(1)}km 최고페이스${paces[0]||'—'}\n`;
+  }
+
+  // ── 최근 식사 10건 ──
   const recentMeals=mr.slice(-10).map(mealLine).join(' | ');
-  if(recentMeals)ctx+=`최근 식사 10건: ${recentMeals}\n`;
-  const recentEx=ex.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).slice(-10).map(e=>`${e.date} ${exerciseLine(e)}`).join(' | ');
-  if(recentEx)ctx+=`최근 운동 10건: ${recentEx}\n`;
-  const recentSleep=sr.slice(-7).map(s=>`${s.date} ${sleepLine(s)}`).join(' | ');
-  if(recentSleep)ctx+=`최근 수면 7건: ${recentSleep}\n`;
+  if(recentMeals)ctx+=`\n[최근 식사 10건]\n${recentMeals}\n`;
+
+  // ── 최근 수면 10건 ──
+  const recentSleep=sr.slice(-10).map(s=>`${s.date} ${sleepLine(s)}`).join(' | ');
+  if(recentSleep)ctx+=`\n[최근 수면 10건]\n${recentSleep}\n`;
+
   return ctx;
 }
 function needsHealthContext(q){
   const t=String(q||'');
-  return /(비교|분석|추세|패턴|돌아가|계획|루틴|추천|문제점|왜|어떻게|감량|증량|체지방|체중|골격근|운동|식사|수면|기록|데이터)/.test(t);
+  return /(비교|분석|추세|패턴|돌아가|계획|루틴|추천|문제점|왜|어떻게|감량|증량|체지방|체중|골격근|운동|식사|수면|기록|데이터|생리학|근육|피로|회복|단백질|글리코겐|젖산|코르티솔|인슐린|대사|호르몬|합성|분해|산화|에너지|칼로리|기초대사|산소|심박|유산소|무산소|근섬유|근비대|근손실|체력|지구력|강도|효율|효과|원리|메커니즘|이유|왜냐|어째서|어떤 원리|어떤 이유)/.test(t);
 }
 function answerLocalRecordQuery(q){
   const text=String(q||'').replace(/\s+/g,' ');
@@ -3663,16 +3705,6 @@ function selectSleepType(t,btn){
   currentSleepType=t;
   document.querySelectorAll('[data-sleeptype]').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const dateEl=document.getElementById('sl-date');
-  if(dateEl){
-    const now=new Date(Date.now()+9*3600*1000);
-    if(t==='낮잠'){
-      dateEl.value=now.toISOString().slice(0,10);
-    }else{
-      dateEl.value=getNightSleepDefaultDate();
-    }
-  }
-  try{calcSleepDuration();}catch(e){}
 }
 
 function initSleepListeners(){
@@ -3681,69 +3713,43 @@ function initSleepListeners(){
   if(bed) bed.addEventListener('change',calcSleepDuration);
   if(wake) wake.addEventListener('change',calcSleepDuration);
 }
-function getDateOffset(dateStr,days){
-  const d=new Date(dateStr+'T00:00:00+09:00');
-  d.setDate(d.getDate()+days);
-  return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
-}
-function getNightSleepDefaultDate(){return getDateOffset(getKstDateString(),-1);}
-function getSleepWakeDate(rec){
-  if(!rec||!rec.date)return '';
-  // 밤잠은 '잠든 날짜'로 저장하고, 대시보드는 '일어난 날짜' 기준으로 보여준다.
-  return (rec.sleepType||'밤잠')==='낮잠' ? rec.date : getDateOffset(rec.date,1);
-}
-function normalizeSleepRecordDate(date,bedtime,waketime){
-  if(currentSleepType==='낮잠')return date;
-  const todayStr=getKstDateString();
-  // 밤잠 입력에서 오늘 날짜가 들어가면, 일어난 오늘의 전날 기록으로 보정한다.
-  // 예: 6/10 21:00 또는 24:00 취침 → 6/11 05:00 기상 = 시트 날짜 6/10
-  if(!date||date===todayStr)return getDateOffset(todayStr,-1);
-  return date;
-}
-function calcSleepTotalMinutes(bedtime,waketime){
-  if(!bedtime||!waketime)return 0;
-  const[bh,bm]=bedtime.split(':').map(Number);
-  const[wh,wm]=waketime.split(':').map(Number);
-  if([bh,bm,wh,wm].some(n=>Number.isNaN(n)))return 0;
-  let bedMins=bh*60+bm;
-  let wakeMins=wh*60+wm;
-  if(wakeMins<=bedMins)wakeMins+=1440;
-  return Math.max(0,wakeMins-bedMins);
-}
 function calcSleepDuration(){
   const bed=document.getElementById('sl-bedtime').value;
   const wake=document.getElementById('sl-waketime').value;
-  const disp=document.getElementById('sl-duration-display');
-  if(!bed||!wake){disp.textContent='—';return;}
-  const dateEl=document.getElementById('sl-date');
-  if(currentSleepType==='밤잠'&&dateEl)dateEl.value=normalizeSleepRecordDate(dateEl.value,bed,wake);
-  const total=calcSleepTotalMinutes(bed,wake);
-  if(!total){disp.textContent='—';return;}
+  if(!bed||!wake){document.getElementById('sl-duration-display').textContent='—';return;}
+  const[bh,bm]=bed.split(':').map(Number);
+  const[wh,wm]=wake.split(':').map(Number);
+  let bedMins=bh*60+bm;let wakeMins=wh*60+wm;
+  if(wakeMins<=bedMins)wakeMins+=1440;
+  const total=wakeMins-bedMins;
   const h=Math.floor(total/60);const m=total%60;
-  disp.textContent=`${h}시간 ${m>0?m+'분':''}`.trim();
+  document.getElementById('sl-duration-display').textContent=`${h}시간 ${m>0?m+'분':''}`.trim();
+  // 수면 시간별 색상
   const hours=total/60;
+  const disp=document.getElementById('sl-duration-display');
   if(hours>=7)disp.style.color='var(--run)';
   else if(hours>=6)disp.style.color='var(--fatrate)';
   else disp.style.color='var(--fat-c)';
 }
 
 function saveSleep(){
-  let date=document.getElementById('sl-date').value;
+  const date=document.getElementById('sl-date').value;
   const bedtime=document.getElementById('sl-bedtime').value;
   const waketime=document.getElementById('sl-waketime').value;
   const quality=document.getElementById('sl-quality').value;
   const memo=document.getElementById('sl-memo').value;
   if(!date||!bedtime||!waketime){showToast('⚠️ 날짜, 취침, 기상 시간을 입력해주세요');return;}
-  date=normalizeSleepRecordDate(date,bedtime,waketime);
-  const dateEl=document.getElementById('sl-date');if(dateEl)dateEl.value=date;
-  const totalMins=calcSleepTotalMinutes(bedtime,waketime);
-  if(!totalMins){showToast('⚠️ 취침/기상 시간을 다시 확인해주세요');return;}
+  const[bh,bm]=bedtime.split(':').map(Number);
+  const[wh,wm]=waketime.split(':').map(Number);
+  let bedMins=bh*60+bm;let wakeMins=wh*60+wm;
+  if(wakeMins<=bedMins)wakeMins+=1440;
+  const totalMins=wakeMins-bedMins;
   const durationHours=Math.round(totalMins/60*10)/10;
-  const rec={id:Date.now(),date,sleepType:currentSleepType,bedtime,waketime,durationHours,quality:quality?parseInt(quality):null,memo:memo||null,wakeDate:getSleepWakeDate({date,sleepType:currentSleepType})};
-  // 같은 수면일+수면타입이면 덮어쓰기
+  const rec={id:Date.now(),date,sleepType:currentSleepType,bedtime,waketime,durationHours,quality:quality?parseInt(quality):null,memo:memo||null};
+  // 같은 날짜+수면타입이면 덮어쓰기
   const idx=sleepRecs.findIndex(r=>r.date===date&&(r.sleepType||'밤잠')===(currentSleepType||'밤잠'));
   if(idx>=0)sleepRecs[idx]={...sleepRecs[idx],...rec};else sleepRecs.push(rec);
-  sleepRecs.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  sleepRecs.sort((a,b)=>a.date.localeCompare(b.date));
   localStorage.setItem('sleepRecords',JSON.stringify(sleepRecs));
   sheetSave({type:'sleep',sleepType:currentSleepType,...rec});
   document.getElementById('sl-bedtime').value='';
@@ -3752,7 +3758,7 @@ function saveSleep(){
   document.getElementById('sl-quality').value='';
   document.getElementById('sl-memo').value='';
   document.getElementById('sl-duration-display').textContent='—';
-  renderSleepHist();showLastSleepRec();renderDashboard();showToast(`😴 수면 저장됐어요! (${currentSleepType})`);
+  renderSleepHist();showLastSleepRec();showToast(`😴 수면 저장됐어요! (${currentSleepType})`);
 }
 
 function showLastSleepRec(){
