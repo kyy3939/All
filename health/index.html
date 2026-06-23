@@ -349,11 +349,17 @@ select.inp{cursor:pointer;font-size:14px;}
 .cs-section.exercise{border-color:var(--run);}
 .cs-section.nutrition{border-color:var(--eat);}
 .cs-section.overall{border-color:var(--coach);}
+.cs-section.recovery{border-color:#4fc3f7;}
+.cs-section.trend{border-color:#ffd740;}
+.cs-section.balance{border-color:#69f0ae;}
 .cs-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;}
 .cs-section.bio .cs-title{color:var(--bio);}
 .cs-section.exercise .cs-title{color:var(--run);}
 .cs-section.nutrition .cs-title{color:var(--eat);}
 .cs-section.overall .cs-title{color:var(--coach);}
+.cs-section.recovery .cs-title{color:#4fc3f7;}
+.cs-section.trend .cs-title{color:#ffd740;}
+.cs-section.balance .cs-title{color:#69f0ae;}
 .cs-content{font-size:13px;line-height:2;color:var(--text);word-break:keep-all;}
 .typing-wrap{align-self:flex-start;display:flex;gap:5px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:3px;padding:13px 18px;}
 .td{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:td 1.2s infinite;}
@@ -724,7 +730,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v2.0.2</span>
+  <span class="nav-ver">v2.0.5</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1240,6 +1246,9 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
         <button class="qb" onclick="qs('운동 순서 추천해줘')">🏋️ 순서 추천</button>
         <button class="qb" onclick="qs('지금 뭐 먹을까?')">🥗 식사 추천</button>
         <button class="qb" onclick="qs('오늘 목표 대비 어때?')">📊 진행 상황</button>
+        <button class="qb" onclick="qs('오늘 회복 상태 어때? 운동 강도 얼마나 올려도 돼?')">💤 회복 점검</button>
+        <button class="qb" onclick="qs('최근 7일 체성분, 운동, 수면, 식사 변화 추세 종합 분석해줘')">📈 7일 추세</button>
+        <button class="qb" onclick="qs('오늘 칼로리 섭취랑 소모 균형 분석하고 단백질 달성률도 알려줘')">⚖️ 칼로리 밸런스</button>
       </div>
       <!-- 입력창 -->
       <div style="display:flex;gap:8px;margin-top:8px;">
@@ -2949,24 +2958,46 @@ function generateDailyReport(){
 
 // ══ 채팅 ══
 let chatHistory=[],chatLoading=false;
-const CHAT_SYSTEM=`당신은 4명의 전문가로 구성된 통합 헬스 코치입니다:
+const CHAT_SYSTEM=`당신은 7명의 전문가로 구성된 통합 헬스 코치입니다:
 🧬 생리학 코치: 운동생리학, 내분비학, 대사학 전문. 글리코겐·젖산·단백질합성·코르티솔·인슐린 등 신체 메커니즘 전문가
 🏋️ 운동 코치: 운동역학, 해부학, 트레이닝 과학 전문. 운동 종류·순서·강도·타이밍·자세·부상 예방 전문가
 🥗 영양 코치: 스포츠 영양학, 생화학 전문. 영양소 대사, 칼로리, 식사 타이밍 전문가
 ⚡ 종합 코치: 세 전문가 의견을 통합해 실행 가능한 최적 조언 제공
+💤 회복 코치: 수면과학·피로생리학 전문. 최근 수면 품질(시간·품질점수)과 운동 강도·빈도를 교차 분석해 오늘의 회복 충분 여부와 적정 운동 강도를 판단. 오버트레이닝 경고, 회복 전략(수면·영양·휴식) 구체적 제안
+📈 트렌드 코치: 시계열 데이터 분석 전문. 체성분(체중·체지방률·골격근량) 변화 방향과 수치, 운동 빈도·종류·강도 추이, 평균 수면시간·품질 변화, 평균 칼로리·단백질 섭취 추이를 종합해 목표 달성 속도와 방향을 평가
+⚖️ 밸런스 코치: 에너지 균형 전문. 오늘 섭취 칼로리와 운동 소모 칼로리를 비교해 목표(~2100kcal) 대비 현재 상태 평가. 단백질 목표(150g/일) 달성률 포함. 남은 하루에 필요한 식사·운동 계획 구체적 제안
 
-[데이터 분석 능력] 컨텍스트에는 오늘 데이터뿐 아니라 전체 기록 통계(체중 최저/최고/변화 추이, 운동 누적 기록, 수면 평균 등)가 포함됩니다. 기록 조회·분석 질문(예: "체중이 가장 적을 때", "운동 총 몇 회", "수면 평균")에 정확히 답하세요.
+[데이터 분석 능력] 컨텍스트에는 오늘 데이터, 전체 기록 통계(체중 최저/최고/변화 추이, 운동 누적 기록, 수면 평균 등), 최근 7일~30일 상세 데이터가 포함됩니다. 컨텍스트에 [분석범위: 최근 30일] 또는 [분석범위: 최근 2주] 태그가 있으면 해당 범위의 데이터를 기반으로 분석하세요.
 
-[응답 규칙]
-- 기록 조회/통계 질문 → overall에 정확한 수치와 날짜 포함
-- 코칭 질문 → 오늘 데이터 기반 구체적 실행 지침
-- 학습/원리 질문 → 교과서 수준의 깊이 있는 설명
-- 단순 대화 → overall만 채움
+[응답 깊이 원칙 — 가장 중요]
+질문 유형에 따라 응답 깊이를 다르게 하세요:
 
-반드시 아래 형식의 "유효한 JSON 객체"만 응답하세요. 마크다운, 설명문, 코드블록 금지.
-{"bio":"신체상태/생리학 조언","exercise":"운동 코칭","nutrition":"영양 코칭","overall":"종합 조언"}
+■ 단순 질문 ("오늘 어때?", "뭐 먹을까?") → 3~5문장으로 간결하게
 
-핵심: 남성 만39세 175cm, 목표 체중2-3kg감량+근육증가+유지, 목표섭취~2100kcal, 단백질150g/일`;
+■ 분석/추세 질문 ("한달 운동 분석", "이번달 체중 변화", "7일 추세") → 아래 항목을 모두 포함한 상세 분석:
+  • 수치 요약: 기간 내 총 횟수/평균/최고값/최저값을 구체적 숫자로 제시
+  • 시간 흐름: 초반 vs 중반 vs 최근 변화 방향 비교
+  • 잘 되고 있는 것: 긍정적 지표 2~3가지 (구체적 수치 포함)
+  • 보완이 필요한 것: 개선 필요 지표 2~3가지 (구체적 수치 포함)
+  • 다음 행동: 내일/이번주 실천 가능한 구체적 제안 2~3가지
+
+■ 코칭 질문 ("운동 순서", "뭐부터 해야 해?") → 단계별 실행 지침, 이유 포함, 5~10문장
+
+■ 학습/원리 질문 ("글리코겐이 뭐야?", "체지방 어떻게 빠져?") → 메커니즘 설명 후 본인 데이터에 적용, 교과서 수준 깊이
+
+[응답 필드 규칙]
+- 분석/추세 질문 → trend 필드에 상세 분석 (운동·체성분·수면·식사 4개 카테고리 모두 포함)
+- 회복/피로 질문 → recovery 필드에 수면+운동 교차 분석
+- 칼로리/단백질 균형 질문 → balance 필드에 수치 계산 포함
+- 기록 조회 → overall에 정확한 수치와 날짜
+- 코칭 질문 → bio·exercise·nutrition 해당 필드 활용
+- 단순 대화 → overall만
+- 질문과 무관한 필드는 빈 문자열("")
+
+반드시 아래 형식의 "유효한 JSON 객체"만 응답하세요. 마크다운, 설명문, 코드블록 금지. JSON 문자열 안에서 줄바꿈은 \\n으로 표현하세요.
+{"bio":"","exercise":"","nutrition":"","overall":"","recovery":"","trend":"","balance":""}
+
+핵심 프로필: 남성 만39세 175cm, 목표 체중2-3kg감량+근육증가+유지, 목표섭취~2100kcal, 단백질150g/일, 주요운동: 런닝·실내자전거·맨몸복합운동(스쿼트·윗몸일으키기·트위스트·하복부·버피)`;
 
 function loadChatContext(){
   const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');
@@ -2999,7 +3030,7 @@ function loadChatContext(){
   if(eEx) eEx.textContent=`운동 ${totalEx}회`;
   if(eMeal) eMeal.textContent=`식사 ${mr.length}건`;
   if(eSleep) eSleep.textContent=`수면 ${sr.length}회`;
-  document.getElementById('chat-status').textContent='4 에이전트 준비 완료';
+  document.getElementById('chat-status').textContent='7 에이전트 준비 완료';
   if(document.getElementById('messages').children.length===0){
     const ds=[];if(latest)ds.push('체성분 ✓');if(tm.length)ds.push(`식사 ${tm.length}끼 ✓`);if(tex)ds.push(`운동 ${tex}회 ✓`);
     addAiChatMsg({overall:ds.length?`안녕하세요! 오늘 데이터 불러왔어요 (${ds.join(', ')})\n\n전체 기록도 확인할 수 있어요. "체중이 가장 낮았던 날은?", "운동 총 몇 회 했어?" 같은 기록 조회도 가능합니다 💪`:`안녕하세요! 아직 오늘 데이터가 없어요.\n체성분·식사·운동을 먼저 입력하면 더 정확한 코칭이 가능해요!\n저장된 전체 기록에 대한 질문도 물어보세요 😊`});
@@ -3319,6 +3350,9 @@ function addAiChatMsg(result){
   if(result.bio)s+=`<div class="cs-section bio"><div class="cs-title">🧬 신체 상태</div><div class="cs-content">${formatAiContent(result.bio)}</div></div>`;
   if(result.exercise)s+=`<div class="cs-section exercise"><div class="cs-title">🏋️ 운동 코칭</div><div class="cs-content">${formatAiContent(result.exercise)}</div></div>`;
   if(result.nutrition)s+=`<div class="cs-section nutrition"><div class="cs-title">🥗 영양 코칭</div><div class="cs-content">${formatAiContent(result.nutrition)}</div></div>`;
+  if(result.recovery)s+=`<div class="cs-section recovery"><div class="cs-title">💤 회복 상태</div><div class="cs-content">${formatAiContent(result.recovery)}</div></div>`;
+  if(result.trend)s+=`<div class="cs-section trend"><div class="cs-title">📈 변화 추세</div><div class="cs-content">${formatAiContent(result.trend)}</div></div>`;
+  if(result.balance)s+=`<div class="cs-section balance"><div class="cs-title">⚖️ 칼로리 밸런스</div><div class="cs-content">${formatAiContent(result.balance)}</div></div>`;
   if(result.overall)s+=`<div class="cs-section overall"><div class="cs-title">⚡ 종합 조언</div><div class="cs-content">${formatAiContent(result.overall)}</div></div>`;
   if(!s)s=`<div class="cs-section overall"><div class="cs-title">⚡ 종합 조언</div><div class="cs-content">응답을 정리하지 못했어요. 잠시 후 다시 시도해주세요.</div></div>`;
   div.innerHTML=`<div class="msg-meta">🤖 헬스코치 · ${nowTime()}</div><div class="bubble"><div class="coaching-sections">${s}</div></div>`;
@@ -3469,19 +3503,30 @@ function buildFullHealthContext(userQuestion=''){
   }
   const todayDay=recordsOnDate(today,stores);
   ctx+=`\n[오늘 연결 기록]\n${formatLinkedDay(todayDay)}\n`;
-  const recentBody=br.slice(-10).map(r=>`${r.date} 체중${r.weight||'—'}kg 골격근${r.skeletal||'—'}kg 체지방률${r.fatRate||'—'}%`).join(' | ');
-  if(recentBody)ctx+=`\n최근 체성분 10건: ${recentBody}\n`;
-  const recentMeals=mr.slice(-10).map(mealLine).join(' | ');
-  if(recentMeals)ctx+=`최근 식사 10건: ${recentMeals}\n`;
-  const recentEx=ex.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).slice(-10).map(e=>`${e.date} ${exerciseLine(e)}`).join(' | ');
-  if(recentEx)ctx+=`최근 운동 10건: ${recentEx}\n`;
-  const recentSleep=sr.slice(-7).map(s=>`${s.date} ${sleepLine(s)}`).join(' | ');
-  if(recentSleep)ctx+=`최근 수면 7건: ${recentSleep}\n`;
+  // ── 질문 기간 감지: 한달/30일/이번달/월간 → 30건, 2주/14일 → 20건, 기본 → 10건 ──
+  const qLower=String(userQuestion||'');
+  const isMonth=/한\s*달|30\s*일|이번\s*달|지난\s*달|월간|한달/.test(qLower);
+  const isTwoWeeks=/2\s*주|14\s*일|보름/.test(qLower);
+  const bodyN=isMonth?30:isTwoWeeks?20:10;
+  const exN=isMonth?40:isTwoWeeks?20:10;   // 운동은 하루 여러 건 가능하므로 조금 더 넉넉히
+  const mealN=isMonth?60:isTwoWeeks?28:10; // 식사는 하루 3끼 기준
+  const sleepN=isMonth?30:isTwoWeeks?14:7;
+  if(isMonth) ctx+=`[분석범위: 최근 30일]\n`;
+  else if(isTwoWeeks) ctx+=`[분석범위: 최근 2주]\n`;
+
+  const recentBody=br.slice(-bodyN).map(r=>`${r.date} 체중${r.weight||'—'}kg 골격근${r.skeletal||'—'}kg 체지방률${r.fatRate||'—'}%`).join(' | ');
+  if(recentBody)ctx+=`\n최근 체성분 ${bodyN}건: ${recentBody}\n`;
+  const recentMeals=mr.slice(-mealN).map(mealLine).join(' | ');
+  if(recentMeals)ctx+=`최근 식사 ${mealN}건: ${recentMeals}\n`;
+  const recentEx=ex.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).slice(-exN).map(e=>`${e.date} ${exerciseLine(e)}`).join(' | ');
+  if(recentEx)ctx+=`최근 운동 ${exN}건: ${recentEx}\n`;
+  const recentSleep=sr.slice(-sleepN).map(s=>`${s.date} ${sleepLine(s)}`).join(' | ');
+  if(recentSleep)ctx+=`최근 수면 ${sleepN}건: ${recentSleep}\n`;
   return ctx;
 }
 function needsHealthContext(q){
   const t=String(q||'');
-  return /(비교|분석|추세|패턴|돌아가|계획|루틴|추천|문제점|왜|어떻게|감량|증량|체지방|체중|골격근|운동|식사|수면|기록|데이터)/.test(t);
+  return /(비교|분석|추세|패턴|돌아가|계획|루틴|추천|문제점|왜|어떻게|감량|증량|체지방|체중|골격근|운동|식사|수면|기록|데이터|한달|한\s*달|30일|이번달|지난달|월간|2주|14일|보름)/.test(t);
 }
 function answerLocalRecordQuery(q){
   const text=String(q||'').replace(/\s+/g,' ');
@@ -3605,7 +3650,42 @@ function buildContextSnapshot(){
   const texToday=ex.filter(r=>r.date===today);
   if(texToday.length) snap+=`오늘운동: ${texToday.length}회\n`;
   const lastSleep=sr[sr.length-1];
-  if(lastSleep)snap+=`최근수면(${lastSleep.date}): ${lastSleep.durationHours||'—'}h\n`;
+  if(lastSleep)snap+=`최근수면(${lastSleep.date}): ${lastSleep.durationHours||'—'}h 품질${lastSleep.quality||'—'}점\n`;
+
+  // ── 최근 7일 트렌드 데이터 (recovery·trend·balance 에이전트용) ──
+  const d7=[];for(let i=6;i>=0;i--){const d=new Date(Date.now()+9*3600*1000);d.setDate(d.getDate()-i);d7.push(d.toISOString().slice(0,10));}
+  // 체성분 7일
+  const b7=d7.map(d=>br.filter(r=>r.date===d).pop()).filter(Boolean);
+  if(b7.length>=2){
+    const first=b7[0],last=b7[b7.length-1];
+    const wDiff=last.weight&&first.weight?(last.weight-first.weight).toFixed(1):null;
+    const fDiff=last.fatRate&&first.fatRate?(last.fatRate-first.fatRate).toFixed(1):null;
+    const sDiff=last.skeletal&&first.skeletal?(last.skeletal-first.skeletal).toFixed(2):null;
+    snap+=`[7일체성분추세] 체중${wDiff!==null?(wDiff>0?'+':'')+wDiff+'kg':'변화없음'} 체지방률${fDiff!==null?(fDiff>0?'+':'')+fDiff+'%':'변화없음'} 골격근${sDiff!==null?(sDiff>0?'+':'')+sDiff+'kg':'변화없음'}\n`;
+    snap+=`체성분일별: ${b7.map(r=>`${r.date.slice(5)} 체중${r.weight||'—'}kg 체지방${r.fatRate||'—'}% 골격근${r.skeletal||'—'}kg`).join(' | ')}\n`;
+  }
+  // 운동 7일
+  const ex7=d7.map(d=>({date:d,count:ex.filter(r=>r.date===d).length,cal:ex.filter(r=>r.date===d).reduce((a,r)=>a+(r.cal||0),0)}));
+  const exDays=ex7.filter(r=>r.count>0);
+  snap+=`[7일운동추세] 운동일수 ${exDays.length}/7일 총${exDays.reduce((a,r)=>a+r.count,0)}회 총소모${exDays.reduce((a,r)=>a+r.cal,0)}kcal\n`;
+  snap+=`운동일별: ${ex7.map(r=>`${r.date.slice(5)} ${r.count>0?r.count+'회':'휴식'}`).join(' | ')}\n`;
+  // 수면 7일
+  const sl7=d7.map(d=>sr.filter(r=>r.date===d||getSleepWakeDate(r)===d).pop()).filter(Boolean);
+  if(sl7.length>0){
+    const avgH=(sl7.reduce((a,r)=>a+(r.durationHours||0),0)/sl7.length).toFixed(1);
+    const avgQ=(sl7.reduce((a,r)=>a+(r.quality||0),0)/sl7.length).toFixed(1);
+    snap+=`[7일수면추세] 평균수면${avgH}h 평균품질${avgQ}점 (${sl7.length}일치)\n`;
+    snap+=`수면일별: ${sl7.map(r=>`${(r.date||'').slice(5)} ${r.durationHours||'—'}h 품질${r.quality||'—'}`).join(' | ')}\n`;
+  }
+  // 식사 7일
+  const ml7=d7.map(d=>{const recs=mr.filter(m=>m.date===d);const kcal=Math.round(recs.reduce((a,m)=>a+(m.total?.kcal||0),0));const prot=Math.round(recs.reduce((a,m)=>a+(m.total?.protein||0),0));return{date:d,kcal,prot,count:recs.length};});
+  const mlDays=ml7.filter(r=>r.count>0);
+  if(mlDays.length>0){
+    const avgKcal=Math.round(mlDays.reduce((a,r)=>a+r.kcal,0)/mlDays.length);
+    const avgProt=Math.round(mlDays.reduce((a,r)=>a+r.prot,0)/mlDays.length);
+    snap+=`[7일식사추세] 평균섭취${avgKcal}kcal 평균단백질${avgProt}g (${mlDays.length}일치)\n`;
+    snap+=`식사일별: ${ml7.map(r=>`${r.date.slice(5)} ${r.count>0?r.kcal+'kcal 단백질'+r.prot+'g':'미기록'}`).join(' | ')}\n`;
+  }
   return snap;
 }
 // ══ 수면 ══
