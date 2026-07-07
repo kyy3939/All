@@ -730,7 +730,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v2.0.8</span>
+  <span class="nav-ver">v2.0.9</span>
 </div>
 
 <!-- PC 상단 탭 -->
@@ -1379,21 +1379,22 @@ function parseDurationField(v){
   if(s.startsWith("'"))s=s.slice(1); // 강제텍스트 마커로 붙인 어퍼스트로피 방어적 제거
   return s;
 }
-// 런닝 구간별 페이스(splits)는 Apps Script에 전용 컬럼이 없어도 왕복 저장되도록,
-// 이미 저장/복원이 검증된 세부내용/메모 컬럼에 표시용 텍스트와 함께 마커로 실어보낸다.
-function encodeRunSplits(memo,splits){
-  if(!splits||!Object.keys(splits).length)return memo||'';
-  const tag='[SPLITS]'+JSON.stringify(splits)+'[/SPLITS]';
-  return (memo?memo+' ':'')+tag;
-}
-function decodeRunSplits(text){
-  if(!text)return{memo:null,splits:null};
-  const m=String(text).match(/\[SPLITS\]([\s\S]*?)\[\/SPLITS\]/);
-  if(!m)return{memo:text||null,splits:null};
-  let splits=null;
-  try{splits=JSON.parse(m[1]);}catch(e){splits=null;}
-  const memo=text.replace(m[0],'').trim()||null;
-  return{memo,splits};
+// ══ v2.0.9 수정: 런닝 구간별 페이스(splits)는 Apps Script의 '구간페이스' 전용 탭에
+// 저장/복원하도록 백엔드가 개선되어, 세부내용/메모 컬럼에 마커로 끼워넣던 임시방편은 제거함.
+// (raw.splits 배열 → 날짜+시간 키로 묶어서 해당 런닝 기록에 매칭 — parseSheetData 내부 참고)
+function buildSplitsLookup(splitsRows){
+  const map={};
+  (splitsRows||[]).forEach(row=>{
+    const d=String(row['날짜']||'').slice(0,10);
+    const t=String(row['시간']||'').slice(0,5);
+    const km=parseInt(row['km']);
+    const pace=String(row['페이스']||'').trim();
+    if(!d||!t||!km||!pace)return;
+    const key=d+'_'+t;
+    if(!map[key])map[key]={};
+    map[key]['km'+km]=pace;
+  });
+  return map;
 }
 function parseSheetData(raw){
   // GAS가 이미 KST 기준 'yyyy-MM-dd' / 'HH:mm' 문자열로 반환하므로
@@ -1438,6 +1439,7 @@ function parseSheetData(raw){
   // ── 운동: 날짜|시간|종류|세부내용|시간(분)|거리(km)|페이스|심박수|칼로리
   // 복합운동은 세부내용을 파싱해서 exercises 배열로 변환
   const exRecs={run:[],walk:[],bike:[],bodyweight:[],other:[]};
+  const splitsLookup=buildSplitsLookup(raw.splits);
   (raw.exercise||[]).forEach(r=>{
     const date=safeDate(r['날짜']);
     const time=safeTime(r['시간']);
@@ -1447,9 +1449,7 @@ function parseSheetData(raw){
     const typeLower=(type+' '+detailText).toLowerCase();
     const isWalkMarker=type.includes('걷')||typeLower.includes('walk')||detailText.includes('걷기');
     const hasRunLikeFields=!!(safeFloat(r['거리(km)'])||String(r['페이스']||'').trim()||safeInt(r['걸음수']));
-    const parseRunLike=()=>{
-      const{memo:cleanMemo,splits:parsedSplits}=decodeRunSplits(detailText);
-      return{
+    const parseRunLike=()=>({
         date,time,
         distance:safeFloat(r['거리(km)']),
         duration:parseDurationField(r['시간(분)']),
@@ -1458,11 +1458,10 @@ function parseSheetData(raw){
         cal:safeInt(r['칼로리']),
         cadence:safeInt(r['케이던스'])||null,
         steps:safeInt(r['걸음수'])||null,
-        detail:cleanMemo,
-        memo:cleanMemo,
-        splits:parsedSplits
-      };
-    };
+        detail:detailText||null,
+        memo:detailText||null,
+        splits:splitsLookup[date+'_'+time]||null
+      });
     if(type.includes('런')){
       exRecs.run.push(parseRunLike());
     } else if(type.includes('걷')||typeLower.includes('walk')){
@@ -2724,7 +2723,7 @@ function saveRun(){
   localStorage.setItem('exerciseRecords',JSON.stringify(exRecs));
   // 시트 전송용: duration은 콜론 문자열 대신 분 단위 숫자로(시간값 오인식 방지),
   // splits(구간 페이스)는 별도 컬럼이 없어도 세부내용/메모에 함께 실어 왕복 저장되게 함
-  sheetSave({type:'exercise',category:'run',...r,duration:toSheetText(dur),memo:encodeRunSplits(memo,r.splits),splitsJson:r.splits?JSON.stringify(r.splits):null});
+  sheetSave({type:'exercise',category:'run',...r,duration:toSheetText(dur),splitsJson:r.splits?JSON.stringify(r.splits):null});
   ['run-dist','run-dur','run-pace','run-hr','run-cal','run-cadence','run-steps','run-sweat','run-memo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const wrap=document.getElementById('run-splits-wrap');if(wrap)wrap.style.display='none';
   renderExHist('run');showToast('🏃 런닝 저장됐어요!');
@@ -4002,6 +4001,7 @@ syncFromSheet();
 /* ══ v2.0.6 추가: 복합운동 종목 팔굽혀펴기 추가 / 목록에 없는 종목 직접입력 추가 기능 ══ */
 /* ══ v2.0.7 추가: 런닝 시간(duration) 구글시트 왕복 오류 수정 / 런닝 구간별 페이스(splits) 영구저장 ══ */
 /* ══ v2.0.8 수정: duration 저장 방식을 분단위 숫자 → 어퍼스트로피 강제텍스트로 변경(초 단위 정밀도 보존) ══ */
+/* ══ v2.0.9 추가: 런닝 구간별 페이스를 Apps Script의 '구간페이스' 전용 탭에서 저장/복원 (Code.gs 함께 업데이트 필요) ══ */
 function renderGuide(){
   const root=document.getElementById('guide-root');
   if(!root||root.dataset.built)return;
