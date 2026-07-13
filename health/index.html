@@ -1861,6 +1861,8 @@ function setCmPeriod(d,btn){
   cmCurrentPeriod=d;
   document.querySelectorAll('#chartModal .cm-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  const hint=document.getElementById('cm-hint');
+  if(hint)hint.textContent='핀치·드래그로 탐색';
   renderModalChart();
 }
 
@@ -1884,6 +1886,8 @@ function renderModalChart(){
   const labels=data.map(r=>r.date.slice(5));
   const vals=data.map(r=>r[meta.key]);
   const color=meta.color;
+  // 기간별 x축 날짜 라벨 밀도 (전체/30일일수록 더 많은 날짜 표시)
+  const tickLimit = cmCurrentPeriod===7 ? 7 : cmCurrentPeriod===30 ? 10 : 12;
   if(modalChart){modalChart.destroy();modalChart=null;}
   const canvas=document.getElementById('chartModalCanvas');
   modalChart=new Chart(canvas,{
@@ -1958,7 +1962,7 @@ function renderModalChart(){
       },
       scales:{
         x:{
-          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:8,maxRotation:0},
+          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:tickLimit,maxRotation:0},
           grid:{color:'rgba(255,255,255,.05)'},
           border:{color:'rgba(255,255,255,.08)'}
         },
@@ -1971,9 +1975,15 @@ function renderModalChart(){
     },
     plugins:[ChartDataLabels]
   });
-  // 데이터 많으면 최근 14개 구간부터 표시
-  if(vals.length>14){
-    try{modalChart.zoomScale('x',{min:vals.length-14,max:vals.length-1},'none');}catch(e){}
+  // '전체' 기간이면서 데이터가 많을 때만 최근 구간부터 보여주고,
+  // 나머지(7일/30일)는 선택한 기간의 날짜 범위를 그대로 전부 표시한다.
+  const INIT_WINDOW=20;
+  if(cmCurrentPeriod===0 && vals.length>INIT_WINDOW){
+    try{
+      modalChart.zoomScale('x',{min:vals.length-INIT_WINDOW,max:vals.length-1},'none');
+      const hint=document.getElementById('cm-hint');
+      if(hint)hint.textContent='← 드래그하면 이전 기록도 볼 수 있어요';
+    }catch(e){}
   }
 }
 
