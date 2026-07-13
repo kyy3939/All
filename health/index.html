@@ -1688,6 +1688,18 @@ function initDates(){
   const days=['일','월','화','수','목','금','토'];
   document.getElementById('navDate').textContent=`${ds} ${days[now.getUTCDay()]}요일`;
 }
+// ══ v2.1.0 추가: 운동 탭에 진입/운동 종류를 고를 때마다 날짜·시간을 "지금"으로 새로 채움.
+// (기존엔 페이지를 새로고침한 시점의 시간이 계속 남아있어서, 같은 세션에서
+//  서로 다른 시간에 두 번째 런닝을 기록해도 시간값이 그대로였음 → 날짜+시간이
+//  같은 기록으로 인식되어 Apps Script가 이전 기록/구간페이스를 덮어쓰며 지워버렸음)
+function refreshExDateTime(){
+  const now=new Date(Date.now()+9*3600*1000);
+  const ds=now.toISOString().slice(0,10);
+  const hh=pad(now.getUTCHours());
+  const mm=pad(now.getUTCMinutes());
+  const dateEl=document.getElementById('ex-date');if(dateEl)dateEl.value=ds;
+  setTimeInputVal('ex-time',`${hh}:${mm}`);
+}
 
 function switchTab(tab){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1700,6 +1712,7 @@ function switchTab(tab){
   if(tab==='dash')renderDashboard();
   if(tab==='chat')loadChatContext();
   if(tab==='sleep')renderSleepHist();
+  if(tab==='ex')refreshExDateTime();
 }
 
 // ══ 대시보드 ══
@@ -2552,14 +2565,18 @@ function renderAllPBs(er){
   }
   
   // 자전거 PB
+  // ══ v2.1.0 수정: duration이 "45:30" 같은 콜론 문자열로 저장되는데 이를 그대로 Math.max/합산해서
+  // (문자열 연산이 되어버려) 최장 시간은 NaN → '—', 누적 시간은 문자열이 이어붙은 값(예: 4530:47)이
+  // 표시되던 버그. 운동 히스토리 표(자전거 탭)와 동일하게 histDurToMin/histFmtMin으로 분 단위 계산.
   if(bikes.length){
-    const maxDur=Math.max(...bikes.filter(r=>r.duration).map(r=>r.duration));
-    const totalDur=bikes.reduce((a,r)=>a+(r.duration||0),0);
+    const durMins=bikes.filter(r=>r.duration).map(r=>histDurToMin(r.duration)).filter(m=>m>0);
+    const maxDurMin=durMins.length?Math.max(...durMins):0;
+    const totalDurMin=bikes.reduce((a,r)=>a+histDurToMin(r.duration),0);
     const bestCal=Math.max(...bikes.filter(r=>r.cal).map(r=>r.cal));
     html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--coach);font-family:'DM Mono',monospace;margin-bottom:8px;">🚴 자전거</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
-      <div class="pb-card"><div class="pb-card-label">최장 시간</div><div class="pb-card-val">${isFinite(maxDur)?maxDur:'—'}</div><div class="pb-card-sub">분</div></div>
-      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val">${totalDur}</div><div class="pb-card-sub">분 · ${bikes.length}회</div></div>
+      <div class="pb-card"><div class="pb-card-label">최장 시간</div><div class="pb-card-val" style="font-size:16px;">${maxDurMin?histFmtMin(maxDurMin):'—'}</div></div>
+      <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="font-size:16px;">${totalDurMin?histFmtMin(totalDurMin):'—'}</div><div class="pb-card-sub">${bikes.length}회</div></div>
       <div class="pb-card"><div class="pb-card-label">최고 소모</div><div class="pb-card-val">${isFinite(bestCal)&&bestCal>0?bestCal:'—'}</div><div class="pb-card-sub">kcal</div></div>
     </div>`;
   }
@@ -2636,7 +2653,7 @@ function editBodyRec(i){
 let exRecs=JSON.parse(localStorage.getItem('exerciseRecords')||'{"run":[],"walk":[],"bike":[],"bodyweight":[],"other":[]}');
 if(!exRecs.walk)exRecs.walk=[];
 let currentExType='run',currentExHistType='run';
-function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));const sid={run:'run',walk:'walk',bike:'bike',bodyweight:'bw',other:'other'}[type]||type;document.getElementById('exs-'+sid).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight','other'].indexOf(type)]);}
+function switchExType(type){currentExType=type;document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`[data-type="${type}"]`).classList.add('active');document.querySelectorAll('.ex-section').forEach(s=>s.classList.remove('active'));const sid={run:'run',walk:'walk',bike:'bike',bodyweight:'bw',other:'other'}[type]||type;document.getElementById('exs-'+sid).classList.add('active');switchExHist(type,document.querySelectorAll('.eht-btn')[['run','walk','bike','bodyweight','other'].indexOf(type)]);refreshExDateTime();}
 function toggleExChip(el){el.classList.toggle('selected');document.getElementById('add-ex-btn').classList.toggle('show',document.querySelectorAll('.ex-chip.selected').length>0);}
 function addBWExerciseItem(n,reps='',sets=''){
   const wrap=document.getElementById('added-exercises');if(!wrap)return;
