@@ -1886,8 +1886,16 @@ function renderModalChart(){
   const labels=data.map(r=>r.date.slice(5));
   const vals=data.map(r=>r[meta.key]);
   const color=meta.color;
-  // 기간별 x축 날짜 라벨 밀도 (전체/30일일수록 더 많은 날짜 표시)
-  const tickLimit = cmCurrentPeriod===7 ? 7 : cmCurrentPeriod===30 ? 10 : 12;
+  // 기간별 x축 날짜 라벨 밀도 (전체는 날짜가 길어지므로 개수를 줄임)
+  const tickLimit = cmCurrentPeriod===7 ? 7 : cmCurrentPeriod===30 ? 8 : 6;
+  // y축 여유 공간: 데이터 범위에 비례한 패딩을 상/하단에 추가해 그래프가 꽉 차 보이지 않게 함
+  const validVals=vals.filter(v=>v!=null && !isNaN(v));
+  const dMax=validVals.length?Math.max(...validVals):0;
+  const dMin=validVals.length?Math.min(...validVals):0;
+  const vRange=dMax-dMin;
+  const vPad=vRange>0?Math.max(vRange*0.35,dMax*0.02):Math.max(dMax*0.05,1);
+  const yMax=dMax+vPad;
+  const yMin=Math.max(0,dMin-vPad*0.6);
   if(modalChart){modalChart.destroy();modalChart=null;}
   const canvas=document.getElementById('chartModalCanvas');
   modalChart=new Chart(canvas,{
@@ -1928,7 +1936,11 @@ function renderModalChart(){
           cornerRadius:10,
           displayColors:false,
           callbacks:{
-            title: items => items[0]?.label || '',
+            title: items => {
+              const idx=items[0]?.dataIndex;
+              const rec=idx!=null?data[idx]:null;
+              return rec?rec.date:(items[0]?.label||''); // 항상 연-월-일 전체로 표시
+            },
             label: ctx=>{
               const v=ctx.parsed.y;
               const unit=meta.label.match(/\(([^)]+)\)/)?.[1]||'';
@@ -1962,11 +1974,22 @@ function renderModalChart(){
       },
       scales:{
         x:{
-          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:tickLimit,maxRotation:0},
+          ticks:{
+            color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:tickLimit,maxRotation:0,
+            callback:function(value){
+              const rec=data[value];
+              if(!rec) return this.getLabelForValue(value);
+              // 전체 조회: 연-월-일 전체 표시 (연도가 섞여도 구분 가능하도록)
+              // 7일/30일 조회: 월-일만 표시
+              return cmCurrentPeriod===0 ? rec.date : rec.date.slice(5);
+            }
+          },
           grid:{color:'rgba(255,255,255,.05)'},
           border:{color:'rgba(255,255,255,.08)'}
         },
         y:{
+          suggestedMin:yMin,
+          suggestedMax:yMax,
           ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:6},
           grid:{color:'rgba(255,255,255,.05)'},
           border:{color:'rgba(255,255,255,.08)'}
