@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가족 보험 보장 대시보드</title>
+<style>
+:root{--bg:#090a0c;--panel:#111317;--panel2:#171a20;--panel3:#1d2128;--line:#2b3038;--ink:#f4f7fb;--sub:#8d9aad;--muted:#657286;--brand:#5b8cff;--brand2:#7c5cff;--good:#35d39a;--warn:#ffb84d;--danger:#ff6678;--cyan:#39c6e8;--shadow:0 18px 48px rgba(0,0,0,.32);--cancer:#ff6678;--illness:#a985ff;--injury:#ffb84d;--indemnity:#35d39a;--tooth:#39c6e8;--etc:#8d9aad}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:Pretendard,"Noto Sans KR","Malgun Gothic",sans-serif;line-height:1.55;letter-spacing:-.025em}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:36px 36px;opacity:.65}
+header{max-width:1840px;margin:0 auto;padding:34px 24px 18px;display:flex;justify-content:space-between;align-items:end;gap:20px}header h1{margin:0;font-size:28px;font-weight:900;letter-spacing:-.05em}header p{margin:6px 0 0;color:var(--sub);font-size:13px}.wrap{max-width:1840px;margin:0 auto;padding:0 24px 72px}
+.searchbox{position:sticky;top:10px;z-index:30;display:flex;align-items:center;gap:10px;background:rgba(16,22,32,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);border-radius:16px;padding:10px 12px;margin-bottom:16px}.searchbox:before{content:"⌕";font-size:24px;color:var(--brand)}.searchbox input{flex:1;min-width:120px;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;padding:9px 2px}.searchbox input::placeholder{color:var(--muted)}.searchbox .chip{padding:6px 11px;border-radius:999px;background:#18243a;border:1px solid #2b426a;color:#a9c2ff;font-size:11px;font-weight:800;cursor:pointer}.searchbox .scope{font-size:11px;color:var(--sub);white-space:nowrap}#clearSearch{background:#1b2431;color:var(--sub);border:1px solid var(--line);border-radius:9px;padding:8px 11px;cursor:pointer}
+.tabs{display:flex;gap:7px;overflow:auto;padding:5px;background:#0d131d;border:1px solid #1e2938;border-radius:13px;margin-bottom:18px;scrollbar-width:none}.tab{flex:none;padding:9px 16px;border-radius:9px;color:var(--sub);font-size:12.5px;font-weight:800;cursor:pointer}.tab.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;box-shadow:0 7px 18px rgba(91,140,255,.22)}.tab .count{opacity:.7;font-weight:600}
+.hero-dashboard{display:grid;grid-template-columns:1.4fr .8fr;gap:16px;margin-bottom:18px}.hero-main,.hero-side{background:linear-gradient(145deg,rgba(26,36,50,.96),rgba(14,20,30,.96));border:1px solid rgba(255,255,255,.07);border-radius:22px;box-shadow:var(--shadow)}.hero-main{padding:24px;position:relative;overflow:hidden}.hero-main:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-90px;top:-110px;background:radial-gradient(circle,rgba(91,140,255,.35),transparent 70%)}.hero-eyebrow{font-size:11px;color:#91adff;font-weight:900;letter-spacing:.12em}.hero-title{font-size:25px;font-weight:900;margin:7px 0 3px}.hero-desc{font-size:12.5px;color:var(--sub)}.hero-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:23px}.hero-kpi{background:rgba(8,12,19,.5);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:13px}.hero-kpi .v{font-size:21px;font-weight:900;font-variant-numeric:tabular-nums}.hero-kpi .l{font-size:10.5px;color:var(--sub);margin-top:2px}.hero-side{padding:20px}.hero-side h3{margin:0 0 15px;font-size:14px}.legend-row{display:grid;grid-template-columns:66px 1fr 38px;align-items:center;gap:9px;margin:11px 0;font-size:11px}.legend-row .bar{height:7px;background:#202b3a;border-radius:9px;overflow:hidden}.legend-row .fill{height:100%;border-radius:9px}.legend-row .n{text-align:right;color:var(--sub)}
+.dashboard-intro{display:flex;justify-content:space-between;align-items:end;margin:25px 0 12px}.dashboard-intro h2{margin:0;font-size:18px}.dashboard-intro p{margin:4px 0 0;color:var(--sub);font-size:12px}.person-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.person-card{background:linear-gradient(150deg,#151d29,#0f151f);border:1px solid #253143;border-radius:20px;padding:18px;box-shadow:0 12px 32px rgba(0,0,0,.2);transition:.2s}.person-card:hover{transform:translateY(-3px);border-color:#3d5270}.person-head{display:flex;justify-content:space-between;align-items:start}.person-avatar{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));font-weight:900;font-size:17px}.person-card h3{margin:0;font-size:18px}.person-card .sub{font-size:11px;color:var(--sub);margin-top:3px}.premium-big{font-size:22px;font-weight:900;text-align:right}.premium-big small{display:block;font-size:10px;color:var(--sub);font-weight:600}.coverage-visual{display:grid;grid-template-columns:84px 1fr;gap:15px;align-items:center;margin:17px 0}.ring{--pct:50;--ring:var(--brand);width:82px;height:82px;border-radius:50%;background:conic-gradient(var(--ring) calc(var(--pct)*1%),#242e3d 0);display:grid;place-items:center;position:relative}.ring:after{content:"";width:59px;height:59px;border-radius:50%;background:#111822;position:absolute}.ring strong,.ring span{position:relative;z-index:1}.ring strong{font-size:18px}.ring span{display:block;font-size:9px;color:var(--sub);text-align:center}.coverage-bars .cb{display:grid;grid-template-columns:38px 1fr 25px;gap:7px;align-items:center;margin:7px 0;font-size:10px}.coverage-bars .track{height:6px;background:#252f3e;border-radius:9px;overflow:hidden}.coverage-bars .fill{height:100%;border-radius:9px}.coverage-bars .num{text-align:right;color:var(--sub)}.detail-btn{display:flex;justify-content:center;text-decoration:none;color:#dbe6ff;background:#1a2740;border:1px solid #315084;border-radius:11px;padding:9px;font-size:12px;font-weight:800}.detail-btn:hover{background:#22355a}
+.summary-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}.stat{background:#121a25;border:1px solid #263244;border-radius:15px;padding:15px;position:relative;overflow:hidden}.stat:after{content:"";position:absolute;right:-20px;bottom:-28px;width:75px;height:75px;border-radius:50%;background:rgba(91,140,255,.08)}.stat .num{font-size:20px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat .lbl{font-size:10.5px;color:var(--sub);margin-top:3px}.section-shell{background:#0e151f;border:1px solid #202b3a;border-radius:18px;padding:16px;margin-bottom:16px}h2.sectitle{font-size:15px;margin:3px 0 13px;display:flex;align-items:center;gap:8px}h2.sectitle:before{content:"";width:4px;height:16px;border-radius:5px;background:linear-gradient(var(--brand),var(--brand2))}
+.type-tabs,.cause-filters{display:flex;gap:6px;overflow:auto;scrollbar-width:none}.type-tabs{margin-bottom:9px}.type-tab,.cause-chip{flex:none;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer}.type-tab{padding:7px 12px;background:#161f2c;color:var(--sub);border:1px solid #283548}.type-tab.active{background:#23365c;color:#c9d9ff;border-color:#46679f}.cause-chip{padding:6px 11px;border:1px solid transparent;opacity:.75}.cause-chip.active{opacity:1;box-shadow:inset 0 0 0 1px currentColor}.cause-chip[data-c="전체"]{background:#222b38;color:#d9e0ea}.cause-chip[data-c="실비"]{background:rgba(53,211,154,.13);color:var(--indemnity)}.cause-chip[data-c="암"]{background:rgba(255,102,120,.13);color:var(--cancer)}.cause-chip[data-c="질병"]{background:rgba(169,133,255,.13);color:var(--illness)}.cause-chip[data-c="상해"]{background:rgba(255,184,77,.13);color:var(--injury)}.cause-chip[data-c="치과"]{background:rgba(57,198,232,.13);color:var(--tooth)}.cause-chip[data-c="기타"]{background:rgba(141,154,173,.13);color:var(--etc)}
+.policy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:10px}.policy-card{background:#131c28;border:1px solid #263244;border-radius:15px;padding:14px;position:relative}.policy-card .pc-top{display:flex;justify-content:space-between;gap:10px}.policy-card .company{font-size:10px;color:#91adff;font-weight:900}.policy-card .product{font-size:13px;font-weight:800;margin-top:3px;line-height:1.35}.policy-card .price{font-size:17px;font-weight:900;white-space:nowrap}.policy-card .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.policy-card .meta div{background:#0e151f;border-radius:9px;padding:8px;font-size:9.5px;color:var(--sub)}.policy-card .meta b{display:block;color:#d5deeb;font-size:10.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.policy-actions{display:flex;justify-content:space-between;align-items:center;margin-top:11px}.status-badge{font-size:9.5px;font-weight:900;border-radius:999px;padding:4px 8px;background:#263142;color:var(--sub)}.status-유지,.status-badge[class*="유지"]{background:rgba(53,211,154,.13);color:var(--good)}.status-종료{background:rgba(141,154,173,.13);color:var(--sub)}.status-납입완료{background:rgba(57,198,232,.13);color:var(--cyan)}.status-확인필요{background:rgba(255,184,77,.13);color:var(--warn)}.pdf-btn{font-size:10px;color:#b9ccff;text-decoration:none;background:#1c2c4b;border:1px solid #34558e;padding:5px 9px;border-radius:7px;font-weight:900}
+.cat-section{margin-bottom:12px;background:#111923;border:1px solid #253143;border-radius:15px;overflow:hidden}.cat-head{display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:900;background:#151f2b;border-bottom:1px solid #263244}.cat-head .n{font-size:10px;color:var(--sub)}.coverage-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:1px;background:#253143}.coverage-item{background:#101720;padding:13px 14px;display:grid;grid-template-columns:1fr auto;gap:10px;min-height:88px}.coverage-item:hover{background:#151f2b}.coverage-item .ci-title{font-size:12px;color:#e8edf5;line-height:1.45}.coverage-item .ci-src{font-size:9.5px;color:var(--sub);margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:310px}.coverage-item .ci-right{text-align:right}.coverage-item .ci-amount{font-size:12px;font-weight:900;color:#fff;white-space:nowrap}.cause-tag{display:inline-flex;margin-top:9px;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:900}.row-cat-암 .cause-tag{background:rgba(255,102,120,.13);color:var(--cancer)}.row-cat-질병 .cause-tag{background:rgba(169,133,255,.13);color:var(--illness)}.row-cat-상해 .cause-tag{background:rgba(255,184,77,.13);color:var(--injury)}.row-cat-실비 .cause-tag{background:rgba(53,211,154,.13);color:var(--indemnity)}.row-cat-치과 .cause-tag{background:rgba(57,198,232,.13);color:var(--tooth)}.row-cat-기타 .cause-tag{background:rgba(141,154,173,.13);color:var(--etc)}mark{background:#ffd95b;color:#151515;border-radius:3px;padding:0 2px}.empty{text-align:center;color:var(--sub);padding:38px;background:#101720;border:1px dashed #344257;border-radius:14px}
+@media(max-width:980px){.hero-dashboard{grid-template-columns:1fr}.hero-kpis{grid-template-columns:repeat(2,1fr)}.summary-row{grid-template-columns:repeat(2,1fr)}.summary-row .stat:nth-child(3){grid-column:span 2}}
+@media(max-width:680px){header{padding:24px 14px 14px}header h1{font-size:22px}.wrap{padding:0 12px 50px}.searchbox .chip,.searchbox .scope{display:none}.person-grid{grid-template-columns:1fr}.hero-main{padding:18px}.hero-title{font-size:20px}.hero-kpis{gap:7px}.hero-kpi{padding:11px}.hero-kpi .v{font-size:17px}.summary-row{gap:7px}.stat{padding:13px}.policy-grid{grid-template-columns:1fr}.coverage-list{grid-template-columns:1fr}.coverage-item{grid-template-columns:1fr}.coverage-item .ci-right{text-align:left;display:flex;justify-content:space-between;align-items:center}.coverage-item .ci-amount{font-size:11px}.searchbox{top:6px}}
+
+/* v2: 개인별 증권 표 + 보장 계층형 레이아웃 */
+.policy-table-wrap{overflow:auto;border:1px solid #273447;border-radius:16px;background:#111923}
+.policy-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;font-size:12px}
+.policy-table th{position:sticky;top:0;z-index:2;background:#192332;color:#8fa0b7;text-align:left;padding:11px 13px;border-bottom:1px solid #2a394d;font-size:10.5px;letter-spacing:.02em;white-space:nowrap}
+.policy-table td{padding:12px 13px;border-bottom:1px solid #202c3b;color:#d9e2ef;vertical-align:middle}
+.policy-table tbody tr:last-child td{border-bottom:none}.policy-table tbody tr:hover td{background:#172231}
+.policy-table .company-cell{font-weight:900;color:#9db8ff;white-space:nowrap}.policy-table .product-cell{min-width:260px;font-weight:800;line-height:1.45}
+.policy-table .premium-cell{text-align:right;font-weight:900;font-size:13px;white-space:nowrap;color:#fff}.policy-table .date-cell{white-space:nowrap;color:#aab8ca}.policy-table .number-cell{white-space:nowrap;color:#b9c6d7}
+.policy-table .action-cell{text-align:right;white-space:nowrap}.policy-table .status-cell{white-space:nowrap}
+.hierarchy-shell{display:grid;gap:18px}.major-block{border:1px solid #29384d;background:linear-gradient(145deg,#121b27,#0e151e);border-radius:18px;overflow:hidden}
+.major-head{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:17px 18px;border-bottom:1px solid #263549;background:rgba(255,255,255,.015)}
+.major-title-wrap{display:flex;gap:12px;align-items:center}.major-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:900}
+.major-block[data-major="질병"] .major-icon{background:rgba(124,92,255,.16);color:#aa94ff}.major-block[data-major="상해"] .major-icon{background:rgba(255,174,66,.16);color:#ffc56f}
+.major-title{font-size:17px;font-weight:900;color:#fff}.major-sub{font-size:10.5px;color:#8999ad;margin-top:2px}.major-total{font-size:12px;color:#aebcd0}.major-total b{font-size:18px;color:#fff;margin-right:3px}
+.type-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px;padding:13px 16px;background:#0f1721;border-bottom:1px solid #243246}
+.type-summary{border:1px solid #29384b;background:#151f2c;border-radius:12px;padding:10px 11px;cursor:pointer;transition:.15s;text-align:left;color:inherit}.type-summary:hover{transform:translateY(-1px);border-color:#4b6488}.type-summary.active{background:#203458;border-color:#4e75b9}
+.type-summary .ts-label{font-size:10.5px;color:#9eacc0}.type-summary .ts-count{font-size:18px;font-weight:900;color:#fff;margin-top:2px}.type-summary .ts-count small{font-size:9px;color:#8392a6;font-weight:600}
+.mid-group{padding:15px 16px 17px}.mid-group+.mid-group{border-top:1px solid #233044}.mid-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.mid-title{font-size:13px;font-weight:900;color:#e7edf7}.mid-count{font-size:10px;color:#8f9fb4;background:#1b2634;border:1px solid #2b3b50;border-radius:999px;padding:3px 8px}
+.detail-table-wrap{overflow:auto;border:1px solid #263549;border-radius:13px}.detail-table{width:100%;border-collapse:collapse;min-width:760px;font-size:11.5px}.detail-table th{background:#172230;color:#8495aa;padding:8px 10px;text-align:left;font-size:10px;white-space:nowrap}.detail-table td{padding:10px;border-top:1px solid #222f40;vertical-align:top}.detail-table tbody tr:hover td{background:#151f2c}
+.detail-table .detail-name{min-width:330px;font-weight:700;color:#e2e8f1;line-height:1.5}.detail-table .detail-source{min-width:210px;color:#8fa0b5;line-height:1.4}.detail-table .detail-amount{width:150px;text-align:right;color:#fff;font-weight:900;white-space:nowrap}.detail-table .detail-action{text-align:right;white-space:nowrap}
+.hierarchy-note{font-size:10.5px;color:#8392a6;margin:0 0 12px}.empty-type{padding:18px;color:#7f8ea2;text-align:center;font-size:11px}
+@media(max-width:680px){.major-head{padding:14px}.type-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr));padding:10px}.type-summary{padding:9px 8px}.type-summary .ts-label{font-size:9px}.type-summary .ts-count{font-size:15px}.mid-group{padding:12px 10px 14px}.policy-table-wrap,.detail-table-wrap{border-radius:12px}.hierarchy-note{line-height:1.5}}
+
+/* 전체 보장 구성표 */
+.coverage-map{border:1px solid #2a394d;border-radius:18px;overflow:hidden;background:#0f1721;margin-bottom:18px}
+.coverage-map-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;background:linear-gradient(135deg,#172334,#111a27);border-bottom:1px solid #2a394d}
+.coverage-map-title{font-size:15px;font-weight:900;color:#fff}.coverage-map-desc{font-size:10.5px;color:#8fa0b5;margin-top:3px}.coverage-map-count{font-size:11px;color:#9cacbf}.coverage-map-count b{font-size:18px;color:#fff;margin-right:3px}
+.coverage-map-table-wrap{overflow:auto}.coverage-map-table{width:100%;border-collapse:collapse;min-width:900px;font-size:11.5px}.coverage-map-table th{padding:9px 12px;background:#131e2b;color:#8091a6;text-align:left;font-size:10px;white-space:nowrap;border-bottom:1px solid #263549}.coverage-map-table td{padding:11px 12px;border-top:1px solid #223043;vertical-align:top}.coverage-map-table tbody tr:hover td{background:#141f2c}
+.map-major{width:90px;font-size:14px;font-weight:900;vertical-align:middle!important}.map-major.disease{color:#b29cff;background:rgba(124,92,255,.06)}.map-major.injury{color:#ffc36b;background:rgba(255,174,66,.06)}
+.map-middle{width:110px;font-weight:900;color:#e6edf7;white-space:nowrap}.map-summary{width:130px;color:#a9b7c8;line-height:1.5}.map-count{width:70px;text-align:right;font-weight:900;color:#fff;white-space:nowrap}
+.sub-chip-wrap{display:flex;flex-wrap:wrap;gap:6px}.sub-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:8px;background:#182535;border:1px solid #2b3d53;color:#d8e0eb;font-size:10px;line-height:1.2}.sub-chip b{color:#fff;font-size:10px}.sub-chip.more{color:#91adff;background:#172541;border-color:#315084;cursor:pointer}
+.detail-divider{display:flex;align-items:center;gap:10px;margin:22px 0 12px}.detail-divider:before,.detail-divider:after{content:"";height:1px;background:#263549;flex:1}.detail-divider span{font-size:11px;font-weight:900;color:#9badc2;white-space:nowrap}
+@media(max-width:680px){.coverage-map-head{padding:14px}.coverage-map-title{font-size:14px}.coverage-map-table{min-width:760px}.coverage-map-table td{padding:9px}.sub-chip{font-size:9px;padding:4px 7px}}
+
+
+/* v4: 보장영역별 전체표 */
+.coverage-overview-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1100px;font-size:12.5px}
+.coverage-overview-table th{position:sticky;top:0;z-index:2;background:#1b1e24;color:#aab2bf;text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.coverage-overview-table td{padding:10px 12px;border-bottom:1px solid #272c34;vertical-align:top}
+.coverage-overview-table tr:hover td{background:rgba(91,140,255,.045)}
+.overview-domain{width:135px;background:#14171b!important;border-right:1px solid var(--line);color:#fff}
+.overview-domain strong{display:block;font-size:14px;margin-bottom:6px;color:#8fb0ff}
+.overview-domain small{display:block;color:var(--sub);font-size:10.5px;line-height:1.45;font-weight:400}
+.overview-benefit{width:105px;color:#dce6f7;font-weight:800;background:#181b20!important;border-right:1px solid #2c323b}
+.overview-benefit span{display:block;margin-top:5px;color:var(--sub);font-size:10px;font-weight:500}
+.overview-item{min-width:380px;color:#eaf0fa;line-height:1.5}
+.overview-amount{width:150px;text-align:right;color:#fff;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
+.overview-source{width:190px;color:var(--sub);font-size:11px}.overview-source b{color:#9db8ff}
+.overview-action{width:58px;text-align:right}.overview-action button{border:1px solid #34445f;background:#20242b;color:#b9c9e3;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:11px}.overview-action button:hover{border-color:var(--brand);color:#fff}
+.detail-card-list{display:grid;gap:8px;padding:12px}
+.detail-card{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;background:#111925;border:1px solid #253247;border-radius:11px;padding:13px 14px}
+.detail-card:hover{border-color:#3b4f70;background:#141e2c}
+.detail-card-main{min-width:0;flex:1}.detail-card-side{text-align:right;min-width:155px}.detail-explain{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}.detail-explain span{background:#1c2737;border:1px solid #2c3a50;border-radius:999px;padding:3px 8px;color:#93a3b9;font-size:10.5px}
+.mid-description{font-size:11px;color:var(--sub);margin-top:2px}
+@media(max-width:760px){.detail-card{display:block}.detail-card-side{text-align:left;margin-top:10px;display:flex;justify-content:space-between;align-items:center}.coverage-map-table-wrap{max-height:none}.overview-item{min-width:300px}}
+
+/* v6: 전체·개인 배경 통일 / 보장표 행 단위 한 줄 구성 */
+body.person-mode{background:var(--bg)}
+body.person-mode:before{opacity:.65}
+body.person-mode .dashboard-intro{margin-top:20px}
+.section-shell,.coverage-map,.policy-table-wrap{box-shadow:none}
+
+.coverage-overview-table{min-width:1760px;table-layout:fixed}
+.coverage-overview-table th,.coverage-overview-table td{vertical-align:middle;white-space:nowrap}
+.coverage-overview-table th:nth-child(1){width:150px}
+.coverage-overview-table th:nth-child(2){width:130px}
+.coverage-overview-table th:nth-child(3){width:520px}
+.coverage-overview-table th:nth-child(4){width:175px}
+.coverage-overview-table th:nth-child(5){width:680px}
+.coverage-overview-table th:nth-child(6){width:70px}
+.overview-domain{width:150px;min-width:150px;background:#14171b!important;border-right:1px solid var(--line);font-size:12px;font-weight:900;color:#9db8ff;overflow:hidden;text-overflow:ellipsis}
+.overview-domain strong{display:inline;font-size:12px;margin:0;color:#9db8ff}.overview-domain small{display:none}
+.overview-benefit{width:130px;min-width:130px;background:#181b20!important;border-right:1px solid #2c323b;font-size:12px;font-weight:900;color:#fff;overflow:hidden;text-overflow:ellipsis}
+.overview-benefit span{display:none}
+.overview-item{width:520px;min-width:520px;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.overview-amount{width:175px;min-width:175px;text-align:right;overflow:hidden;text-overflow:ellipsis}
+.overview-source{width:680px;min-width:680px;overflow:hidden;text-overflow:ellipsis;color:#a6afbd}
+.overview-source b{display:inline;color:#9db8ff;margin-right:5px}
+.overview-action{width:70px;min-width:70px;text-align:center}
+.coverage-map-table-wrap{overflow:auto;scrollbar-color:#3b414b #121418;scrollbar-width:thin}
+.coverage-map-table-wrap::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{width:11px;height:11px}
+.coverage-map-table-wrap::-webkit-scrollbar-track,body::-webkit-scrollbar-track,*::-webkit-scrollbar-track{background:#111318}
+.coverage-map-table-wrap::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb,*::-webkit-scrollbar-thumb{background:#3a4049;border:2px solid #111318;border-radius:10px}
+.coverage-map-table-wrap::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,*::-webkit-scrollbar-thumb:hover{background:#505864}
+.coverage-map-table-wrap::-webkit-scrollbar-corner,*::-webkit-scrollbar-corner{background:#111318}
+@media(max-width:760px){.coverage-overview-table{min-width:1760px}.overview-item{min-width:520px}.overview-source{min-width:680px}}
+
+
+
+/* v7 final: neutral charcoal dark theme */
+body,body.person-mode{background:#090a0c!important}
+body:before,body.person-mode:before{opacity:.35;background-image:linear-gradient(rgba(255,255,255,.009) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.009) 1px,transparent 1px)}
+.searchbox,.tabs,.section-shell,.coverage-map,.policy-table-wrap,.summary-row .stat,.coverage-map-head,.major-block,.mid-group{background-color:#111317!important}
+.searchbox{background:rgba(17,19,23,.94)!important}
+.person-card{background:linear-gradient(150deg,#17191e,#101216)!important;border-color:#2a2e35!important}
+.coverage-map-head{background:#15181d!important}
+.policy-table th,.coverage-overview-table th,.detail-table th{background:#1b1e24!important}
+.policy-table tbody tr:hover td,.coverage-overview-table tr:hover td,.detail-table tbody tr:hover td{background:#171a1f!important}
+.section-shell,.coverage-map,.policy-table-wrap,.person-card{border-color:#292d34!important}
+
+
+/* v8: 보장 상세 영역 글자 크기 및 밀도 조정 */
+.hierarchy-shell .major-title{font-size:16px!important}
+.hierarchy-shell .major-desc{font-size:10.5px!important}
+.hierarchy-shell .mid-title{font-size:12px!important}
+.hierarchy-shell .mid-description{font-size:10px!important}
+.hierarchy-shell .detail-name{font-size:11.5px!important;line-height:1.45!important;font-weight:650!important}
+.hierarchy-shell .detail-explain span{font-size:9.5px!important;padding:2px 7px!important}
+.hierarchy-shell .detail-amount{font-size:11.5px!important}
+.hierarchy-shell .detail-card{padding:10px 12px!important}
+
+
+/* v9: 보장표 분류 셀 병합 / 개인별 보유증권 위치 통일 */
+.person-mode .dashboard-intro{min-height:58px;display:flex;align-items:flex-end}
+.person-mode .summary-row{min-height:78px}
+.person-policy-section{height:455px;display:flex;flex-direction:column}
+.person-policy-section .hierarchy-note{flex:0 0 auto}
+.person-policy-section .policy-table-wrap{height:350px;min-height:350px;overflow:auto;flex:1 1 auto}
+.person-policy-section .policy-table thead th{position:sticky;top:0;z-index:3}
+.coverage-overview-table td.overview-domain,
+.coverage-overview-table td.overview-benefit{vertical-align:middle!important;text-align:center}
+.coverage-overview-table td.overview-domain{background:#15171b!important}
+.coverage-overview-table td.overview-benefit{background:#191c21!important}
+.coverage-overview-table td.overview-domain strong,
+.coverage-overview-table td.overview-benefit{white-space:normal;line-height:1.45}
+.coverage-overview-table .group-count{display:block;margin-top:5px;font-size:9.5px;color:#7f8997;font-weight:600}
+@media(max-width:760px){
+  .person-policy-section{height:430px}
+  .person-policy-section .policy-table-wrap{height:325px;min-height:325px}
+}
+
+
+/* v10: 개인 상단 위치 완전 고정 / 대분류를 중분류 3개 단위로 분할 */
+.person-top-fixed{height:172px;min-height:172px;display:grid;grid-template-rows:62px 92px;gap:14px;margin-bottom:18px}
+.person-top-fixed .dashboard-intro{height:62px;min-height:62px;margin:0;display:flex;align-items:flex-end}
+.person-top-fixed .dashboard-intro h2{white-space:nowrap}
+.person-top-fixed .dashboard-intro p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-top-fixed .summary-row{height:92px;min-height:92px;margin:0;grid-template-columns:repeat(4,minmax(0,1fr))}
+.person-top-fixed .stat{height:92px;min-height:92px;display:flex;flex-direction:column;justify-content:center}
+.person-policy-section{height:486px!important;min-height:486px!important;margin-bottom:18px!important}
+.person-policy-section .policy-table-wrap{height:376px!important;min-height:376px!important;max-height:376px!important}
+.coverage-overview-table td.overview-domain{border-top:2px solid #353a43!important}
+.coverage-overview-table tr:first-child td.overview-domain{border-top:0!important}
+.overview-domain .domain-seq{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:#242832;color:#9da8b8;font-size:9px;vertical-align:1px}
+.overview-domain .domain-range{display:block;margin-top:6px;color:#8d96a4;font-size:9px;line-height:1.35;font-weight:600}
+@media(max-width:760px){
+ .person-top-fixed{height:auto;min-height:0;display:block;margin-bottom:14px}
+ .person-top-fixed .dashboard-intro{height:auto;min-height:58px;margin-bottom:10px}
+ .person-top-fixed .summary-row{height:auto;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .person-top-fixed .stat{height:78px;min-height:78px}
+ .person-policy-section{height:455px!important;min-height:455px!important}
+ .person-policy-section .policy-table-wrap{height:345px!important;min-height:345px!important;max-height:345px!important}
+}
+
+
+
+/* v11: 보유증권 열 위치 고정 / 증권 수만큼 자연 높이 표시 */
+.person-policy-section{
+  height:auto!important;
+  min-height:0!important;
+  display:block!important;
+  margin-bottom:18px!important;
+}
+.person-policy-section .policy-table-wrap{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  flex:none!important;
+}
+.person-policy-section .policy-table{
+  width:100%!important;
+  min-width:1420px!important;
+  table-layout:fixed!important;
+}
+.person-policy-section .policy-table thead th{
+  position:static!important;
+}
+.person-policy-section .policy-table th,
+.person-policy-section .policy-table td{
+  box-sizing:border-box;
+  vertical-align:middle!important;
+}
+.person-policy-section .policy-table .product-cell{
+  min-width:0!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.person-policy-section .policy-table .company-cell,
+.person-policy-section .policy-table .number-cell,
+.person-policy-section .policy-table .date-cell,
+.person-policy-section .policy-table .premium-cell,
+.person-policy-section .policy-table .status-cell,
+.person-policy-section .policy-table .action-cell{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+@media(max-width:760px){
+  .person-policy-section{height:auto!important;min-height:0!important}
+  .person-policy-section .policy-table-wrap{height:auto!important;min-height:0!important;max-height:none!important;overflow-x:auto!important;overflow-y:visible!important}
+}
+
+
+
+/* v12: 보유증권 우측 열 잘림 방지 / 분류 경계선 전체 행 연결 */
+.person-policy-section .policy-table th,
+.person-policy-section .policy-table td{padding-left:11px!important;padding-right:11px!important}
+.person-policy-section .policy-table .status-cell,
+.person-policy-section .policy-table .action-cell{overflow:visible!important;text-overflow:clip!important}
+.person-policy-section .policy-table .status-badge{max-width:100%;white-space:nowrap}
+.person-policy-section .policy-table .status-cell{text-align:center!important;padding-left:6px!important;padding-right:6px!important}
+.person-policy-section .policy-table .action-cell{text-align:center!important;padding-left:6px!important;padding-right:6px!important}
+.person-policy-section .policy-table .pdf-btn{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 9px}
+
+/* 대분류 시작선은 모든 열 끝까지 굵게 이어집니다. */
+.coverage-overview-table tbody tr.domain-start > td{
+  border-top:2px solid #454b56!important;
+}
+.coverage-overview-table tbody tr.domain-start:first-child > td{
+  border-top:0!important;
+}
+/* 중분류 시작선도 행 전체에 이어지되 대분류보다 얇게 표시합니다. */
+.coverage-overview-table tbody tr.benefit-start > td{
+  border-top:1px solid #343942!important;
+}
+.coverage-overview-table td.overview-domain,
+.coverage-overview-table td.overview-benefit{
+  border-bottom:1px solid #272c34!important;
+}
+
+
+/* v13: 전체 보장표 헤더 경계 강화 / 연관어 검색 보완 */
+.coverage-overview-table thead th{
+  border-bottom:2px solid #454b56!important;
+}
+.coverage-overview-table thead th+th{
+  border-left:1px solid #343942;
+}
+
+
+
+/* v15: 상단 현황 카드 여백 조정 / 전체 비율 균형화 */
+@media(min-width:981px){
+  header,.wrap{max-width:1700px}
+  .hero-dashboard{min-height:226px;gap:18px;margin-bottom:22px}
+  .hero-main{min-height:226px;padding:24px 26px;display:flex;flex-direction:column;justify-content:center}
+  .hero-title{margin:8px 0 4px}
+  .hero-kpis{margin-top:20px;gap:12px}
+  .hero-kpi{padding:13px 14px;min-height:66px;display:flex;flex-direction:column;justify-content:center}
+  .hero-side{min-height:226px;padding:22px;display:flex;flex-direction:column;justify-content:center}
+  .hero-side h3{margin-bottom:13px}
+  .legend-row{margin:10px 0}
+  .dashboard-intro{margin:28px 0 15px}
+  .person-grid{gap:16px}
+  .person-card{min-height:284px;padding:22px 18px;display:flex;flex-direction:column}
+  .coverage-visual{margin:22px 0 20px;flex:1}
+  .coverage-bars .cb{margin:9px 0}
+  .detail-btn{padding:11px 9px}
+}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>가족 보험 보장 대시보드</h1>
+  <p>인물별 계약 요약과 진단비·수술비·입원비 등 보장 유형별 항목을 한눈에 확인하세요</p>
+</header>
+<div class="wrap">
+  <div class="searchbox">
+    <input id="searchInput" type="text" placeholder="예: 치과, 암, 골절, 실손... 검색하면 현재 선택된 범위 안에서 찾아드립니다">
+    <span class="chip" onclick="doSearch('치과')">치과</span>
+    <span class="chip" onclick="doSearch('암')">암</span>
+    <span class="chip" onclick="doSearch('실손')">실손</span>
+    <span class="scope" id="scopeLabel"></span>
+    <button id="clearSearch" onclick="clearSearch()">검색 지우기</button>
+  </div>
+
+  <div class="tabs" id="personTabs"></div>
+  <div id="mainArea"></div>
+</div>
+
+<script>
+const DATA = {"김용연": [{"file": "01. 김용연/김용연_메화_운전자보험_M-Drive1204.pdf", "company": "메리츠화재", "product": "운전자보험", "policyNumber": "65D88291", "status": "유지", "premiumMonthly": 13000, "startDate": "2013.03.25", "maturity": "80세(2065.03.25)", "dental": false, "dentalDetail": "", "coverage": ["일반상해사망후유장해 10,000,000원", "자가용운전자용 벌금 20,000,000원", "자동차사고 성형수술비 1,000,000원", "자가용운전자용 교통사고 처리지원금 30,000,000원(공탁금 한도)", "자가용운전자용 자동차사고 변호사선임비용 5,000,000원", "교통사고 부상치료비 100,000원~6,000,000원(부상등급별)"], "note": "순수 운전자보험(상해 특화). 질병/암 관련 담보 없음. 치과 관련 보장 없음", "paymentPeriod": "20년납(240회) 2013.03.25~2033.03.25 완료예정"}, {"file": "01. 김용연/김용연_미생_보장성보험_건강종신보험 1211 건강이야말로 최고의 재산입니다._201303.pdf", "company": "미래에셋생명", "product": "건강종신보험 1211 건강이야말로 최고의 재산입니다", "policyNumber": "8002833657", "status": "유지", "premiumMonthly": 108080, "startDate": "2013.03.19", "maturity": "종신(주보험)/특약 각기 다름(80세~100세)", "dental": false, "dentalDetail": "", "coverage": ["주보험(3대보장-100%선지급) 30,000,000원 - 암/뇌출혈/급성심근경색증 최초1회", "헬스케어연금 - 3대보장 진단시 10년간 매년 지급", "말기질환진단비 10,000,000원(말기신부전증·말기간질환), 5,000,000원(말기폐질환)", "특정암진단비(유방암·성별특정암) 10,000,000원(1년미만 5,000,000원)", "특정암진단비(유방암 180일이내) 2,000,000원", "특정암진단비(경계성종양) 2,000,000원(1년미만 1,000,000원)", "특정암진단비(갑상선암·기타피부암·제자리암) 1,000,000원(1년미만 500,000원)", "5대장기이식수술비 7,500,000원(1년미만)/15,000,000원(1년이상)", "조혈모세포이식비 2,500,000원(1년미만)/5,000,000원(1년이상)", "특수수술비(심장판막수술·대동맥류인조혈관치환) 5,000,000원(1년미만)/10,000,000원(1년이상)", "특수수술비(관상동맥성형술 PTCA) 1,000,000원(1년미만)/2,000,000원(1년이상)", "중대한화상치료비 10,000,000원", "고도장해연금(고도재해장해연금특약) 10,000,000원, 10년간 매년 확정지급", "통원치료비(특정상병) 통원1회당 10,000원", "암수술비(갑상선암·기타피부암·제자리암 및 경계성종양 제외) 2,250,000원(1년미만)/4,500,000원(1년이상)", "암수술비(갑상선암·경계성종양) 450,000원(1년미만)/900,000원(1년이상)", "암수술비(기타피부암·제자리암) 225,000원(1년미만)/450,000원(1년이상)", "암입원비 1일당 75,000원(4일이상 입원시, 120일한도)", "암입원비(갑상선암·기타피부암·제자리암·경계성종양) 1일당 15,000원", "항암방사선치료비(암) 1,500,000원, (갑상선암·경계성종양) 300,000원, (기타피부암·제자리암) 150,000원", "질병입원비(주요성인질환) 1형 75,000/2형 45,000/3형 30,000/4형 15,000 (1일당)", "질병입원비(생활질환) 1일당 15,000원", "수술비(주요성인질환/생활질환, 형별) 375,000원~7,500,000원", "재해장해보험금 최대 30,000,000원(장해지급률 비례)", "재해수술치료비 200,000원", "재해골절치료비(치아파절 제외) 300,000원", "고도장해급여금 30,000,000원(80%이상 장해)", "수술급여금(체증형종신수술) 1종 50,000원~5종 2,500,000원(제1보험기간), 1종 100,000원~5종 5,000,000원(제2보험기간)", "입원급여금(체증형종신입원) 1일당 10,000원(제1보험기간)/20,000원(제2보험기간)", "두번째암진단보험금 - 일반암 10,000,000원 / 특정암 5,000,000원", "사망보험금(두번째암진단 미발생시 사망) 10,000,000원"], "note": "3대보장(암/뇌출혈/급성심근경색) 및 다수 암 관련 특약(암진단비, 암수술비, 암입원비, 항암방사선치료비, 두번째암진단비 등) 보유 - 김용연의 핵심 암보험 중 하나. 재해골절치료비는 치아파절 제외. 명시적 치과 담보 없음", "paymentPeriod": "20년납 2013.03.19~2033.03.19 완료예정"}, {"file": "01. 김용연/김용연_미생_보장성보험_종합보장보험 무배당 1504 생활의 자신감_201504.pdf", "company": "미래에셋생명", "product": "종합보장보험 무배당 1504 생활의 자신감", "policyNumber": "8003506372", "status": "유지", "premiumMonthly": 33000, "startDate": "2015.04.10", "maturity": "100세(2085.04.10)", "dental": true, "dentalDetail": "치과통원비[갱신] - 국민건강보험/의료급여 적용 대상 치료 시 통원 1회당 10,000원", "coverage": ["재해사망보험금 20,000,000원(가입금액100%+적립계약 책임준비금)", "50%장해및2대질병납입면제(장해 또는 뇌출혈·급성심근경색증)", "질병장해80%이상보험금 1,000,000원(1회지급)/120,000,000원(총지급, 10년120회)", "질병사망보험금 200,000원(1회지급)/24,000,000원(총지급, 10년120회)", "뇌혈관질환진단비 500,000원(1년미만)/1,000,000원(1년이상)", "특정법정감염병진단비 200,000원", "항암방사선치료비(암) 1,000,000원, (기타피부암·갑상선암·제자리암·경계성종양) 200,000원", "항암약물치료비(암) 1,000,000원, (기타피부암·갑상선암·제자리암·경계성종양) 200,000원", "첫날부터질병입원보험금 1일당 30,000원(120일한도)", "중환자실입원급여금 1일당 50,000원(60일한도)", "암직접치료통원보험금(암) 통원1회당 15,000원, (기타피부암·갑상선암·제자리암·경계성종양) 7,500원", "심장뇌혈관질환통원치료비 통원1회당 10,000원", "치과통원비[갱신] 통원1회당 10,000원", "응급실내원보험금 10,000원", "재해골절진단보험금(치아파절 제외) 200,000원", "5대재해골절진단비(치아파절 제외) 300,000원", "5대재해골절수술비(치아파절 제외) 200,000원", "깁스(Cast)치료비 100,000원", "재해80%이상장해보험금 1,000,000원(1회지급)/120,000,000원(총지급, 10년120회)", "만기환급금(적립계약 책임준비금, 이미납입한보험료 한도)"], "note": "치과통원비 특약 보유(치과 검색 핵심 히트). 암 관련은 진단비(lump sum)가 아닌 항암방사선/항암약물치료비, 암직접치료통원비 형태(치료비형). 재해골절 계열은 치아파절 제외", "paymentPeriod": "20년납 2015.04.10~2035.04.10 완료예정(치과통원특약은 5년갱신)"}, {"file": "01. 김용연/김용연_미생_실비_행복한 보장보험 무배당 1207_201303.pdf", "company": "미래에셋생명", "product": "행복한 보장보험 무배당 1207", "policyNumber": "8002833742", "status": "유지", "premiumMonthly": 32480, "startDate": "2013.03.19", "maturity": "100세(2085.03.19)", "dental": false, "dentalDetail": "", "coverage": ["만기축하금", "대중교통재해사망 3억", "교통재해사망 1.5억", "재해사망 7천만", "각종 장해급여금", "재해수술치료비", "치명적재해수술치료비", "납입면제", "계약소멸", "실손의료비[갱신형] 종합입원(5천만원/질병·상해당), 종합통원(외래 20만원한도/180회, 처방조제 10만원한도/180건)", "암진단특약 - 고액치료암 4천만/일반암 2천만/유방암·성별특정암 5백만 등", "암사망특약 3천만원"], "note": "실손의료비 주계약 보유. 치과 명시적 담보 없음(실손 통원한도 내 치과 진료 시 부분 보장 가능성 있으나 약관 확인 필요)", "paymentPeriod": "20년납 2013.03.19~2033.03.19 완료예정(실손·암 특약은 3~5년 갱신형)"}, {"file": "01. 김용연/닙입완료/김용연_미생_연금보험_변액종신보험 무배당 1501 인생은 교향악입니다._201503.pdf", "company": "미래에셋생명", "product": "변액종신보험 무배당 1501 인생은 교향악입니다", "policyNumber": "8003484553", "status": "납입완료", "premiumMonthly": 100180, "startDate": "2015.03.25", "maturity": "종신(9999.03.25)", "dental": false, "dentalDetail": "", "coverage": ["주보험(기본Plan) 24,213,075원", "암납입면제특약 1,000,000원", "사망보험금(기본보험금/적립금105%/기납입보험료 중 큰 금액)", "납입면제(50%이상 장해 또는 뇌출혈·급성심근경색증)", "보험료납입면제(암진단시, 갑상선암 등 일부암 제외)"], "note": "⚠️ 확인 필요: 증권 원본에 '2016년 3월 납입' 및 '자동이체 해지' 자필 메모가 있음. 의무납입기간 36개월을 채우지 못한 상태로 납입이 중단된 것으로 보여, 단순 납입완료가 아니라 실효·감액완납 여부를 보험사에 직접 확인해야 함", "paymentPeriod": "5년납 예정(2015.03.25~2020.03.25)이었으나 증권상 자필 메모상 2016년 3월 납입 후 자동이체 해지로 표시됨 — 의무납입기간(36개월)도 채우지 못해 정상 완납 여부 확인 필요"}, {"file": "01. 김용연/닙입완료/김용연_미생_종신보험_통합종신보험 무배당 1504 보여줄 수 있는 사랑은 아주 작습니다._201509.pdf", "company": "미래에셋생명", "product": "통합종신보험 무배당 1504 보여줄 수 있는 사랑은 아주 작습니다", "policyNumber": "8003613715", "status": "납입완료", "premiumMonthly": 107410, "startDate": "2015.09.15", "maturity": "종신(9999.09.15)", "dental": false, "dentalDetail": "", "coverage": ["주보험 23,000,000원", "사망보험금(기본보험금/적립금105%/기납입보험료 중 큰 금액)", "납입면제(50%이상 장해 또는 뇌출혈·급성심근경색증)"], "note": "매우 단순한 보장(2개 항목)", "paymentPeriod": "5년납 2015.09.15~2020.09.15 완납 완료"}, {"file": "01. 김용연/보험종료/김용연_미생_저축보험_종료.pdf", "company": "미래에셋생명", "product": "번액적립보험 무배당1404 진심의 차이", "policyNumber": "8003412198", "status": "종료", "premiumMonthly": null, "startDate": "2014.12.26", "maturity": "종신", "dental": false, "dentalDetail": "", "coverage": ["사망보험금: 사망 당시 계약자적립금 + 840,000원"], "note": "종료된 저축성 보험. 실적배당형(펀드형), 예금자보호 대상 아님"}, {"file": "01. 김용연/보험종료/김용연_미생_종신보험_변액종신보험 무배당 1307 인생은 교향악입니다._201401.pdf", "company": "미래에셋생명", "product": "연금전환되는 변액종신보험 II 무배당 1307 인생은 교향악입니다", "policyNumber": "8003158725", "status": "종료", "premiumMonthly": 139100, "startDate": "2014.01.18", "maturity": "종신(9999.01.18)", "dental": false, "dentalDetail": "", "coverage": ["주보험(기본Plan) 60,606,061원", "암납입면제특약 800,000원", "체증형암진단(본인형)55세형: 1차보험기간 20,000,000원 / 2차보험기간 40,000,000원 (경계성종양 4,000,000/8,000,000, 기타피부암·갑상선암·제자리암 2,000,000/4,000,000)", "체증형2대질병진단(본인형)55세: 1차 20,000,000원 / 2차 40,000,000원 (뇌출혈, 급성심근경색증)", "사망보험금(기본보험금/직전 월계약해당일 계약자적립금 105%, 이미 납입한 보험료 중 큰 금액)", "납입면제(50%이상 장해 또는 뇌출혈·급성심근경색증)", "보험료납입면제(암보장개시일 이후 암 진단시, 갑상선암·기타피부암 제외)"], "note": "종료된 종신보험. 특약: 주피 안구또는안구부속기(안검, 부위부담보 99년)"}], "박현미": [{"file": "02. 박현미/박현미_보장성보험_삼성화재_20200918.pdf", "company": "삼성화재", "product": "건강보험 마이헬스 파트너(2004.2) 1종", "policyNumber": "설계번호 1209194532000209", "status": "유지", "premiumMonthly": 145014, "startDate": "2020.09.23", "maturity": "100세(2085.09.23)", "dental": false, "dentalDetail": "", "coverage": ["상해사망 10,000,000원", "상해후유장해(80%이상) 10,000,000원", "암진단비(유사암제외) 20,000,000원", "유사암진단비(기타피부암) 10,000,000원", "유사암진단비(갑상선암) 10,000,000원", "유사암진단비(대장점막내암) 10,000,000원", "유사암진단비(제자리암) 10,000,000원", "유사암진단비(경계성종양) 10,000,000원", "뇌출혈진단비 1,000,000원", "급성심근경색증진단비 1,000,000원", "질병후유장해(80%이상) 50,000,000원", "뇌혈관질환진단비A 10,000,000원", "[갱신형]뇌혈관질환진단비B 20,000,000원", "허혈성심장질환진단비A 10,000,000원", "[갱신형]허혈성심장질환진단비B 20,000,000원", "혈전용해치료비(뇌경색증) 2,000,000원", "혈전용해치료비(급성심근경색증) 2,000,000원", "상해중환자실입원일당(1일이상) 250,000원", "상해입원수술비(당일입원제외) 500,000원", "상해통원수술비(외래및당일입원) 500,000원", "질병입원수술비II(당일입원제외)(대장용종절제포함) 300,000원", "질병통원수술비II(외래및당일입원)(대장용종절제포함) 300,000원", "[갱신형]질병입원수술비(당일입원제외) 300,000원", "[갱신형]질병통원수술비(외래및당일입원) 300,000원", "105대질병수술비(5대주요기관관혈) 20,000,000원", "105대질병수술비(5대주요기관비관혈) 10,000,000원", "105대질병수술비(24대주요질병) 5,000,000원", "105대질병수술비(76대생활질병) 200,000원", "뇌·내장손상수술비 20,000,000원", "특정외상성뇌손상진단비 2,000,000원", "특정외상성뇌출혈진단비 10,000,000원", "특정외상성장기손상진단비 2,000,000원", "[갱신형]민사소송법률비용손해 20,000,000원(자기부담금 10만원)"], "note": "암진단비(유사암제외) 2,000만원 - 박현미의 핵심 암보험 중 하나. 뇌혈관/허혈성심장질환 진단비도 다수 보유. 치과 관련 보장 없음", "paymentPeriod": "20년납 2020.09.23~2040.09.23 완료예정"}, {"file": "02. 박현미/박현미_신협.pdf", "company": "김포한강 신협", "product": "건강사랑공제 여성형", "policyNumber": "증서번호 33-02-366942", "status": "유지", "premiumMonthly": 14600, "startDate": "2008.11.20", "maturity": "80세(2065.11.20)", "dental": false, "dentalDetail": "", "coverage": ["7대질병 수술급여금(수술1회당) 4,000,000원", "7대질병 입원급여금(4~60일 3일초과1일당) 40,000원 / (61~120일, 60일초과1일당) 80,000원", "여성특정질병 수술급여금(수술1회당) 500,000원", "여성특정질병 입원급여금(4일이상,3일초과1일당120일한도) 30,000원", "기타질병 입원급여금(3일초과1일당120일한도) 20,000원", "재해수술급여금(수술1회당) 500,000원", "재해입원급여금(3일초과1일당120일한도) 20,000원", "만기공제금(생존시 납입공제료 전액)", "암진단특약: 일반암 20,000,000원 / 기타피부암·갑상선암·경계성종양·상피내암 각 2,000,000원(각 최초1회한)"], "note": "치과 관련 보장 없음", "paymentPeriod": "20년납 2008.11.20~2028.11.20 완료예정"}, {"file": "02. 박현미/박현미_운전자보험_KB손해보험_20200918.pdf", "company": "KB손해보험", "product": "(무)KB운전자보험과안전하게사는이야기(20.08) 2종(23020)", "policyNumber": "청약번호 RQ20-36890610", "status": "유지", "premiumMonthly": 10000, "startDate": "2020.09.16", "maturity": "", "dental": false, "dentalDetail": "", "coverage": ["자동차사고부상보장(1~7급)(기본계약) 1,000,000원", "교통상해사망 10,000,000원", "교통상해50%이상후유장해 1,000,000원", "자동차사고부상보장I 15,000,000원", "자동차사고부상보장II 9,000,000원", "자동차사고부상보장I(차대차사고) 15,000,000원", "자동차사고부상보장II(차대차사고) 6,000,000원", "자동차사고부상보장I(중대법규위반및뺑소니피해) 30,000,000원", "자동차사고부상보장II(중대법규위반및뺑소니피해) 9,000,000원", "가족동승자동차사고부상보장(1~11급) 500,000원", "가족동승자동차사고부상보장 100,000원", "신상해1~5종수술비_5종 2,000,000원", "신상해1~5종수술비_4종 500,000원", "신상해1~5종수술비_3종 300,000원", "신상해1~5종수술비_2종 150,000원", "신상해1~5종수술비_1종 100,000원", "보복운전피해보장 1,000,000원", "자동차사고변호사선임비용손해 20,000,000원", "자동차사고벌금II(스쿨존사고3천만원한도) 20,000,000원", "자동차사고벌금(대물) 5,000,000원", "교통사고처리보장V 100,000,000원"], "note": "순수 운전자보험(교통사고/상해 특화). 질병/암 관련 담보 없음. 치과 관련 보장 없음", "paymentPeriod": "20년납 100세만기(20년 자동갱신형)"}, {"file": "02. 박현미/박현미_표적치료_KB손해보험_20200918.pdf", "company": "KB손해보험", "product": "(무)KB암보험과 건강하게사는이야기(20.05)2종, 연만기 자동갱신형(22972)", "policyNumber": "청약번호 RQ20-36960764", "status": "유지", "premiumMonthly": 11600, "startDate": "", "maturity": "", "dental": false, "dentalDetail": "", "coverage": ["암진단비(유사암제외)(감액없음)(기본계약) 1,000,000원", "유사암진단비(감액없음) 200,000원", "신재진단암진단비II(기타피부암,갑상선암포함) 5,000,000원", "갑상선바늘생검조직병리진단비(연간1회한) 200,000원", "항암방사선치료비 1,000,000원", "항암약물치료비 1,000,000원", "표적항암약물허가치료비 70,000,000원", "갑상선암(초기제외)진단비 10,000,000원", "암수술비(유사암제외) 1,000,000원", "유사암수술비 1,000,000원", "위·십이지장 양성종양 및 폴립 진단비(연간1회한) 100,000원", "대장 양성종양 및 폴립 진단비(연간1회한) 200,000원"], "note": "표적항암약물허가치료비 7천만원 - 박현미의 핵심 암보험(표적항암 특화). 치과 관련 보장 없음", "paymentPeriod": "20년납 20년만기(자동갱신, 최대100세까지)"}, {"file": "02. 박현미/박현미_한화생명_CI보험.pdf", "company": "한화생명", "product": "무배당 대한유니버셜CI통합종신보험(2종,표준체)", "policyNumber": "보종코드 1626-052, 증권번호 146165873", "status": "유지", "premiumMonthly": 105364, "startDate": "2009.12.22", "maturity": "종신", "dental": false, "dentalDetail": "재해의료특약 상세: 재해골절(단, 치아파절 제외)로 진단 확정시(1회한) 300,000원 — 치아파절 제외 명시", "coverage": ["주계약 비일시납 50,000,000원", "교통재해사망 50,000,000원", "암간호 25,000,000원", "재해의료 10,000,000원", "상해입원진단 20,000,000원", "재해보장 50,000,000원", "CI추가보장 20,000,000원", "질병의료보장 20,000,000원", "첫날부터입원(갱신) 30,000,000원", "실손의료비II종합(갱신,3년납) 50,000,000원(입원), 외래20만원/처방조제10만원 한도(통원)", "주계약 사망보험금: 80%이상 장해시 [가산보험금]+50,000,000원(케어프리 미발생) 또는 +10,000,000원(케어프리 발생)", "주계약 케어프리보험금: 중대한화상및부식/중대한질병/중대한수술 진단시 40,000,000원(1년미만 20,000,000원)", "CI추가보장특약 경계성종양진단비 6,000,000원", "CI추가보장특약 소액치료비암·상피내암진단비 2,000,000원", "CI추가보장특약 조혈모세포이식수술비 2,000,000원", "CI추가보장특약 관상동맥성형술(PTCA) 2,000,000원", "CI추가보장특약 양성뇌종양수술비 6,000,000원", "성인병진단특약 뇌출혈·급성심근경색증진단비 20,000,000원(1년미만 1/2)", "암간호특약 암입원급여금(4일이상,3일초과1일당120일한도) 125,000원 / 유사암입원급여금 50,000원", "암간호특약 암통원치료비(1회당) 50,000원 / 유사암통원치료비 25,000원", "재해의료특약 재해골절(치아파절제외)진단비(1회당) 300,000원", "재해의료특약 현저한추상진단비 3,000,000원 / 추상진단비 2,000,000원", "재해의료특약 재해수술비(1회당) 1,000,000원", "질병의료보장특약 성인특정질환 제1형 100,000원 / 제2형 60,000원 / 제3형 40,000원", "질병의료보장특약 성인특정질환II 제1형 60,000원 / 제2형 40,000원", "첫날부터입원특약(갱신) 입원1일당(120일한도) 30,000원"], "note": "암간호특약, CI추가보장특약(경계성종양/소액암/상피내암), 성인병진단특약(뇌출혈·급성심근경색) 등 다수 암/질병 관련 담보 보유. 재해의료특약은 치아파절 제외", "paymentPeriod": "20년납 2009.12.22~2029.12.22 완료예정(첫날부터입원·실손의료비 특약은 3년갱신)"}, {"file": "02. 박현미/박현미_한화생명_연금보험.pdf", "company": "한화생명", "product": "무배당 스마트변액통합보험(보장형계약)(2종기본형Plus수익형 표준체)", "policyNumber": "보종코드 1710-081, 증권번호 165368358", "status": "유지", "premiumMonthly": 118950, "startDate": "2014.02.07", "maturity": "종신", "dental": false, "dentalDetail": "", "coverage": ["주계약(사망보험금)"], "note": "사망보장 중심의 단순 변액보험. 치과 관련 보장 없음", "paymentPeriod": "15년납 2014.02.07~2029.02.07 완료예정"}, {"file": "02. 박현미/박현미_현대해상_보장성보험.pdf", "company": "현대해상", "product": "무배당퍼펙트골드종합보험(Hi1610)기본플랜", "policyNumber": "L-016-31886543", "status": "유지", "premiumMonthly": 41000, "startDate": "2016.12.19", "maturity": "100세(2085.12.19)", "dental": false, "dentalDetail": "골절진단(치아파절 제외) 1,000,000원 / 5대골절진단담보 1,000,000원 — 골절 보장에서 치아파절 명시적 제외", "coverage": ["기본계약(상해사망고도후유장해) 1억", "질병후유장해(80%이상) 1천만", "상해사망추가담보 2억", "상해후유장해담보 1억", "골절진단(치아파절 제외) 100만", "골절수술담보 60만", "5대골절진단담보 100만", "5대골절수술담보 100만", "깁스치료담보 20만", "화상진단담보 20만", "상해수술담보 100만", "상해입원일당 2만/일", "상해입원일당(중환자실) 10만/일", "응급실내원진료비 2만", "암진단(갱신형) 100만", "재진단암진단(갱신형) 2천만", "암수술담보 200만", "암수술(갱신형)담보 200만", "2대질환(뇌혈관,허혈심장)입원일당 2만", "2대질환수술담보 200만", "간질환수술담보 200만", "질병수술담보 20만", "특정5대질병수술담보 10만", "특정5대질병수술(갱신형)담보 10만", "특정질병수술(여성)담보 250만", "16대질병수술II담보 200만", "시각질환(백내장,녹내장)수술담보 10만", "충수염수술담보 20만", "크론병진단담보 500만", "조혈모세포이식수술담보 2000만", "각막이식수술담보 1000만", "만성당뇨합병증진단담보 200만", "중대한재생불량빈혈진단담보 1000만", "중증루푸스신염진단담보 1000만", "유방암으로인한유방수술담보 50만", "인공관절수술(갱신형)담보 100만", "일상생활중배상책임(가족)(갱신형)담보 1억"], "note": "종합보장형 상해/질병 보험. 골절 담보에서 치아파절 제외 조항 존재(검색 참고용). 명시적 치과 담보 없음", "paymentPeriod": "20년납 2016.12.19~2036.12.19 완료예정"}, {"file": "02. 박현미/오피스텔 화재보험/박현미_오피스텔화재보험_삼성화재_20200918.pdf", "company": "삼성화재", "product": "무배당 삼성화재 재물보험 성공예감(2004.6)", "policyNumber": "설계번호 1209194532000213", "status": "확인필요", "premiumMonthly": 4330, "startDate": "2020.09.17", "maturity": "2025.09.17 (5년납5년만기)", "dental": false, "dentalDetail": "", "coverage": ["건물: 화재손해(건물/집기비품 실손), 특수건물 풍수재손해, 구내폭발파열손해", "특수건물 신체손해배상책임(사망/부상)", "특수건물 화재대물배상책임 10억", "가족 화재벌금 2천만"], "note": "⚠️ 확인 필요: 보험기간이 2020.09.17~2025.09.17(5년만기)로, 만기일이 이미 지났습니다(오늘 기준 약 10개월 경과). 갱신 여부를 삼성화재에 확인해야 합니다.", "paymentPeriod": "5년납 2020.09.17~2025.09.17 완료"}], "김하준": [{"file": "03. 김하준/김하준_KB손해보험_보장내용정리_보장성보험_20240501.pdf", "company": "KB손해보험", "product": "KB 금쪽같은 자녀보험Plus(무배당)(24.04)_2종_무해지(24417)", "policyNumber": "청약번호 RQ24-20515743", "status": "유지", "premiumMonthly": 74452, "startDate": "2024.04.17 접수", "maturity": "", "dental": true, "dentalDetail": "치과 관련 담보 다수 보유 - 치석제거(스케일링)치료비, 치아영상진단비(X-ray/파노라마)(질병/상해), 치수치료(신경치료)비(유치/영구치)(질병/상해), 크라운치료(유치/영구치)(질병/상해)(무제한), 인레이·온레이보존치료(유치/영구치), 복합레진보존치료(유치/영구치), 아말감또는글래스아이노머보존치료(유치/영구치), 특정치주질환(잇몸질환)치료비, 단순발치/정교한발치/완전매복치아발치 치료비 - 20년갱신 100세만기", "coverage": ["[기본계약]일반상해후유장해(3~100%) 10,000,000원", "[기본계약]일반상해후유장해(20~100%) 1,000,000원", "[의무부가특약]자녀보험료납입면제대상보장(11대) 100,000원", "보험료납입지원(유사암진단) 37,215원", "암진단비(유사암제외)(감액없음) 20,000,000원", "[갱신형]암진단비(유사암제외)(감액없음) 80,000,000원", "[갱신형]유사암진단비(감액없음) 20,000,000원", "다발성소아암진단비(감액없음) 10,000,000원", "소아백혈병진단비 10,000,000원", "양성뇌종양진단비 20,000,000원", "항암방사선치료비(감액없음) 5,000,000원", "항암약물치료비(감액없음) 5,000,000원", "항암방사선치료비(남성생식기관련:전립선,음경,고환암)(감액없음) 20,000,000원", "[갱신형]표적항암약물허가치료비(3대특정암)(최초1회한)(감액없음) 100,000,000원", "[갱신형]표적항암약물허가치료비(림프종·백혈병관련암)(최초1회한)(감액없음) 100,000,000원", "[갱신형]표적항암약물허가치료비(3대특정암및림프종·백혈병관련암제외)(최초1회한)(감액없음) 100,000,000원", "[갱신형]특정항암호르몬약물허가치료비(최초1회한)(감액없음) 1,000,000원", "[갱신형]갑상선암호르몬약물허가치료비(최초1회한)(감액없음) 2,000,000원", "[갱신형]표적항암방사선치료비(항암세기조절방사선)(최초1회한)(감액없음) 20,000,000원", "[갱신형]표적항암방사선치료비(항암양성자방사선)(최초1회한)(감액없음) 30,000,000원", "[갱신형]비급여표적항암약물허가치료비(3대특정암)(최초1회한)(감액없음) 100,000,000원", "[갱신형]비급여표적항암약물허가치료비(림프종·백혈병관련암)(최초1회한)(감액없음) 100,000,000원", "[갱신형]비급여표적항암약물허가치료비(3대특정암및림프종·백혈병관련암제외)(최초1회한)(감액없음) 100,000,000원", "[갱신형]카티(CAR-T)항암약물허가치료비(연간1회한)(감액없음) 50,000,000원", "갑상선바늘생검조직병리진단비(연간1회한) 500,000원", "암직접치료입원일당(요양제외,1일이상180일한도) 100,000원", "암요양병원입원일당(1일이상90일한도) 20,000원", "암직접치료통원일당 50,000원", "암직접치료통원일당(종합병원) 20,000원", "암직접치료통원일당(상급종합병원) 30,000원", "부정맥질환(I49)진단비(감액없음) 3,000,000원", "심장질환(특정Ⅰ)진단비(감액없음) 5,000,000원", "심장질환(특정Ⅱ)진단비(감액없음) 5,000,000원", "혈전용해치료비(연간1회한)(감액없음)(급성심근경색증,I21)(예약) 10,000,000원", "혈전용해치료비(연간1회한)(감액없음)(뇌경색증,I63)(예약) 10,000,000원", "질병수술비 200,000원", "질병1~5종수술비(매회지급)_1종~5종 100,000/300,000/1,000,000/2,000,000/3,000,000원", "112대질병수술비Ⅰ~Ⅵ(감액없음) 5,000,000/3,000,000/1,000,000/500,000/300,000/200,000원", "암수술비(유사암제외)(30%체증형) 5,000,000원", "유사암수술비 5,000,000원", "[갱신형]다빈치로봇암수술비(갑상선암및전립선암제외)(최초1회한)(감액없음) 10,000,000원", "[갱신형]다빈치로봇갑상선암및전립선암수술비(최초1회한)(감액없음) 2,500,000원", "상해수술비Q 300,000원", "상해수술비(10년후1.5배체증) 200,000원", "상해1~5종수술비(매회지급)_1~5종 100,000/300,000/1,000,000/3,000,000/5,000,000원", "창상봉합술치료비Ⅰ(안면/경부) 50,000원", "창상봉합술치료비Ⅱ(안면/경부) 1,000,000원", "창상봉합술치료비Ⅰ(안면/경부외) 50,000원", "창상봉합술치료비Ⅱ(안면/경부외) 500,000원", "골절진단비Ⅱ(치아파절제외) 300,000원", "골절진단비(치아파절포함)(연간1회한) 200,000원", "5대골절진단비 1,000,000원", "골절수술비 300,000원", "깁스치료비 500,000원", "화상진단비 500,000원", "중대한화상및부식진단비 50,000,000원", "십자인대수술비(급여,연간1회한)(감액없음) 300,000원", "상해흉터복원수술비 70,000원", "상해흉터복원수술비Ⅱ(안면부) 3,000,000원", "[갱신형]독감(인플루엔자)항바이러스제치료비(연간1회한)(10일면책) 100,000원", "11대특정감염병진단비(수족구포함)(연간1회한,10일면책) 200,000원", "특정바이러스질환진단비(감액없음) 100,000원", "12대소화계특정질환진단비(최초1회한)(감액없음) 1,000,000원", "중대한재생불량성빈혈진단비 10,000,000원", "중증세균성수막염진단비 10,000,000원", "말기신부전증진단비 20,000,000원", "만성당뇨합병증진단비(감액없음) 1,000,000원", "기흉진단비 1,000,000원", "외상성특정장기손상진단비 1,000,000원", "외상성특정뇌출혈진단비 5,000,000원", "추간판장애및관절증(엉덩,무릎)(이차성및상세불명제외)수술비 500,000원", "조혈모세포이식수술비 20,000,000원", "5대장기이식수술비 20,000,000원", "각막이식수술비 10,000,000원", "상해재활치료비(급여,1일1회한,연간30회한) 10,000원", "상해중환자실입원일당(1일이상)Ⅱ 100,000원", "질병중환자실입원일당(1일이상)Q 100,000원", "응급실내원비(응급) 30,000원", "폭력피해보장 1,000,000원", "간병인사용상해입원일당(요양/정신/한방병원제외,181일이상) 150,000원", "간병인사용질병입원일당(요양/정신/한방병원제외,181일이상) 150,000원", "간호간병통합서비스상해질병입원일당(요양/정신/한방병원제외,181일이상) 70,000원", "간호간병통합서비스상해입원일당(1-180일) 30,000원", "간호간병통합서비스질병입원일당(1-180일) 30,000원", "간병인사용상해입원일당(1일이상)(요양병원제외)(10년후1.5배체증) 150,000원", "간병인사용상해입원일당(1일이상)(요양병원)(10년후1.5배체증) 50,000원", "간병인사용질병입원일당(1일이상)(요양병원제외)(10년후1.5배체증) 150,000원", "간병인사용질병입원일당(1일이상)(요양병원)(10년후1.5배체증) 50,000원", "간호간병통합서비스상해입원일당(1-180일)(10년후1.5배체증) 40,000원", "간호간병통합서비스질병입원일당(1-180일)(10년후1.5배체증) 40,000원", "스쿨존내어린이교통사고보장 200,000원", "[갱신형]치석제거(스케일링)치료비 10,000원", "[갱신형]치아영상진단비(X-ray촬영)(질병) 10,000원", "[갱신형]치아영상진단비(X-ray촬영)(상해) 10,000원", "[갱신형]치아영상진단비(파노라마촬영)(질병) 10,000원", "[갱신형]치아영상진단비(파노라마촬영)(상해) 10,000원", "[갱신형]치수치료(신경치료)비(질병)(유치) 30,000원", "[갱신형]치수치료(신경치료)비(질병)(영구치) 30,000원", "[갱신형]치수치료(신경치료)비(상해)(유치) 30,000원", "[갱신형]치수치료(신경치료)비(상해)(영구치) 30,000원", "[갱신형]크라운치료(질병/상해)(유치/영구치)(무제한) 각 200,000원", "[갱신형]인레이·온레이보존치료(질병/상해)(유치/영구치) 각 120,000원", "[갱신형]복합레진보존치료(질병/상해)(유치/영구치) 각 100,000원", "[갱신형]아말감또는글래스아이노머보존치료(질병/상해)(유치/영구치) 각 10,000원", "[갱신형]특정치주질환(잇몸질환)치료비 20,000원", "[갱신형]단순발치치료비 5,000원", "[갱신형]정교한발치치료비 10,000원", "[갱신형]완전매복된치아의발치치료비 20,000원", "[예약가입,6세이후]임플란트보철치료(상해및질병)(영구치) 500,000원", "[예약가입,6세이후]가철성의치(틀니)보철치료(연간1회한도) 500,000원", "[예약가입,6세이후]고정성가공의치(브릿지)보철치료 250,000원", "[예약가입,6세이후]영구치아상실위로금 200,000원", "[예약가입,6세이후]부정교합치료비 2,000,000원", "[예약가입,6세이후]시력치료비 2,000,000원", "[예약가입,6세이후]시력교정비 200,000원", "[갱신형]가족일상생활중배상책임Ⅱ 100,000,000원"], "note": "표적항암약물허가치료비(3대특정암/림프종·백혈병관련암/기타암 각 1억원, 갱신형), 카티(CAR-T)항암약물허가치료비 5천만원, 암진단비 2천만원(+갱신형 8천만원) 등 김하준의 핵심 암보험. 치과 담보 최다 보유(치석제거/치수치료/크라운/보존치료/발치/예약가입 임플란트·틀니·브릿지 등)", "paymentPeriod": "20년납 2024.04.17~2044.04.17 완료예정"}, {"file": "03. 김하준/김하준_삼성화재_보장 내용 정리_보장성보험_20240501.pdf", "company": "삼성화재", "product": "무배당 삼성화재 자녀보험 NEW마이슈퍼스타(2404.3)3종(납입면제,해약환급금미지급형)", "policyNumber": "설계번호 1248657785200031", "status": "유지", "premiumMonthly": 77677, "startDate": "2024.04 ~ 2121.04", "maturity": "", "dental": false, "dentalDetail": "", "coverage": ["상해후유장해(3~100%) 100,000,000원", "보험료납입면제대상 100,000원", "유사암진단납입지원 38,000원", "뇌혈관질환진단비(감액없음) 10,000,000원", "허혈성심장질환진단비(감액없음) 10,000,000원", "상해입원수술비(당일입원제외) 500,000원", "상해통원수술비(외래및당일입원) 500,000원", "상해1종수술비(시술포함) 300,000원", "상해2종수술비(시술포함) 300,000원", "상해3종수술비(시술포함) 450,000원", "상해4종수술비(시술포함) 450,000원", "상해5종수술비(시술포함) 5,000,000원", "상해6종수술비(시술포함) 10,000,000원", "상해7종수술비(시술포함) 15,000,000원", "상해8종수술비(시술포함) 25,000,000원", "상해입원일당(1일이상) 30,000원", "상해입원후통원일당(3일이상계속입원,20일한도) 30,000원", "질병후유장해(3~100%)(80세만기) 30,000,000원", "[갱신형]뇌혈관질환진단비(감액없음) 40,000,000원", "[갱신형]허혈성심장질환진단비(감액없음) 40,000,000원", "위·십이지장,대장양성종양및폴립진단비(연간1회한) 200,000원", "대상포진진단비 1,000,000원", "통풍진단비 1,000,000원", "요로결석진단비 1,000,000원", "특정법정감염병진단비 300,000원", "[갱신형]독감(인플루엔자)입원일당(1일이상,30일한도) 30,000원", "질병입원수술비Ⅱ(당일입원제외) 500,000원", "질병통원수술비Ⅱ(외래및당일입원) 500,000원", "질병입원수술비Ⅳ(당일입원제외)(백내장,대장양성종양제외) 500,000원", "질병통원수술비Ⅳ(외래및당일입원)(백내장,대장양성종양제외) 500,000원", "질병1종수술비(시술포함) 300,000원", "질병2종수술비(시술포함) 300,000원", "질병3종수술비(시술포함) 450,000원", "질병4종수술비(시술포함) 450,000원", "질병5종수술비(시술포함) 5,000,000원", "질병6종수술비(시술포함) 10,000,000원", "질병7종수술비(시술포함) 15,000,000원", "질병8종수술비(시술포함) 25,000,000원", "질병비급여수술비 200,000원", "질병종합병원비급여수술비 100,000원", "질병상급종합병원비급여수술비 100,000원", "2대질병특정재활치료비(급여)(1일1회한,연간90회한) 30,000원", "5대주요기관질병관혈수술비Ⅱ 30,000,000원", "5대주요기관질병비관혈수술비Ⅱ 10,000,000원", "질병입원일당(1일이상) 20,000원", "질병입원후통원일당(3일이상계속입원,20일한도) 30,000원", "가족일상생활중배상책임Ⅱ 100,000,000원"], "note": "치과 관련 보장 없음(순수 상해/질병 진단·수술 중심). 뇌혈관질환/허혈성심장질환 진단비(기본+갱신형 합산 최대 5천만원)가 특징적", "paymentPeriod": "20년납 2024.04~2044.04 완료예정"}, {"file": "03. 김하준/김하준_현대해상_실손보험.pdf", "company": "현대해상", "product": "무배당실손의료비보장보험(갱신형)(Hi2004)기본납입형플랜", "policyNumber": "계약번호 L020 49903527", "status": "유지", "premiumMonthly": 13380, "startDate": "", "maturity": "", "dental": false, "dentalDetail": "", "coverage": ["상해입원실손의료비(갱신형)_선택형Ⅱ 5천만원", "상해통원실손의료비(외래/처방조제)(갱신형)_선택형Ⅱ", "질병입원실손의료비(갱신형)_선택형Ⅱ 5천만원", "질병통원실손의료비(외래/처방조제)(갱신형)_선택형Ⅱ", "비급여도수치료·체외충격파치료·증식치료실손의료비(갱신형)", "비급여주사료실손의료비(갱신형)", "비급여자기공명영상진단(MRI/MRA)실손의료비(갱신형)"], "note": "실손의료비 담보만 구성(순수 실손보험). 치과 관련 명시적 담보 없음(통원한도 내 진료비 일부 보장 가능성은 있으나 약관상 치과 치료 제외조항 확인 필요)", "paymentPeriod": "1년납 1년만기 갱신형(태아 가입, 최대15년 갱신)"}, {"file": "03. 김하준/보험종료/김하준_현대해상_보장성보험(종료).pdf", "company": "현대해상", "product": "무배당굿앤굿어린이종합보험Q(Hi2010)기본플랜", "policyNumber": "계약번호 L02049910851", "status": "종료(해지)", "premiumMonthly": null, "startDate": "2020.10.23", "maturity": "", "dental": false, "dentalDetail": "골절진단(치아파절제외)담보 - 치아파절은 골절 보장에서 제외. 부정교합치료담보/시력치료담보/시력교정담보 있음(2세 이전 가입시 6세 이후 발동)", "coverage": ["기본계약(상해후유장해)", "보험료납입면제대상담보", "골절진단담보(치아파절 제외/포함 각각)", "5대골절진단담보", "성장판손상골절진단담보", "화상진단담보", "중증화상/부식진단담보", "상해입원일당(중환자실 포함)", "상해수술Ⅱ담보, 골절수술Ⅱ담보, 5대골절수술Ⅱ담보", "심한상해수술담보, 중대한특정상해수술담보, 상해흉터성형수술담보", "질병후유장해담보", "암진단Ⅱ담보(유사암제외), 유사암진단Ⅱ담보", "다발성소아암진단담보, 소아백혈병진단담보, 뇌졸중진단담보, 뇌혈관질환진단담보", "급성심근경색증진단담보, 허혈심장질환진단담보", "항암방사선/항암약물치료담보", "말기신부전증진단담보, 양성뇌종양진단담보, 심장관련소아특정질병진단담보", "중대한재생불량성빈혈진단담보, 특정감염병진단(갱신형)담보, 중증세균성수막염진단담보", "인슐린의존당뇨병진단담보, ADHD진단담보, 기흉진단담보, 특정정신장애진단담보", "대상포진진단담보, 대상포진눈병진단담보", "질병입원일당Ⅱ(1-180일, 종합병원, 중환자실 구분)", "암직접치료입원일당, 요양병원암입원일당, 선천이상입원일당", "질병수술담보, 질병수술(1~5종)담보, 암수술담보, 조혈모세포이식수술담보", "뇌혈관질환/허혈심장질환/심뇌혈관질환 수술담보, 추간판장애수술담보", "충수염수술담보, 척추측만증수술담보, 모야모야병개두수술담보", "희귀난치성질환수술담보, 어린이개흉심장수술담보, 어린이심장시술담보", "선천이상수술담보(다발성/특정/최초1회한)", "5대기관질병수술Ⅱ담보", "인공와우이식수술담보, 5대장기이식수술담보, 각막이식수술담보", "깁스치료담보, 응급실내원진료비Ⅱ(응급/비응급)담보", "자동차사고(스쿨존내교통사고)담보", "유괴·납치·불법감금피해담보", "미성년성폭력범죄피해담보", "강력범죄피해(사망제외)담보", "폭력피해(사망제외)담보", "부정교합치료담보", "시력치료담보", "시력교정담보", "의료사고법률비용담보", "무배당일상생활중배상책임Ⅲ(가족)(갱신형)담보 1억원", "저체중아입원일당담보, 저체중아출생담보, 장해출생담보"], "note": "2020.10.23 태아 시점 가입, 2024.04.30 해지 완료(누적납입 5,900,496원, 환급 1,781,159원). 치과 명시적 담보 없음, 골절 담보에서 치아파절 제외 조항 존재"}, {"file": "03. 김하준/보험종료/김하준_현대해상_보장성보험 해지완료확인서(종료).pdf", "company": "현대해상", "product": "무배당굿앤굿어린이종합보험Q(Hi2010) 해지완료확인서", "policyNumber": "L02049910851", "status": "종료(해지완료확인)", "premiumMonthly": null, "startDate": "", "maturity": "", "dental": false, "dentalDetail": "", "coverage": [], "note": "위 종료 정책과 동일 건의 해지 확인 서류. 최종환급금 1,781,159원 확인"}], "최복순": [{"file": "04. 최복순/최복순_미생_간병보험_100세 간병보험 무배당 1501_201503.pdf", "company": "미래에셋생명", "product": "100세 간병보험 무배당 1501", "policyNumber": "8003485244", "status": "유지", "premiumMonthly": 38850, "startDate": "2015.03.25", "maturity": "90세(2049.03.25, 주보험)", "dental": false, "dentalDetail": "", "coverage": ["간병연금(장기요양상태 진단확정시 최초1회한, 5년간 매월 60회 250,000원)", "한번더간병연금(진단확정 5년경과 후 생존시 연 12회, 최대 60회, 매월 250,000원)", "간병관련질병진단특약(1년미만 2,500,000원/1년이후 5,000,000원)", "중환자실입원급여금(1일당 15,000원, 1회 입원당 60일 한도)", "납입면제(50%이상 장해 또는 장기요양상태시)"], "paymentPeriod": "20년납 2015.03.25~2035.03.25 완료예정"}, {"file": "04. 최복순/최복순_미생_보장성보험_변액 건강종신보험 1310 건강이야말로 최고의 재산입니다__감액_20260714.pdf", "company": "미래에셋생명", "product": "변액건강종신보험(무)1310 건강이야말로 최고의 재산입니다", "policyNumber": "8003158719", "status": "유지", "premiumMonthly": 77700, "startDate": "2014.01.18", "maturity": "종신(9999.01.18)", "dental": false, "dentalDetail": "", "coverage": ["헬스케어연금(3대보장형: 암/뇌출혈/급성심근경색증 진단시 최초1회한, 10년간 매년 10회 확정지급)", "유족연금(사망시 사망보험금 10년간 10회 확정지급)", "납입면제(50%이상 장해 또는 암·뇌출혈·급성심근경색증, 기타피부암·갑상선암 제외)", "암진단비(유방암·성별특정암 10,000,000/1년이내 5,000,000, 유방암180일이내 2,000,000, 경계성종양 2,000,000/1년이내 1,000,000, 갑상선암·기타피부암·제자리암 1,000,000/1년이내 500,000)"], "note": "2026.07.14 재발행 증권 기준 주보험 3,000만원→2,000만원으로 감액(감액완납 아님, 계속 납입 중). 특정암진단특약(1,000만원)은 그대로 유지. 이전 월보험료 114,600원 → 현재 77,700원", "paymentPeriod": "20년납 2014.01.18~2034.01.18 완료예정"}, {"file": "04. 최복순/최복순_미생_종신보험_LoveAge 연금받는 종신보험 1112_201201.pdf", "company": "미래에셋생명", "product": "무배당 미래에셋 LoveAge 연금받는종신보험1112", "policyNumber": "8002353551", "status": "유지", "premiumMonthly": 124050, "startDate": "2012.01.09", "maturity": "종신(9999.01.09)", "dental": false, "dentalDetail": "재해골절치료비[(무)재해보장특약1104]: 재해골절(단, 치아파절 제외)로 진단확정시[골절1회당] 300,000원 — 치아파절 제외 명시(검색 참고용)", "coverage": ["사망위로금(보험가입금액의 50%+추가적립금)", "유족연금(보험가입금액의 5%를 10년간 매년 확정지급)", "수술급여금(수술1회당 최대 5,000,000원)", "재해골절치료비(치아파절 제외) 300,000원/1회", "재해수술치료비 200,000원", "2대질병진단비(뇌출혈/급성심근경색증) 10,000,000원", "노후질병보장특약(수술급여금 1형500,000/2형300,000, 입원급여금 1형20,000/2형10,000 1일당)", "암수술비(1년미만1,500,000/1년이상3,000,000, 갑상선암등300,000/600,000, 기타피부암등150,000/300,000)", "암입원비(1일당 50,000/기타피부암등 10,000)", "항암방사선치료비(1,000,000/기타피부암등 200,000/100,000)", "암진단비(1년미만5,000,000/1년이상10,000,000, 유방암180일이내1,000,000, 경계성종양1,000,000/2,000,000, 갑상선암등500,000/1,000,000)", "납입면제(50%이상 장해 또는 뇌출혈·급성심근경색증)"], "paymentPeriod": "20년납 2012.01.09~2032.01.09 완료예정(수술특약 1건은 15년납)"}, {"file": "04. 최복순/최복순_흥국화재_무배당행복을다주는가족사랑보험플러스_20260714.pdf", "company": "흥국화재", "product": "무배당 행복을 다주는 가족사랑보험 플러스", "policyNumber": "41201243930000(764HM0012803)", "status": "유지", "premiumMonthly": 26256, "startDate": "2012.02.10", "maturity": "100세(2059.02.10, 47년)", "dental": false, "dentalDetail": "골절진단비(치아파절제외) 200,000원 — 치아파절 제외 명시", "coverage": ["일반상해사망 70,000,000원", "일반상해입원비(1일-180일) 20,000원", "골절진단비(치아파절제외) 200,000원", "일반상해후유장해 70,000,000원", "교통상해부상처리비용 6,000,000원", "질병입원비(1일-180일) 20,000원", "벌금 20,000,000원", "교통사고합의비용(일반) 30,000,000원", "자동차사고성형치료비 1,000,000원", "[갱신형]가족일상생활중배상책임(갱신형) 100,000,000원", "자동차사고변호사선임비용 5,000,000원"], "note": "2012.02.10 최초 가입(당시 월보험료 51,458원, 실손 특약 종합입원/통원의료비 포함). 2024.04 실손 부분이 별도 정책(흥국화재 실손의료보험 계약전환)으로 분리되면서 현재 월보험료가 26,256원으로 축소됨. 동일 증권번호(41201243930000)의 최신 상태.", "paymentPeriod": "20년납 2012.02.10~2032.02.10 완료예정"}, {"file": "04. 최복순/최복순_흥국화재_실손의료보험_20260714.pdf", "company": "흥국화재", "product": "무배당 흥국화재 실손의료보험(계약전환용_24.04)(갱신형) 2종 (2009년 8월 1일~2015년 12월 31일 가입자)", "policyNumber": "42453602770000", "status": "유지", "premiumMonthly": 49203, "startDate": "2024.04.01", "maturity": "100세만기 (계약전환, 보장내용변경주기 5년)", "dental": false, "dentalDetail": "", "coverage": ["[갱신형]상해급여의료비(5,000만원, 급여80%)", "[갱신형]질병급여의료비(5,000만원, 급여80%)", "[갱신형]상해비급여의료비(5,000만원, 비급여70%, 3대비급여 제외)", "[갱신형]질병비급여의료비(5,000만원, 비급여70%, 3대비급여 제외)", "[갱신형]상해3대비급여의료비(비급여70%) 350만원(도수치료/체외충격파/증식치료, 주사료, MRI)", "[갱신형]질병3대비급여의료비(비급여70%) 350만원(도수치료/체외충격파/증식치료, 주사료, MRI)"], "paymentPeriod": "1년납 1년만기 갱신형(5년 단위 보장내용 변경, 2024.04.01 전환~100세)", "note": "1회 보험료(할인전) 65,119원이나, 할인후보험료 49,203원이 실제 청구액. 대시보드에는 할인후보험료로 반영."}]};
+// 종료·해지 완료된 보험은 대시보드 집계와 상세 화면에서 제외
+Object.keys(DATA).forEach(name => {
+  DATA[name] = (DATA[name] || []).filter(p => !/(^|\s)(종료|해지완료|해지 완료)/.test(String(p.status || "")));
+});
+
+const PEOPLE = Object.keys(DATA);
+const ALL = "전체";
+
+const CATS = ["전체","실비","암","질병","상해","치과","기타"];
+const CAT_DOT = {"실비":"#34d399","암":"#f87171","질병":"#a78bfa","상해":"#fbbf24","치과":"#22d3ee","기타":"#9ca3af"};
+
+const TYPES = ["전체","진단비","수술비","입원비","통원비","사망·후유장해","치료비","기타"];
+
+function classifyCause(text){
+  const t = text;
+  const dentalCheckText = t.replace(/치아파절/g, '');
+  const has = (arr, s)=> arr.some(k=>s.includes(k));
+  if(has(['치아','치과','치석','치수치료','크라운','인레이','온레이','레진','아말감','발치','임플란트','틀니','브릿지','치주','부정교합'], dentalCheckText)) return '치과';
+  if(has(['암','항암','카티','CAR-T','백혈병','뇌종양'], t)) return '암';
+  if(t.includes('실손') || t.includes('실비')) return '실비';
+  if(has(['배상책임','화재','재물보험','풍수재','민사소송','법률비용'], t)) return '기타';
+  if(has(['상해','재해','골절','화상','교통사고','자동차사고','운전자','벌금','변호사','흉터','창상','십자인대','깁스','응급실','스쿨존','보복운전'], t)) return '상해';
+  if(has(['질병','뇌','심장','심근경색','당뇨','통풍','요로결석','대상포진','수막염','신부전','기흉','간질환','폐질환','폐부종','수술','진단비','입원','통원','바이러스','감염병','재생불량성빈혈','장기이식','이식수술','조혈모세포','장해','간병','간호','후유장해'], t)) return '질병';
+  return '기타';
+}
+
+function classifyType(text){
+  const t = text;
+  if(t.includes('사망') || t.includes('후유장해') || t.includes('장해')) return '사망·후유장해';
+  if(t.includes('진단')) return '진단비';
+  if(t.includes('수술')) return '수술비';
+  if(t.includes('입원')) return '입원비';
+  if(t.includes('통원')) return '통원비';
+  if(t.includes('치료')) return '치료비';
+  return '기타';
+}
+
+function extractAmounts(text){
+  const m = text.match(/[0-9][0-9,]*(?:\.[0-9]+)?\s*원/g);
+  return m ? m.join(' / ') : '-';
+}
+
+function esc(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function buildItemsForPerson(person){
+  const policies = DATA[person] || [];
+  const items = [];
+  policies.forEach(pol=>{
+    (pol.coverage||[]).forEach(c=>{
+      items.push({
+        text: c,
+        cause: classifyCause(c),
+        type: classifyType(c),
+        company: pol.company,
+        product: pol.product,
+        file: pol.file,
+        person: person
+      });
+    });
+  });
+  return items;
+}
+
+function buildItems(scope){
+  if(scope === ALL){
+    let items = [];
+    PEOPLE.forEach(p => items = items.concat(buildItemsForPerson(p)));
+    return items;
+  }
+  return buildItemsForPerson(scope);
+}
+
+let currentPerson = ALL;
+let currentType = "전체";
+let currentCause = "전체";
+let currentSearch = "";
+
+function renderPersonTabs(){
+  const wrap = document.getElementById('personTabs');
+  let html = `<div class="tab all-tab ${currentPerson===ALL?'active':''}" onclick="selectPerson('${ALL}')">전체 <span class="count">(${PEOPLE.length}명)</span></div>`;
+  html += PEOPLE.map(p=>{
+    const cnt = DATA[p].length;
+    return `<div class="tab ${p===currentPerson?'active':''}" onclick="selectPerson('${p}')">${p} <span class="count">(${cnt}건)</span></div>`;
+  }).join('');
+  wrap.innerHTML = html;
+}
+
+function selectPerson(p){
+  currentPerson = p;
+  currentType = "전체";
+  currentCause = "전체";
+  document.body.classList.toggle('person-mode', p!==ALL);
+  renderPersonTabs();
+  renderMain();
+}
+
+function pdfHref(file){ return encodeURI(file); }
+
+function getSearchTerms(query){
+  const q=String(query||'').trim().toLowerCase();
+  if(!q) return [];
+  const synonymMap={
+    '치과':['치과','치아','치수','신경치료','크라운','레진','인레이','온레이','스케일링','치석','발치','임플란트','틀니','브릿지','치주','잇몸','부정교합','보철','보존치료'],
+    '치아':['치아','치과','치수','신경치료','크라운','레진','인레이','온레이','스케일링','치석','발치','임플란트','틀니','브릿지','치주','잇몸','부정교합','보철','보존치료'],
+    '실손':['실손','실비','의료비'],
+    '실비':['실비','실손','의료비']
+  };
+  return synonymMap[q]||[q];
+}
+
+function matchesSearch(it){
+  if(!currentSearch) return true;
+  const haystack=`${it.text||''} ${it.product||''} ${it.company||''}`.toLowerCase();
+  const terms=getSearchTerms(currentSearch);
+  return terms.some(term=>haystack.includes(term));
+}
+
+function highlightSearch(text){
+  if(!currentSearch) return esc(text);
+  const q = currentSearch;
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  return esc(text).replace(re, m=>`<mark>${m}</mark>`);
+}
+
+function personSummaryData(person){
+  const items = buildItemsForPerson(person);
+  const policies = DATA[person] || [];
+  const totalPremium = policies.reduce((s,p)=> s + (p.status==='납입완료' ? 0 : (p.premiumMonthly||0)), 0);
+  const typeCounts = {}; TYPES.slice(1).forEach(t=>typeCounts[t]=0);
+  const causeCounts = {}; CATS.slice(1).forEach(c=>causeCounts[c]=0);
+  items.forEach(it=>{ typeCounts[it.type]=(typeCounts[it.type]||0)+1; causeCounts[it.cause]=(causeCounts[it.cause]||0)+1; });
+  return { policies, items, totalPremium, typeCounts, causeCounts };
+}
+
+function renderPersonCard(person){
+  const s = personSummaryData(person);
+  const maxCause = Math.max(...CATS.slice(1).map(c=>s.causeCounts[c]||0),1);
+  const mainCoverage = s.causeCounts['암'] + s.causeCounts['질병'];
+  const pct = Math.min(100, Math.round((mainCoverage/Math.max(s.items.length,1))*100));
+  const bars = ['암','질병','상해','치과'].map(c=>`<div class="cb"><span>${c}</span><div class="track"><div class="fill" style="width:${Math.max(5,(s.causeCounts[c]/maxCause)*100)}%;background:${CAT_DOT[c]}"></div></div><span class="num">${s.causeCounts[c]}</span></div>`).join('');
+  return `<div class="person-card">
+    <div class="person-head"><div style="display:flex;gap:11px;align-items:center"><div class="person-avatar">${esc(person).slice(0,1)}</div><div><h3>${esc(person)}</h3><div class="sub">증권 ${s.policies.length}건 · 보장 ${s.items.length}건</div></div></div><div class="premium-big">${s.totalPremium.toLocaleString()}원<small>월 납입 보험료</small></div></div>
+    <div class="coverage-visual"><div class="ring" style="--pct:${pct};--ring:${CAT_DOT['질병']}"><div><strong>${pct}%</strong><span>질병·암 비중</span></div></div><div class="coverage-bars">${bars}</div></div>
+    <a class="detail-btn" href="javascript:selectPerson('${person}')">보험 구성 자세히 보기 →</a>
+  </div>`;
+}
+
+function hexA(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function renderAllOverview(){
+  const wrap = document.getElementById('mainArea');
+  const allPolicies = PEOPLE.flatMap(p=>DATA[p]||[]);
+  const allItems = buildItems(ALL);
+  const totalPremium = allPolicies.reduce((a,p)=>a+(p.status==='납입완료' ? 0 : (p.premiumMonthly||0)),0);
+  const activeCount = allPolicies.filter(p=>(p.status||'').includes('유지')).length;
+  const causeCounts={}; CATS.slice(1).forEach(c=>causeCounts[c]=allItems.filter(i=>i.cause===c).length);
+  const max=Math.max(...Object.values(causeCounts),1);
+  const legend=CATS.slice(1).map(c=>`<div class="legend-row"><span style="color:${CAT_DOT[c]};font-weight:800">${c}</span><div class="bar"><div class="fill" style="width:${causeCounts[c]/max*100}%;background:${CAT_DOT[c]}"></div></div><span class="n">${causeCounts[c]}</span></div>`).join('');
+  wrap.innerHTML = `<div class="hero-dashboard"><div class="hero-main"><div class="hero-eyebrow">FAMILY INSURANCE OVERVIEW</div><div class="hero-title">우리 가족 보험 현황을 한눈에</div><div class="hero-desc">보험료, 유지 계약, 보장 항목을 시각적으로 정리했습니다.</div><div class="hero-kpis"><div class="hero-kpi"><div class="v">${PEOPLE.length}명</div><div class="l">관리 가족</div></div><div class="hero-kpi"><div class="v">${allPolicies.length}건</div><div class="l">전체 증권</div></div><div class="hero-kpi"><div class="v">${activeCount}건</div><div class="l">유지 계약</div></div><div class="hero-kpi"><div class="v">${totalPremium.toLocaleString()}원</div><div class="l">월 보험료 합계</div></div></div></div><div class="hero-side"><h3>보장 카테고리 분포</h3>${legend}</div></div><div class="dashboard-intro"><div><h2>가족별 보험 구성</h2><p>카드를 눌러 개인별 증권과 세부 보장을 확인하세요.</p></div></div><div class="person-grid">${PEOPLE.map(renderPersonCard).join('')}</div>`;
+}
+
+function renderAllSearch(){
+  const wrap = document.getElementById('mainArea');
+  const items = buildItems(ALL).filter(matchesSearch);
+  if(items.length===0){ wrap.innerHTML = '<div class="empty">일치하는 보장 항목이 없습니다.</div>'; return; }
+  wrap.innerHTML = `<h2 class="sectitle">"${esc(currentSearch)}" 검색 결과 (전체 가족, ${items.length}건)</h2>${renderTable(items, true)}`;
+}
+
+function renderPolicyTable(person){
+  const policies = DATA[person] || [];
+  if(!policies.length) return '<div class="empty">현재 포함된 보험 증권이 없습니다.</div>';
+  return `<div class="policy-table-wrap"><table class="policy-table"><colgroup>
+    <col style="width:8%"><col style="width:22%"><col style="width:11%"><col style="width:8%"><col style="width:16%"><col style="width:13%"><col style="width:9%"><col style="width:7%"><col style="width:6%">
+  </colgroup><thead><tr>
+    <th>보험사</th><th>상품명</th><th>증권번호</th><th>계약일</th><th>납입기간</th><th>보장기간</th><th style="text-align:right">월 보험료</th><th style="text-align:center">상태</th><th style="text-align:center">원문</th>
+  </tr></thead><tbody>${policies.map(p=>`<tr>
+    <td class="company-cell">${esc(p.company||'-')}</td>
+    <td class="product-cell" title="${esc(p.product||'')}">${esc(p.product||'-')}</td>
+    <td class="number-cell">${esc(p.policyNumber||'-')}</td>
+    <td class="date-cell">${esc(p.startDate||'-')}</td>
+    <td class="date-cell" title="${esc(p.paymentPeriod||'')}">${esc(p.paymentPeriod||'확인필요')}</td>
+    <td class="date-cell" title="${esc(p.maturity||'')}">${esc(p.maturity||'-')}</td>
+    <td class="premium-cell">${p.premiumMonthly?p.premiumMonthly.toLocaleString()+'원':'-'}</td>
+    <td class="status-cell"><span class="status-badge status-${esc(p.status||'확인필요')}">${esc(p.status||'-')}</span></td>
+    <td class="action-cell"><a class="pdf-btn" href="${pdfHref(p.file)}" target="_blank">PDF ↗</a></td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderTable(items, showPerson){
+  return `<div class="coverage-list">${items.map(it=>`<article class="coverage-item row-cat-${it.cause}"><div><div class="ci-title">${showPerson?`<b style="color:#91adff">${esc(it.person)}</b> · `:''}${highlightSearch(it.text)}</div><div class="ci-src">${esc(it.company)} · ${esc(it.product)}</div></div><div class="ci-right"><div class="ci-amount">${esc(extractAmounts(it.text))}</div><span class="cause-tag">${esc(it.cause)}</span><div style="margin-top:8px"><a class="pdf-btn" href="${pdfHref(it.file)}" target="_blank">PDF</a></div></div></article>`).join('')}</div>`;
+}
+
+function classifyDomain(text, product=''){
+  const t = `${text||''} ${product||''}`;
+
+  // 1차 대분류는 질환명이 아니라 보험의 성격을 기준으로 구분합니다.
+  if(/실손|실비|의료비\[갱신|종합입원|종합통원|급여의료비|비급여의료비/.test(t)) return '실손의료';
+  if(/운전자|자동차사고|교통사고처리|교통상해|대중교통|벌금|변호사선임|스쿨존|보복운전|자동차사고부상/.test(t)) return '운전자보험';
+  if(/치과|치아|치수|크라운|레진|인레이|온레이|스케일링|발치|임플란트|틀니|브릿지|치주|부정교합/.test(t.replace(/치아파절/g,''))) return '치과';
+  if(/간병|장기요양|간호간병|간병인/.test(t)) return '간병';
+  if(/상해|재해|골절|화상|깁스|창상|흉터|외상|폭력|후유장해|장해급여/.test(t)) return '상해';
+  if(/암|종양|항암|백혈병|림프종|카티|CAR-T|뇌|심장|심근|허혈|관상동맥|부정맥|혈전용해|질병|감염|당뇨|신부전|간질환|소화계|통풍|대상포진|요로결석|수막염|폐질환/.test(t)) return '질병';
+  if(/종신|주계약.*사망|사망보험금|일반사망|연금전환되는 변액종신|통합종신/.test(t)) return '종신·사망';
+  return '기타';
+}
+
+function classifyBenefit(text, domain=''){
+  const t=String(text||'');
+  if(/실손|실비|급여의료비|비급여의료비|종합입원의료비|종합통원의료비/.test(t)) return '실손의료';
+  if(/사망/.test(t)){
+    if(domain==='질병') return '질병 사망';
+    if(domain==='상해') return '상해 사망';
+    if(domain==='운전자보험') return '교통 사망';
+    return '사망';
+  }
+  if(/진단비|진단보험금|진단급여|진단 확정|진단시/.test(t)) return '진단비';
+  if(/수술비|수술급여|수술치료|수술담보|이식수술|절제/.test(t)) return '수술비';
+  if(/입원일당|입원비|입원급여|입원보험금|중환자실/.test(t)) return '입원비';
+  if(/통원|외래|응급실/.test(t)) return '통원비';
+  if(/항암|약물치료|방사선치료|재활치료|치료비|처치/.test(t)) return '치료비';
+  if(/후유장해|장해보험|장해급여|장해연금|장해지급/.test(t)) return '후유장해';
+  if(/벌금|변호사|처리지원|배상책임|법률비용/.test(t)) return '비용손해';
+  if(/납입면제|보험료납입지원/.test(t)) return '납입면제';
+  if(/연금|환급금|축하금|적립금/.test(t)) return '연금·환급';
+  return '기타';
+}
+
+function safeId(v){return String(v).replace(/[^가-힣a-zA-Z0-9_-]/g,'-');}
+function domainDescription(domain){
+  const m={
+    '종신·사망':'종신보험 주계약과 일반 사망보험금 보장','실손의료':'실제 발생한 입원·통원 의료비 보장','질병':'암·뇌·심장 및 일반질병의 진단·수술·입원 보장','상해':'재해·골절·화상·후유장해 등 상해 관련 보장','운전자보험':'교통사고 처리지원금·벌금·변호사비 등 운전자 보장','치과':'치아 진단·보존·보철·발치 치료 보장','간병':'간병인 및 간호간병통합서비스 보장','기타':'그 밖의 특약·환급·연금 및 부가 보장'
+  }; return m[domain]||'';
+}
+
+function renderCoverageOverview(items){
+  const benefitOrder=['실손의료','진단비','수술비','입원비','통원비','치료비','후유장해','질병 사망','상해 사망','교통 사망','사망','비용손해','납입면제','연금·환급','기타'];
+  const domainOrder=['실손의료','질병','상해','운전자보험','종신·사망','치과','간병','기타'];
+  const sorted=[...items].sort((a,b)=>{
+    const ad=classifyDomain(a.text,a.product), bd=classifyDomain(b.text,b.product);
+    const ab=classifyBenefit(a.text,ad), bb=classifyBenefit(b.text,bd);
+    const adi=domainOrder.indexOf(ad), bdi=domainOrder.indexOf(bd);
+    if(adi!==bdi) return (adi<0?999:adi)-(bdi<0?999:bdi);
+    const abi=benefitOrder.indexOf(ab), bbi=benefitOrder.indexOf(bb);
+    if(abi!==bbi) return (abi<0?999:abi)-(bbi<0?999:bbi);
+    return a.text.localeCompare(b.text,'ko');
+  });
+
+  // 대분류가 너무 길게 한 셀로 이어지지 않도록 중분류 3개 단위로 구간을 나눕니다.
+  const rowsData=[];
+  domainOrder.forEach(domain=>{
+    const domainItems=sorted.filter(it=>classifyDomain(it.text,it.product)===domain);
+    if(!domainItems.length) return;
+    const benefits=[...new Set(domainItems.map(it=>classifyBenefit(it.text,domain)))].sort((a,b)=>benefitOrder.indexOf(a)-benefitOrder.indexOf(b));
+    const chunks=[];
+    for(let i=0;i<benefits.length;i+=3) chunks.push(benefits.slice(i,i+3));
+    chunks.forEach((chunk,chunkIndex)=>{
+      chunk.forEach(benefit=>{
+        domainItems.filter(it=>classifyBenefit(it.text,domain)===benefit).forEach(it=>rowsData.push({it,domain,benefit,chunkIndex,chunkCount:chunks.length,chunkBenefits:chunk}));
+      });
+    });
+  });
+
+  const chunkCounts={};
+  const benefitCounts={};
+  rowsData.forEach(r=>{
+    const ck=`${r.domain}||${r.chunkIndex}`;
+    chunkCounts[ck]=(chunkCounts[ck]||0)+1;
+    const bk=`${ck}||${r.benefit}`;
+    benefitCounts[bk]=(benefitCounts[bk]||0)+1;
+  });
+
+  let prevChunk='';
+  let prevBenefit='';
+  const rows=rowsData.map(r=>{
+    const {it,domain,benefit,chunkIndex,chunkCount,chunkBenefits}=r;
+    const chunkKey=`${domain}||${chunkIndex}`;
+    const benefitKey=`${chunkKey}||${benefit}`;
+    const id=`detail-${safeId(domain)}-${safeId(benefit)}`;
+    const sourceTitle=`${it.company} · ${it.product}`;
+    const seq=chunkCount>1?`<span class="domain-seq">${chunkIndex+1}/${chunkCount}</span>`:'';
+    const range=chunkCount>1?`<span class="domain-range">${chunkBenefits.map(esc).join(' · ')}</span>`:'';
+    const isChunkStart=chunkKey!==prevChunk;
+    const isBenefitStart=benefitKey!==prevBenefit;
+    const domainCell=isChunkStart
+      ? `<td class="overview-domain" rowspan="${chunkCounts[chunkKey]}" title="${esc(domain)}"><strong>${esc(domain)}</strong>${seq}<span class="group-count">${chunkCounts[chunkKey]}개 항목</span>${range}</td>`:'';
+    const benefitCell=isBenefitStart
+      ? `<td class="overview-benefit" rowspan="${benefitCounts[benefitKey]}" title="${esc(benefit)}">${esc(benefit)}<span class="group-count">${benefitCounts[benefitKey]}개</span></td>`:'';
+    const rowClass=`overview-row${isChunkStart?' domain-start':''}${!isChunkStart&&isBenefitStart?' benefit-start':''}`;
+    prevChunk=chunkKey;
+    prevBenefit=benefitKey;
+    return `<tr class="${rowClass}">${domainCell}${benefitCell}<td class="overview-item" title="${esc(it.text)}">${highlightSearch(it.text)}</td><td class="overview-amount" title="${esc(extractAmounts(it.text))}">${esc(extractAmounts(it.text))}</td><td class="overview-source" title="${esc(sourceTitle)}"><b>${esc(it.company)}</b> · ${esc(it.product)}</td><td class="overview-action"><button onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})">상세</button></td></tr>`;
+  });
+  return `<div class="coverage-map"><div class="coverage-map-head"><div><div class="coverage-map-title">전체 보장 현황표</div><div class="coverage-map-desc">대분류는 중분류 3개 단위로 나눠 반복 표시하고, 같은 중분류의 보장 항목은 하나로 묶어 표시합니다.</div></div><div class="coverage-map-count"><b>${items.length}</b>건</div></div><div class="coverage-map-table-wrap"><table class="coverage-overview-table"><thead><tr><th>대분류</th><th>중분류</th><th>소분류 · 보장 항목</th><th>가입금액</th><th>보험사 · 상품</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
+}
+
+function renderHierarchyRows(list){
+  return `<div class="detail-card-list">${list.map(it=>`<article class="detail-card"><div class="detail-card-main"><div class="detail-name">${highlightSearch(it.text)}</div><div class="detail-explain"><span>${esc(it.company)}</span><span>${esc(it.product)}</span></div></div><div class="detail-card-side"><div class="detail-amount">${esc(extractAmounts(it.text))}</div><a class="pdf-btn" href="${pdfHref(it.file)}" target="_blank">원문 PDF ↗</a></div></article>`).join('')}</div>`;
+}
+
+function renderCoverageHierarchy(items){
+  const order=['실손의료','질병','상해','운전자보험','종신·사망','치과','간병','기타'];
+  return `<div class="hierarchy-shell">${order.map(domain=>{
+    const domainItems=items.filter(it=>classifyDomain(it.text,it.product)===domain);
+    if(!domainItems.length) return '';
+    const groups={}; domainItems.forEach(it=>{const b=classifyBenefit(it.text,domain);(groups[b]??=[]).push(it);});
+    const benefitOrder=['실손의료','진단비','수술비','입원비','통원비','치료비','후유장해','질병 사망','상해 사망','교통 사망','사망','비용손해','납입면제','연금·환급','기타'];
+    const groupHtml=Object.entries(groups).sort((a,b)=>benefitOrder.indexOf(a[0])-benefitOrder.indexOf(b[0])).map(([benefit,list])=>`<div class="mid-group" id="detail-${safeId(domain)}-${safeId(benefit)}"><div class="mid-head"><div><div class="mid-title">${esc(benefit)}</div><div class="mid-description">${list.length}개 담보의 지급조건과 가입금액</div></div><div class="mid-count">${list.length}건</div></div>${renderHierarchyRows(list)}</div>`).join('');
+    return `<section class="major-block domain-${safeId(domain)}"><div class="major-head"><div class="major-title-wrap"><div class="major-icon">◆</div><div><div class="major-title">${esc(domain)}</div><div class="major-sub">${esc(domainDescription(domain))}</div></div></div><div class="major-total"><b>${domainItems.length}</b>건</div></div>${groupHtml}</section>`;
+  }).join('')}</div>`;
+}
+
+function renderPersonDetail(person){
+  const wrap = document.getElementById('mainArea');
+  const s = personSummaryData(person);
+  const visibleItems = s.items.filter(matchesSearch);
+  const domainCount=new Set(visibleItems.map(it=>classifyDomain(it.text,it.product))).size;
+  const summaryHtml = `<div class="summary-row"><div class="stat"><div class="num">${s.policies.length}</div><div class="lbl">보유 증권 수</div></div><div class="stat"><div class="num">${s.totalPremium.toLocaleString()}원</div><div class="lbl">월 보험료 합계</div></div><div class="stat"><div class="num">${visibleItems.length}</div><div class="lbl">전체 보장 항목</div></div><div class="stat"><div class="num">${domainCount}</div><div class="lbl">보장영역</div></div></div>`;
+  const policyHtml = `<section class="section-shell person-policy-section"><h2 class="sectitle">보유 증권</h2><p class="hierarchy-note">현재 유지 중이거나 상태 확인이 필요한 증권만 표시합니다. 종료·해지 완료 보험은 제외했습니다.</p>${renderPolicyTable(person)}</section>`;
+  const overview = visibleItems.length ? renderCoverageOverview(visibleItems) : '<div class="empty">일치하는 보장 항목이 없습니다.</div>';
+  const hierarchy = visibleItems.length ? renderCoverageHierarchy(visibleItems) : '';
+  wrap.innerHTML = `<div class="person-top-fixed"><div class="dashboard-intro"><div><h2>${esc(person)} 보험 대시보드</h2><p>종신·사망, 실손, 암, 질병, 상해, 운전자 등 보험 성격별 보장을 한눈에 확인하세요.</p></div></div>${summaryHtml}</div>${policyHtml}<section class="section-shell"><h2 class="sectitle">전체 보장 현황</h2><p class="hierarchy-note">상단 표에는 실제 항목과 가입금액을 모두 표시하고, 하단 상세 영역에는 보험사·상품·원문과 함께 지급조건을 구분해 표시합니다.</p>${overview}<div class="detail-divider"><span>보장영역별 상세 내용</span></div>${hierarchy}</section>`;
+}
+
+function selectType(t){ currentType = t; renderMain(); }
+function selectCause(c){ currentCause = c; renderMain(); }
+
+function renderMain(){
+  const scopeLabel = document.getElementById('scopeLabel');
+  scopeLabel.textContent = currentPerson===ALL ? '(전체 가족 대상 검색)' : `(${currentPerson} 안에서만 검색)`;
+
+  if(currentPerson === ALL){
+    if(currentSearch) renderAllSearch();
+    else renderAllOverview();
+  } else {
+    renderPersonDetail(currentPerson);
+  }
+}
+
+function doSearch(q){
+  document.getElementById('searchInput').value = q;
+  currentSearch = q;
+  renderMain();
+}
+
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  currentSearch = e.target.value.trim();
+  renderMain();
+});
+
+function clearSearch(){
+  document.getElementById('searchInput').value = '';
+  currentSearch = '';
+  renderMain();
+}
+
+document.body.classList.toggle('person-mode', currentPerson!==ALL);
+renderPersonTabs();
+renderMain();
+</script>
+</body>
+</html>
