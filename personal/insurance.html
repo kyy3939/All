@@ -286,6 +286,43 @@ body:before,body.person-mode:before{opacity:.35;background-image:linear-gradient
 </style>
 </head>
 <body>
+<div id="pw-gate" style="position:fixed;inset:0;z-index:99999;background:#0b0d12;display:flex;align-items:center;justify-content:center;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;">
+  <div style="text-align:center;">
+    <div style="color:#f4f7fb;font-size:15px;margin-bottom:14px;font-weight:700;">비밀번호를 입력하세요</div>
+    <input id="pw-input" type="password" autocomplete="off" style="padding:10px 14px;border-radius:8px;border:1px solid #2b3240;background:#131722;color:#f4f7fb;font-size:14px;outline:none;" />
+    <button id="pw-submit" style="margin-left:8px;padding:10px 16px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-weight:700;cursor:pointer;">확인</button>
+    <div id="pw-error" style="color:#fb7185;font-size:12px;margin-top:10px;display:none;">비밀번호가 틀렸습니다</div>
+  </div>
+</div>
+<script>
+(function(){
+  function pwhash(str){var x=5381;for(var i=0;i<str.length;i++){x=((x*33)^str.charCodeAt(i))>>>0;}return x.toString(16);}
+  var PW_HASH='7c5545c5';
+  var KEY='ins_dash_auth_ok';
+  var gate=document.getElementById('pw-gate');
+  if (localStorage.getItem(KEY)===PW_HASH){ gate.remove(); }
+  else {
+    document.documentElement.style.overflow='hidden';
+    var input=document.getElementById('pw-input');
+    var err=document.getElementById('pw-error');
+    function tryAuth(){
+      if (pwhash(input.value)===PW_HASH){
+        localStorage.setItem(KEY, PW_HASH);
+        gate.remove();
+        document.documentElement.style.overflow='';
+      } else {
+        err.style.display='block';
+        input.value='';
+        input.focus();
+      }
+    }
+    document.getElementById('pw-submit').addEventListener('click', tryAuth);
+    input.addEventListener('keydown', function(e){ if(e.key==='Enter') tryAuth(); });
+    setTimeout(function(){ input.focus(); }, 50);
+  }
+})();
+</script>
+
 <header>
   <h1>가족 보험 보장 대시보드</h1>
   <p>인물별 계약 요약과 진단비·수술비·입원비 등 보장 유형별 항목을 한눈에 확인하세요</p>
@@ -404,7 +441,42 @@ function selectPerson(p){
   renderMain();
 }
 
-function pdfHref(file){ return encodeURI(file); }
+const DRIVE_MAP = {
+  "01. 김용연/김용연_메화_운전자보험_M-Drive1204.pdf": "https://drive.google.com/file/d/1onPtnQAbeFjdb4pu4neG5fswE7BUJoRm/view?usp=drive_link",
+  "01. 김용연/김용연_미생_보장성보험_건강종신보험 1211 건강이야말로 최고의 재산입니다._201303.pdf": "https://drive.google.com/file/d/1JwAf29UBpj04taBgPpzfD4lFdYybXgoV/view?usp=drive_link",
+  "01. 김용연/김용연_미생_보장성보험_종합보장보험 무배당 1504 생활의 자신감_201504.pdf": "https://drive.google.com/file/d/1ETROErqSh2H3ckZOpQM6Esc7vEtgHTyb/view?usp=drive_link",
+  "01. 김용연/김용연_미생_실비_행복한 보장보험 무배당 1207_201303.pdf": "https://drive.google.com/file/d/1FzCPI-_iHSvhMn5odJtFt4bnV5I8sTQg/view?usp=drive_link",
+  "01. 김용연/닙입완료/김용연_미생_연금보험_변액종신보험 무배당 1501 인생은 교향악입니다._201503.pdf": "https://drive.google.com/file/d/1kpwqZLLENawffJA-7AyBet6bhr9fkb0r/view?usp=drive_link",
+  "01. 김용연/닙입완료/김용연_미생_종신보험_통합종신보험 무배당 1504 보여줄 수 있는 사랑은 아주 작습니다._201509.pdf": "https://drive.google.com/file/d/11ab8Fvt90Xsvf-AXziEIJpcyQz55HCF0/view?usp=drive_link",
+  "01. 김용연/보험종료/김용연_미생_저축보험_종료.pdf": "https://drive.google.com/file/d/1sy2n1G4l6_sA_FR5lhU6gz3_lZMVnsow/view?usp=drive_link",
+  "01. 김용연/보험종료/김용연_미생_종신보험_변액종신보험 무배당 1307 인생은 교향악입니다._201401.pdf": "https://drive.google.com/file/d/1cOK_0SEfvPzdrUtdhhX7Ev4fJUSrlo34/view?usp=drive_link",
+  "02. 박현미/박현미_보장성보험_삼성화재_20200918.pdf": "https://drive.google.com/file/d/16Ov2lc4etLFDo6Jw7jLmd2ye2Zvvpw4c/view?usp=drive_link",
+  "02. 박현미/박현미_신협.pdf": "https://drive.google.com/file/d/1F3-Occ8kbUcZMpNXhueJg63obnmJTIlo/view?usp=drive_link",
+  "02. 박현미/박현미_운전자보험_KB손해보험_20200918.pdf": "https://drive.google.com/file/d/1Yp_W-xKF-lkiiITS4-c5fpAUf7dvk-kT/view?usp=drive_link",
+  "02. 박현미/박현미_표적치료_KB손해보험_20200918.pdf": "https://drive.google.com/file/d/18NTvL7OvlE0wzby0z7JmUoxzYmUC0DYo/view?usp=drive_link",
+  "02. 박현미/박현미_한화생명_CI보험.pdf": "https://drive.google.com/file/d/1AA41GsmXiZT2VX2dy4-r-Jvb7nC2qv2z/view?usp=drive_link",
+  "02. 박현미/박현미_한화생명_연금보험.pdf": "https://drive.google.com/file/d/1hZBdWj9V2ei_mifa0DvmxPK9xevYCQ97/view?usp=drive_link",
+  "02. 박현미/박현미_현대해상_보장성보험.pdf": "https://drive.google.com/file/d/1SDQWSJkiwNSjj2mW8AXmKSIwonDdO_CU/view?usp=drive_link",
+  "02. 박현미/오피스텔 화재보험/박현미_오피스텔화재보험_삼성화재_20200918.pdf": "https://drive.google.com/file/d/1XN_fBhLUbR5HqeS5e53rx-hjfvJCEDRH/view?usp=drive_link",
+  "03. 김하준/김하준_KB손해보험_보장내용정리_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1LgYeqGXExVN6u1HxWpl0luj6GxzWHHoE/view?usp=drive_link",
+  "03. 김하준/김하준_KB손해보험_약관_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1D0E6WBVolxka5YCsohGzD9iAywC30RWk/view?usp=drive_link",
+  "03. 김하준/김하준_KB손해보험_청약서_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1sINo23xFWI-yvzOd6uUJ_nNUHDnXMyA3/view?usp=drive_link",
+  "03. 김하준/김하준_삼성화재_RC확인서_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1AgN09bdrNIznH-BVBE5REI-zDFH0O4jF/view?usp=drive_link",
+  "03. 김하준/김하준_삼성화재_보장 내용 정리_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1uUn8sH7vqe9nINrzlWKpdXnFfMLDJ5gC/view?usp=drive_link",
+  "03. 김하준/김하준_삼성화재_약관_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1y-K_hw2E2bRNi5JWzu-R95uYUA9tmnfW/view?usp=drive_link",
+  "03. 김하준/김하준_삼성화재_청약서_보장성보험_20240501.pdf": "https://drive.google.com/file/d/1j4udHauSMumK8GTD7q0xHzKMLfu2CSba/view?usp=drive_link",
+  "03. 김하준/김하준_현대해상_실손보험.pdf": "https://drive.google.com/file/d/1rQLVP65WRPFNaVn0BzPm8KJG6KZ5NV6c/view?usp=drive_link",
+  "03. 김하준/보험종료/김하준_현대해상_보장성보험 해지완료확인서(종료).pdf": "https://drive.google.com/file/d/1q9aLiwUVpgrEAWQBslm3C8A1ASxNBEOi/view?usp=drive_link",
+  "03. 김하준/보험종료/김하준_현대해상_보장성보험(종료).pdf": "https://drive.google.com/file/d/1Mnr-v0Oy6lPzVER8gikzWcHKlUZ8Iktq/view?usp=drive_link",
+  "04. 최복순/최복순_미생_간병보험_100세 간병보험 무배당 1501_201503.pdf": "https://drive.google.com/file/d/12h74H6DQdpNxa3mxMPZvofvxFjl-gcp_/view?usp=drive_link",
+  "04. 최복순/최복순_미생_보장성보험_변액 건강종신보험 1310 건강이야말로 최고의 재산입니다__감액_20260714.pdf": "https://drive.google.com/file/d/1jED-mHInQAvsqIvdczM1-fAe1yPw5VBI/view?usp=drive_link",
+  "04. 최복순/최복순_미생_종신보험_LoveAge 연금받는 종신보험 1112_201201.pdf": "https://drive.google.com/file/d/1ivyiOnGFV1XcAJ-cKq6jHDk9CQx0e4gm/view?usp=drive_link",
+  "04. 최복순/최복순_흥국화재_무배당행복을다주는가족사랑보험플러스_20260714.pdf": "https://drive.google.com/file/d/1IhoJ4Ks4pGI2jVDmUQ5Y157QXGy_75OD/view?usp=drive_link",
+  "04. 최복순/최복순_흥국화재_실손의료보험_20260714.pdf": "https://drive.google.com/file/d/1XLs1lHLbdcXCcZ-TMgdEYwIMYqTyo6pV/view?usp=drive_link",
+  "04. 최복순/보험종료/최복순_미생_보장성보험_변액 건강종신보험 1310 건강이야말로 최고의 재산입니다_201401.pdf": "https://drive.google.com/file/d/1TRANhdyFC7mAkD1ygt0fnoxzKVY-9Grb/view?usp=drive_link",
+  "04. 최복순/보험종료/최복순_흥생_실비_무배당 행복을 다주는 가족사랑보험 플러스_201202.pdf": "https://drive.google.com/file/d/1I14MW2cpDqRmWVXBZJogLqjFsiiPbFLg/view?usp=drive_link"
+};
+function pdfHref(file){ return DRIVE_MAP[file] ? DRIVE_MAP[file] : encodeURI(file); }
 
 function getSearchTerms(query){
   const q=String(query||'').trim().toLowerCase();
