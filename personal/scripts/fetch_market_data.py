@@ -131,12 +131,17 @@ def fetch_history(symbol):
     if h is None or h.empty:
         raise RuntimeError(f"{symbol} 히스토리가 비어있음")
     h = h[~h.index.duplicated(keep="last")]
-    # 휴장일 등으로 OHLC 중 일부가 NaN인 행은 완전히 제거한다.
-    # (NaN이 JSON으로 직렬화되면 JS의 JSON.parse가 깨지면서 페이지 전체가 렌더링되지 않는다)
-    cols = [c for c in ("Open", "High", "Low", "Close") if c in h.columns]
-    h = h.dropna(subset=cols)
+    # Close가 없는 행(휴장일 등)은 그 날 자체가 의미 없으므로 제거한다.
+    if "Close" in h.columns:
+        h = h.dropna(subset=["Close"])
     if h.empty:
         raise RuntimeError(f"{symbol} 히스토리가 전부 NaN")
+    # Open/High/Low는 데이터 공급 지연 등으로 당일 종가만 먼저 들어오고 아직 비어있는 경우가 있다.
+    # 그 필드들이 없다고 그 날 전체를 버리면(특히 가장 최신 날짜) "어제 데이터인데 그저께 것만 보임" 문제가
+    # 생기므로, 없는 값은 종가로 채워 넣어(캔들이 얇은 선처럼 보일 뿐 그 날 자체는 살아있게) 처리한다.
+    for col in ("Open", "High", "Low"):
+        if col in h.columns:
+            h[col] = h[col].fillna(h["Close"])
     return h
 
 
