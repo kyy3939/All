@@ -1,0 +1,48 @@
+name: Update market data
+
+on:
+  schedule:
+    # 매일 21:30 UTC = 06:30 KST (미국 정규장 마감 이후, 한국 아침에 최신 데이터 반영)
+    - cron: "30 21 * * *"
+  workflow_dispatch: {}   # Actions 탭에서 "Run workflow" 버튼으로 수동 실행 가능
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-market-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch market data & update stocks.html
+        env:
+          HTML_PATH: personal/stocks.html
+        run: python scripts/fetch_market_data.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "market-data-bot"
+          git config user.email "market-data-bot@users.noreply.github.com"
+          if git diff --quiet -- "$HTML_PATH"; then
+            echo "변경 사항 없음 — 커밋 생략"
+          else
+            git add "$HTML_PATH"
+            git commit -m "chore: update market data ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+            git push
+          fi
+        env:
+          HTML_PATH: personal/stocks.html
