@@ -169,7 +169,7 @@ def build_vol_series(old_series):
     for key, symbol in VOL_SYMBOLS.items():
         def _do(symbol=symbol, key=key):
             h = fetch_history(symbol)
-            scale = 0.1 if key == "TNX" else 1.0  # ^TNX는 실제값의 10배로 표기됨
+            scale = 1.0  # 실 수집 결과 확인: yfinance history()의 ^TNX Close는 이미 실제 수익률(%) 값으로 반환됨
             rows = []
             for ts in h.index[-SERIES_KEEP_ROWS:]:
                 close = float(h.loc[ts, "Close"]) * scale
