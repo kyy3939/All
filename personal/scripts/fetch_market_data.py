@@ -26,7 +26,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
 import yfinance as yf
-from pykrx import stock as krx
+from bs4 import BeautifulSoup
 
 # ----------------------------------------------------------------------------
 # 설정
@@ -284,80 +284,136 @@ def price_and_chg(info, symbol):
     return price, round(chg_pct, 2)
 
 
-def krx_latest_trading_day():
-    """KRX 기준 가장 최근 개장일(YYYYMMDD)을 찾는다.
-    주말/공휴일에는 데이터가 비어있으므로, 실제로 데이터가 존재하는 날이 나올 때까지
-    최대 10일 전까지 하루씩 거슬러 올라간다 (연휴 대비)."""
-    d = datetime.now(KST)
-    for _ in range(10):
-        date_str = d.strftime("%Y%m%d")
-        try:
-            df = krx.get_market_ohlcv_by_ticker(date_str, market="KOSPI")
-            if df is not None and not df.empty:
-                return date_str
-        except Exception:  # noqa: BLE001
-            pass
-        d -= timedelta(days=1)
-    raise RuntimeError("최근 10일 내 KRX 개장일을 찾지 못함")
+NAVER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    )
+}
 
 
-def fetch_krx_top30(market, date_str):
-    """KRX(한국거래소) 공식 데이터로 시가총액 상위 30 · 등락률 상위 30을 가져온다.
-    네이버 등 화면 스크래핑과 달리 KRX 정보데이터시스템의 공식 API를 그대로 쓰므로
-    페이지 구조 변경에 영향을 받지 않는다. market: "KOSPI" 또는 "KOSDAQ" """
-    cap_df = krx.get_market_cap_by_ticker(date_str, market=market)
-    ohlcv_df = krx.get_market_ohlcv_by_ticker(date_str, market=market)
-    if cap_df is None or cap_df.empty:
-        raise RuntimeError(f"{market} 시가총액 데이터가 비어있음 ({date_str})")
-    if ohlcv_df is None or ohlcv_df.empty or "등락률" not in ohlcv_df.columns:
-        raise RuntimeError(f"{market} 등락률 데이터가 비어있음 ({date_str})")
+def fetch_naver_html(url):
+    req = Request(url, headers=NAVER_HEADERS)
+    with urlopen(req, timeout=15) as resp:
+        raw = resp.read()
+    return raw.decode("euc-kr", errors="replace")  # 네이버 금융은 EUC-KR 인코딩
 
-    df = cap_df.join(ohlcv_df[["등락률"]], how="inner")
-    if df.empty:
-        raise RuntimeError(f"{market} 시가총액/등락률 데이터 병합 결과가 비어있음")
 
-    name_cache = {}
+def _parse_num(text):
+    text = (text or "").replace(",", "").replace("%", "").strip()
+    m = re.search(r"-?\d+(?:\.\d+)?", text)
+    return float(m.group()) if m else None
 
-    def ticker_name(ticker):
-        if ticker not in name_cache:
-            try:
-                name_cache[ticker] = krx.get_market_ticker_name(ticker)
-            except Exception:  # noqa: BLE001
-                name_cache[ticker] = ticker
-        return name_cache[ticker]
 
-    def make_row(ticker, r):
-        return {
-            "name": ticker_name(ticker),
-            "ticker": ticker,
-            "market": market,
-            "price": int(r["종가"]),
-            "chgPct": round(float(r["등락률"]), 2),
-            "cap": round(float(r["시가총액"]) / 1e12, 1),  # 원 -> 조원
-        }
+def _parse_chg_pct(td):
+    """등락률 셀은 색상(적=상승/청=하락)으로만 방향을 표시하고 텍스트에 부호가
+    없는 경우가 있어, 텍스트의 '-' 기호와 화살표 아이콘의 alt 텍스트(상승/하락/보합)
+    를 함께 확인해 방향을 판단한다."""
+    text = td.get_text(strip=True)
+    val = _parse_num(text)
+    if val is None:
+        return None
+    val = abs(val)
+    img = td.find("img")
+    alt = img.get("alt") if img else None
+    if alt == "보합" or val == 0:
+        return 0.0
+    is_down = ("-" in text) or (alt == "하락") or ("하락" in text)
+    return -val if is_down else val
 
-    cap_rows = [make_row(t, r) for t, r in df.sort_values("시가총액", ascending=False).head(30).iterrows()]
-    chg_rows = [make_row(t, r) for t, r in df.sort_values("등락률", ascending=False).head(30).iterrows()]
+
+def parse_naver_table(html, limit=30):
+    """네이버 금융 시세 테이블(class="type_2")을 헤더 텍스트 기준으로 파싱한다.
+    고정된 열 순서에 의존하지 않고 "종목명"/"현재가"/"등락률"/"시가총액" 헤더 라벨로
+    열 위치를 찾으므로, 열이 추가/삭제되는 정도의 구조 변경에는 견딘다."""
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", class_="type_2")
+    if table is None:
+        raise RuntimeError("시세 테이블(table.type_2)을 찾지 못함 — 페이지 구조가 바뀌었을 수 있음")
+    thead = table.find("thead")
+    if thead is None:
+        raise RuntimeError("테이블 헤더(thead)를 찾지 못함")
+    headers = [th.get_text(strip=True) for th in thead.find_all("th")]
+
+    def col_idx(name):
+        for i, h in enumerate(headers):
+            if name in h:
+                return i
+        return None
+
+    idx_name = col_idx("종목명")
+    idx_price = col_idx("현재가")
+    idx_chg = col_idx("등락률")
+    idx_cap = col_idx("시가총액")
+    if idx_name is None or idx_price is None or idx_chg is None:
+        raise RuntimeError(f"필요한 열을 헤더에서 찾지 못함 (headers={headers})")
+
+    body = table.find("tbody")
+    if body is None:
+        raise RuntimeError("테이블 본문(tbody)을 찾지 못함")
+
+    rows = []
+    for tr in body.find_all("tr"):
+        tds = tr.find_all("td")
+        need = max(idx_name, idx_price, idx_chg, idx_cap if idx_cap is not None else 0)
+        if len(tds) <= need:
+            continue
+        link = tds[idx_name].find("a", href=re.compile(r"code=\d{6}"))
+        if not link:
+            continue
+        code_m = re.search(r"code=(\d{6})", link["href"])
+        if not code_m:
+            continue
+        price = _parse_num(tds[idx_price].get_text(strip=True))
+        chg_pct = _parse_chg_pct(tds[idx_chg])
+        cap = _parse_num(tds[idx_cap].get_text(strip=True)) if idx_cap is not None else None
+        if price is None or chg_pct is None:
+            continue
+        rows.append({
+            "name": link.get_text(strip=True),
+            "ticker": code_m.group(1),
+            "price": int(price),
+            "chgPct": round(chg_pct, 2),
+            "cap": round((cap or 0) / 10000, 1),  # 네이버는 억원 단위 -> 조원 단위로 환산
+        })
+        if len(rows) >= limit:
+            break
+
+    if len(rows) < 10:
+        raise RuntimeError(f"파싱된 행이 너무 적음({len(rows)}개) — 페이지 구조 변경 의심")
+    return rows
+
+
+def fetch_naver_top30(market):
+    """market: "KOSPI" 또는 "KOSDAQ" -> (시가총액 상위 30, 등락률 상위 30)"""
+    sosok = "0" if market == "KOSPI" else "1"
+
+    cap_html = fetch_naver_html(
+        f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}&page=1"
+    )
+    cap_rows = parse_naver_table(cap_html, limit=30)
+
+    chg_html = fetch_naver_html(f"https://finance.naver.com/sise/sise_rise.naver?sosok={sosok}")
+    chg_rows = parse_naver_table(chg_html, limit=30)
+
+    for r in cap_rows + chg_rows:
+        r["market"] = market
     return cap_rows, chg_rows
 
 
 def build_major_stocks(old_data):
     """코스피/코스닥 x 시가총액상위30/등락률상위30 = 4개 탭.
-    고정 종목 리스트가 아니라 매일 KRX 데이터로 실제 순위를 다시 스크리닝한다."""
+    고정 종목 리스트가 아니라 네이버 금융 랭킹 페이지를 매일 다시 스크래핑해
+    그날그날 실제 순위를 반영한다."""
     empty = {"kospi_cap": [], "kosdaq_cap": [], "kospi_chg": [], "kosdaq_chg": []}
     old_data = old_data if isinstance(old_data, dict) else empty
 
-    date_str = retry(krx_latest_trading_day, "KRX 최근 개장일 조회", default=None)
-    if not date_str:
-        log("ERROR: KRX 개장일 조회 실패, 주요 종목 4개 탭 전체 이전 값 유지")
-        return {k: old_data.get(k, []) for k in empty}
-
     result = {}
     for key, market in (("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")):
-        def _do(market=market, date_str=date_str):
-            return fetch_krx_top30(market, date_str)
+        def _do(market=market):
+            return fetch_naver_top30(market)
 
-        got = retry(_do, f"{market} 시총·등락률 상위 30 스크리닝", default=None)
+        got = retry(_do, f"{market} 네이버 시총·등락률 상위 30 스크리닝", default=None)
         if got:
             result[f"{key}_cap"], result[f"{key}_chg"] = got
         else:
