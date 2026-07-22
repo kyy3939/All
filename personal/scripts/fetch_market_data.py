@@ -131,6 +131,12 @@ def fetch_history(symbol):
     if h is None or h.empty:
         raise RuntimeError(f"{symbol} 히스토리가 비어있음")
     h = h[~h.index.duplicated(keep="last")]
+    # 휴장일 등으로 OHLC 중 일부가 NaN인 행은 완전히 제거한다.
+    # (NaN이 JSON으로 직렬화되면 JS의 JSON.parse가 깨지면서 페이지 전체가 렌더링되지 않는다)
+    cols = [c for c in ("Open", "High", "Low", "Close") if c in h.columns]
+    h = h.dropna(subset=cols)
+    if h.empty:
+        raise RuntimeError(f"{symbol} 히스토리가 전부 NaN")
     return h
 
 
@@ -462,7 +468,14 @@ def main():
         "IDX_SERIES": idx_series,
         "VOL_SERIES": vol_series,
     }
-    new_json = json.dumps(new_data, ensure_ascii=False, separators=(",", ":"))
+    try:
+        # allow_nan=False: NaN/Infinity가 하나라도 섞여 있으면 여기서 즉시 실패시킨다.
+        # (그대로 두면 JSON.parse가 브라우저에서 깨지면서 페이지 전체가 빈 화면이 된다)
+        new_json = json.dumps(new_data, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    except ValueError as e:
+        log(f"ERROR: 생성된 데이터에 NaN/Infinity가 포함되어 있어 중단합니다 ({e}). "
+            f"파일을 변경하지 않았습니다 — 기존 데이터가 그대로 유지됩니다.")
+        sys.exit(1)
 
     def _repl(_m):
         return '<script type="application/json" id="marketData">' + new_json + "</script>"
