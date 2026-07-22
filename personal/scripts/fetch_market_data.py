@@ -26,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
 import yfinance as yf
+from pykrx import stock as krx
 
 # ----------------------------------------------------------------------------
 # 설정
@@ -257,11 +258,6 @@ def build_indices(idx_series, vol_series, nikkei_last2, old_indices):
 # 4. 보유/관심 종목 (MAJOR_STOCKS, STOCKS)
 # ----------------------------------------------------------------------------
 
-def kr_symbol(ticker, market):
-    suffix = ".KQ" if market == "KOSDAQ" else ".KS"
-    return ticker if ticker.endswith((".KS", ".KQ")) else f"{ticker}{suffix}"
-
-
 def safe_get_info(symbol):
     def _do():
         t = yf.Ticker(symbol)
@@ -288,24 +284,86 @@ def price_and_chg(info, symbol):
     return price, round(chg_pct, 2)
 
 
-def update_major_stocks(old_list):
-    out = []
-    for item in old_list:
-        symbol = kr_symbol(item["ticker"], item["market"])
-        info = safe_get_info(symbol)
-        new_item = dict(item)
-        if info:
-            price, chg_pct = price_and_chg(info, symbol)
-            if price is not None:
-                new_item["price"] = int(round(price))
-                new_item["chgPct"] = chg_pct
-            cap = info.get("marketCap")
-            if cap:
-                new_item["cap"] = round(cap / 1e12, 1)  # 조원 단위
+def krx_latest_trading_day():
+    """KRX 기준 가장 최근 개장일(YYYYMMDD)을 찾는다.
+    주말/공휴일에는 데이터가 비어있으므로, 실제로 데이터가 존재하는 날이 나올 때까지
+    최대 10일 전까지 하루씩 거슬러 올라간다 (연휴 대비)."""
+    d = datetime.now(KST)
+    for _ in range(10):
+        date_str = d.strftime("%Y%m%d")
+        try:
+            df = krx.get_market_ohlcv_by_ticker(date_str, market="KOSPI")
+            if df is not None and not df.empty:
+                return date_str
+        except Exception:  # noqa: BLE001
+            pass
+        d -= timedelta(days=1)
+    raise RuntimeError("최근 10일 내 KRX 개장일을 찾지 못함")
+
+
+def fetch_krx_top30(market, date_str):
+    """KRX(한국거래소) 공식 데이터로 시가총액 상위 30 · 등락률 상위 30을 가져온다.
+    네이버 등 화면 스크래핑과 달리 KRX 정보데이터시스템의 공식 API를 그대로 쓰므로
+    페이지 구조 변경에 영향을 받지 않는다. market: "KOSPI" 또는 "KOSDAQ" """
+    cap_df = krx.get_market_cap_by_ticker(date_str, market=market)
+    ohlcv_df = krx.get_market_ohlcv_by_ticker(date_str, market=market)
+    if cap_df is None or cap_df.empty:
+        raise RuntimeError(f"{market} 시가총액 데이터가 비어있음 ({date_str})")
+    if ohlcv_df is None or ohlcv_df.empty or "등락률" not in ohlcv_df.columns:
+        raise RuntimeError(f"{market} 등락률 데이터가 비어있음 ({date_str})")
+
+    df = cap_df.join(ohlcv_df[["등락률"]], how="inner")
+    if df.empty:
+        raise RuntimeError(f"{market} 시가총액/등락률 데이터 병합 결과가 비어있음")
+
+    name_cache = {}
+
+    def ticker_name(ticker):
+        if ticker not in name_cache:
+            try:
+                name_cache[ticker] = krx.get_market_ticker_name(ticker)
+            except Exception:  # noqa: BLE001
+                name_cache[ticker] = ticker
+        return name_cache[ticker]
+
+    def make_row(ticker, r):
+        return {
+            "name": ticker_name(ticker),
+            "ticker": ticker,
+            "market": market,
+            "price": int(r["종가"]),
+            "chgPct": round(float(r["등락률"]), 2),
+            "cap": round(float(r["시가총액"]) / 1e12, 1),  # 원 -> 조원
+        }
+
+    cap_rows = [make_row(t, r) for t, r in df.sort_values("시가총액", ascending=False).head(30).iterrows()]
+    chg_rows = [make_row(t, r) for t, r in df.sort_values("등락률", ascending=False).head(30).iterrows()]
+    return cap_rows, chg_rows
+
+
+def build_major_stocks(old_data):
+    """코스피/코스닥 x 시가총액상위30/등락률상위30 = 4개 탭.
+    고정 종목 리스트가 아니라 매일 KRX 데이터로 실제 순위를 다시 스크리닝한다."""
+    empty = {"kospi_cap": [], "kosdaq_cap": [], "kospi_chg": [], "kosdaq_chg": []}
+    old_data = old_data if isinstance(old_data, dict) else empty
+
+    date_str = retry(krx_latest_trading_day, "KRX 최근 개장일 조회", default=None)
+    if not date_str:
+        log("ERROR: KRX 개장일 조회 실패, 주요 종목 4개 탭 전체 이전 값 유지")
+        return {k: old_data.get(k, []) for k in empty}
+
+    result = {}
+    for key, market in (("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")):
+        def _do(market=market, date_str=date_str):
+            return fetch_krx_top30(market, date_str)
+
+        got = retry(_do, f"{market} 시총·등락률 상위 30 스크리닝", default=None)
+        if got:
+            result[f"{key}_cap"], result[f"{key}_chg"] = got
         else:
-            log(f"WARN: {item['name']}({symbol}) 정보 수집 실패, 이전 값 유지")
-        out.append(new_item)
-    return out
+            result[f"{key}_cap"] = old_data.get(f"{key}_cap", [])
+            result[f"{key}_chg"] = old_data.get(f"{key}_chg", [])
+    return result
 
 
 def fmt_cap(market, cap_value):
@@ -453,7 +511,7 @@ def main():
     vol_series = build_vol_series(old.get("VOL_SERIES", {}))
     nikkei_last2 = fetch_nikkei_last2()
     indices = build_indices(idx_series, vol_series, nikkei_last2, old.get("INDICES", []))
-    major_stocks = update_major_stocks(old.get("MAJOR_STOCKS", []))
+    major_stocks = build_major_stocks(old.get("MAJOR_STOCKS", {}))
     stocks = update_stocks(old.get("STOCKS", []))
     news = build_news(old.get("NEWS", []))
 
@@ -499,7 +557,13 @@ def main():
     with open(HTML_PATH, "w", encoding="utf-8") as f:
         f.write(new_html)
 
-    log(f"완료. asOf={as_of}, INDICES={len(indices)}, MAJOR_STOCKS={len(major_stocks)}, "
+    ms_summary = (
+        f"코스피시총{len(major_stocks.get('kospi_cap', []))}"
+        f"·코스닥시총{len(major_stocks.get('kosdaq_cap', []))}"
+        f"·코스피등락{len(major_stocks.get('kospi_chg', []))}"
+        f"·코스닥등락{len(major_stocks.get('kosdaq_chg', []))}"
+    )
+    log(f"완료. asOf={as_of}, INDICES={len(indices)}, MAJOR_STOCKS=({ms_summary}), "
         f"STOCKS={len(stocks)}, NEWS={len(news)}")
 
 
