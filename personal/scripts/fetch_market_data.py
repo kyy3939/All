@@ -541,6 +541,28 @@ def fetch_news_for_query(query):
     return items
 
 
+def _parse_pub_date(s):
+    """RSS pubDate 문자열("Thu, 23 Jul 2026 00:42:05 GMT" 등)을 datetime으로 파싱한다.
+    실패하면 None. %Z로 매칭된 경우 tzinfo 없는(naive) UTC 벽시계 값이 되고,
+    %z로 매칭된 경우 tzinfo가 붙은 aware 값이 된다."""
+    for fmt in ("%a, %d %b %Y %H:%M:%S %Z", "%a, %d %b %Y %H:%M:%S %z"):
+        try:
+            return datetime.strptime(s, fmt)
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
+def _format_pub_date_kst(s):
+    """기사 작성일을 한국시간(KST) 기준 "YYYY-MM-DD" 문자열로 변환한다. 실패 시 None."""
+    dt_val = _parse_pub_date(s)
+    if dt_val is None:
+        return None
+    if dt_val.tzinfo is not None:
+        dt_val = dt_val.astimezone(timezone.utc).replace(tzinfo=None)
+    return (dt_val + timedelta(hours=9)).strftime("%Y-%m-%d")
+
+
 def build_news(old_news):
     """카테고리(코스피/코스닥/강세·약세 종목/섹터/글로벌 증시/환율/유가)별로 검색어를
     나눠서 각각 몇 건씩 가져온 뒤 합친다. 전부 한 검색어로만 모으면 최신순 정렬 특성상
@@ -568,17 +590,12 @@ def build_news(old_news):
         if not all_items:
             raise RuntimeError("뉴스 0건 수집")
 
-        def parse_date(s):
-            for fmt in ("%a, %d %b %Y %H:%M:%S %Z", "%a, %d %b %Y %H:%M:%S %z"):
-                try:
-                    return datetime.strptime(s, fmt)
-                except Exception:  # noqa: BLE001
-                    continue
-            return datetime.min
-
-        all_items.sort(key=lambda x: parse_date(x["pubDate"]), reverse=True)
+        all_items.sort(key=lambda x: _parse_pub_date(x["pubDate"]) or datetime.min, reverse=True)
         top = all_items[:NEWS_MAX_TOTAL]
-        return [{"t": it["t"], "src": it["src"], "link": it["link"]} for it in top]
+        return [
+            {"t": it["t"], "src": it["src"], "link": it["link"], "date": _format_pub_date_kst(it["pubDate"])}
+            for it in top
+        ]
 
     news = retry(_do, "뉴스 수집", default=None)
     return news if news else old_news
