@@ -324,16 +324,23 @@ def _parse_chg_pct(td):
 
 def parse_naver_table(html, limit=30):
     """네이버 금융 시세 테이블(class="type_2")을 헤더 텍스트 기준으로 파싱한다.
-    고정된 열 순서에 의존하지 않고 "종목명"/"현재가"/"등락률"/"시가총액" 헤더 라벨로
+    네이버는 <thead>/<tbody> 없이 <tr> 안에 <th>만으로 헤더 행을 표시하는 옛날식 표
+    마크업을 쓰므로, thead 유무에 의존하지 않고 "<th>가 있는 첫 번째 행"을 헤더로
+    간주한다. 고정된 열 순서 대신 "종목명"/"현재가"/"등락률"/"시가총액" 헤더 라벨로
     열 위치를 찾으므로, 열이 추가/삭제되는 정도의 구조 변경에는 견딘다."""
     soup = BeautifulSoup(html, "html.parser")
     table = soup.find("table", class_="type_2")
     if table is None:
         raise RuntimeError("시세 테이블(table.type_2)을 찾지 못함 — 페이지 구조가 바뀌었을 수 있음")
-    thead = table.find("thead")
-    if thead is None:
-        raise RuntimeError("테이블 헤더(thead)를 찾지 못함")
-    headers = [th.get_text(strip=True) for th in thead.find_all("th")]
+
+    all_trs = table.find_all("tr")
+    if not all_trs:
+        raise RuntimeError("테이블에 행이 하나도 없음")
+
+    header_tr = next((tr for tr in all_trs if tr.find("th")), None)
+    if header_tr is None:
+        raise RuntimeError("헤더 행(<th> 포함)을 찾지 못함")
+    headers = [th.get_text(strip=True) for th in header_tr.find_all("th")]
 
     def col_idx(name):
         for i, h in enumerate(headers):
@@ -348,12 +355,10 @@ def parse_naver_table(html, limit=30):
     if idx_name is None or idx_price is None or idx_chg is None:
         raise RuntimeError(f"필요한 열을 헤더에서 찾지 못함 (headers={headers})")
 
-    body = table.find("tbody")
-    if body is None:
-        raise RuntimeError("테이블 본문(tbody)을 찾지 못함")
-
     rows = []
-    for tr in body.find_all("tr"):
+    for tr in all_trs:
+        if tr is header_tr or tr.find("th"):
+            continue
         tds = tr.find_all("td")
         need = max(idx_name, idx_price, idx_chg, idx_cap if idx_cap is not None else 0)
         if len(tds) <= need:
