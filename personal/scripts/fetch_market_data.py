@@ -35,7 +35,8 @@ from bs4 import BeautifulSoup
 HTML_PATH = os.environ.get("HTML_PATH", "stocks.html")
 KST = timezone(timedelta(hours=9))
 HISTORY_PERIOD = "2y"      # 이동평균(120일) 계산을 위해 넉넉히 2년치 받아옴
-SERIES_KEEP_ROWS = 260     # 최종적으로 보관할 최근 거래일 수 (1년 뷰 지원)
+SERIES_KEEP_ROWS = 260     # 지수/환율 등: 최종적으로 보관할 최근 거래일 수 (1년 뷰 지원)
+STOCK_SERIES_KEEP_ROWS = 130  # 관심종목 차트: 종목 수가 많아(최대 수십 개) 페이지 용량을 고려해 절반(약 6개월)만 보관
 RETRY = 3
 RETRY_SLEEP = 3
 
@@ -146,9 +147,12 @@ def fetch_history(symbol):
     return h
 
 
-def build_idx_series(old_series):
+def build_series_for_symbols(symbol_pairs, old_series, what_label, keep_rows=SERIES_KEEP_ROWS):
+    """(key, 야후파이낸스 심볼) 쌍 목록을 받아 각각의 OHLC+이동평균(5/20/60/120일) 시계열을
+    수집한다. 지수 차트(IDX_SERIES)와 관심종목 차트(STOCK_SERIES)가 완전히 같은 로직을
+    쓰므로 공용 헬퍼로 뺐다."""
     result = {}
-    for key, symbol in IDX_SYMBOLS.items():
+    for key, symbol in symbol_pairs:
         def _do(symbol=symbol):
             h = fetch_history(symbol)
             closes = h["Close"]
@@ -157,7 +161,7 @@ def build_idx_series(old_series):
             ma60 = closes.rolling(60).mean()
             ma120 = closes.rolling(120).mean()
             rows = []
-            for ts in h.index[-SERIES_KEEP_ROWS:]:
+            for ts in h.index[-keep_rows:]:
                 rows.append({
                     "date": ts.strftime("%Y-%m-%d"),
                     "open": round(float(h.loc[ts, "Open"]), 2),
@@ -171,9 +175,19 @@ def build_idx_series(old_series):
                 })
             return rows
 
-        rows = retry(_do, f"지수 시세 수집 [{key}={symbol}]", default=None)
+        rows = retry(_do, f"{what_label} 시세 차트 수집 [{key}={symbol}]", default=None)
         result[key] = rows if rows else old_series.get(key, [])
     return result
+
+
+def build_idx_series(old_series):
+    return build_series_for_symbols(list(IDX_SYMBOLS.items()), old_series, "지수")
+
+
+def build_stock_series(stocks_list, old_series):
+    """관심종목 각각의 차트용 시세를 수집한다. STOCKS의 ticker(야후 심볼)를 그대로 키로 쓴다."""
+    pairs = [(item["ticker"], item["ticker"]) for item in stocks_list]
+    return build_series_for_symbols(pairs, old_series, "종목", keep_rows=STOCK_SERIES_KEEP_ROWS)
 
 
 def build_vol_series(old_series):
@@ -447,6 +461,18 @@ def build_rec_string(info, old_rec):
     return f"{mean:.1f} · {label}"
 
 
+def fetch_stock_news(name):
+    """종목별 관련 뉴스 최대 3건을 가져온다. 실패하면 예외를 던진다(retry()에서 처리)."""
+    items = fetch_news_for_query(f"{name} 주가")
+    top = items[:3]
+    if not top:
+        raise RuntimeError("종목 뉴스 0건 수집")
+    return [
+        {"t": it["t"], "src": it["src"], "link": it["link"], "date": _format_pub_date_kst(it["pubDate"])}
+        for it in top
+    ]
+
+
 def update_stocks(old_list):
     out = []
     for item in old_list:
@@ -455,46 +481,48 @@ def update_stocks(old_list):
         new_item = dict(item)
         if not info:
             log(f"WARN: {item['name']}({symbol}) 상세 정보 수집 실패, 이전 값 전체 유지")
-            out.append(new_item)
-            continue
+        else:
+            price, chg_pct = price_and_chg(info, symbol)
+            if price is not None:
+                new_item["price"] = round(price, 2) if item["unit"] == "$" else int(round(price))
+                new_item["chgPct"] = chg_pct
 
-        price, chg_pct = price_and_chg(info, symbol)
-        if price is not None:
-            new_item["price"] = round(price, 2) if item["unit"] == "$" else int(round(price))
-            new_item["chgPct"] = chg_pct
+            cap = info.get("marketCap")
+            cap_str = fmt_cap(item["market"], cap) if cap else None
+            if cap_str:
+                new_item["cap"] = cap_str
 
-        cap = info.get("marketCap")
-        cap_str = fmt_cap(item["market"], cap) if cap else None
-        if cap_str:
-            new_item["cap"] = cap_str
+            per = info.get("trailingPE") or info.get("forwardPE")
+            if per:
+                new_item["per"] = round(per, 2)
 
-        per = info.get("trailingPE") or info.get("forwardPE")
-        if per:
-            new_item["per"] = round(per, 2)
+            div_rate = info.get("dividendRate")
+            if div_rate and price:
+                new_item["div"] = round(div_rate / price * 100, 2)
+            elif info.get("dividendYield") is not None:
+                dy = info.get("dividendYield")
+                # yfinance 버전에 따라 0.0058(=0.58%) 또는 0.58(=0.58%)로 오는 경우가 섞여 있어 방어적으로 처리
+                new_item["div"] = round(dy * 100, 2) if dy < 1 else round(dy, 2)
 
-        div_rate = info.get("dividendRate")
-        if div_rate and price:
-            new_item["div"] = round(div_rate / price * 100, 2)
-        elif info.get("dividendYield") is not None:
-            dy = info.get("dividendYield")
-            # yfinance 버전에 따라 0.0058(=0.58%) 또는 0.58(=0.58%)로 오는 경우가 섞여 있어 방어적으로 처리
-            new_item["div"] = round(dy * 100, 2) if dy < 1 else round(dy, 2)
+            roe = info.get("returnOnEquity")
+            if roe is not None:
+                new_item["roe"] = round(roe * 100, 2)
 
-        roe = info.get("returnOnEquity")
-        if roe is not None:
-            new_item["roe"] = round(roe * 100, 2)
+            lo = info.get("fiftyTwoWeekLow")
+            hi = info.get("fiftyTwoWeekHigh")
+            if lo:
+                new_item["lo"] = round(lo, 2) if item["unit"] == "$" else int(round(lo))
+            if hi:
+                new_item["hi"] = round(hi, 2) if item["unit"] == "$" else int(round(hi))
 
-        lo = info.get("fiftyTwoWeekLow")
-        hi = info.get("fiftyTwoWeekHigh")
-        if lo:
-            new_item["lo"] = round(lo, 2) if item["unit"] == "$" else int(round(lo))
-        if hi:
-            new_item["hi"] = round(hi, 2) if item["unit"] == "$" else int(round(hi))
+            new_item["rec"] = build_rec_string(info, item.get("rec"))
+            target = info.get("targetMeanPrice")
+            if target:
+                new_item["target"] = round(target, 2) if item["unit"] == "$" else int(round(target))
 
-        new_item["rec"] = build_rec_string(info, item.get("rec"))
-        target = info.get("targetMeanPrice")
-        if target:
-            new_item["target"] = round(target, 2) if item["unit"] == "$" else int(round(target))
+        # 종목별 관련 뉴스 — yfinance 정보 수집 성공 여부와 무관하게(다른 소스이므로) 항상 시도한다.
+        news = retry(lambda name=item["name"]: fetch_stock_news(name), f"{item['name']} 관련 뉴스 수집", default=None)
+        new_item["news"] = news if news else item.get("news", [])
 
         out.append(new_item)
     return out
@@ -615,6 +643,7 @@ def main():
     indices = build_indices(idx_series, vol_series, nikkei_last2, old.get("INDICES", []))
     major_stocks = build_major_stocks(old.get("MAJOR_STOCKS", {}))
     stocks = update_stocks(old.get("STOCKS", []))
+    stock_series = build_stock_series(stocks, old.get("STOCK_SERIES", {}))
     news = build_news(old.get("NEWS", []))
 
     as_of = None
@@ -630,6 +659,7 @@ def main():
         "MAJOR_STOCKS": major_stocks,
         "NEWS": news,
         "STOCKS": stocks,
+        "STOCK_SERIES": stock_series,
         "IDX_SERIES": idx_series,
         "VOL_SERIES": vol_series,
     }
@@ -665,8 +695,10 @@ def main():
         f"·코스피등락{len(major_stocks.get('kospi_chg', []))}"
         f"·코스닥등락{len(major_stocks.get('kosdaq_chg', []))}"
     )
+    stocks_with_series = sum(1 for s in stocks if stock_series.get(s["ticker"]))
+    stocks_with_news = sum(1 for s in stocks if s.get("news"))
     log(f"완료. asOf={as_of}, INDICES={len(indices)}, MAJOR_STOCKS=({ms_summary}), "
-        f"STOCKS={len(stocks)}, NEWS={len(news)}")
+        f"STOCKS={len(stocks)}(차트 {stocks_with_series}·뉴스 {stocks_with_news}), NEWS={len(news)}")
 
 
 if __name__ == "__main__":
