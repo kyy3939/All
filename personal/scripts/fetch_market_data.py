@@ -504,7 +504,17 @@ def update_stocks(old_list):
 # 5. 뉴스 (Google 뉴스 RSS — API 키 불필요)
 # ----------------------------------------------------------------------------
 
-NEWS_QUERIES = ["코스피 마감", "글로벌 증시"]
+NEWS_QUERIES = [
+    ("코스피 마감", 2),
+    ("코스닥 마감", 2),
+    ("코스피 급등주", 2),
+    ("코스피 급락주", 2),
+    ("업종 테마 강세", 2),
+    ("글로벌 증시", 2),
+    ("원달러 환율", 2),
+    ("국제 유가", 1),
+]
+NEWS_MAX_TOTAL = 15
 
 
 def fetch_news_for_query(query):
@@ -532,15 +542,31 @@ def fetch_news_for_query(query):
 
 
 def build_news(old_news):
+    """카테고리(코스피/코스닥/강세·약세 종목/섹터/글로벌 증시/환율/유가)별로 검색어를
+    나눠서 각각 몇 건씩 가져온 뒤 합친다. 전부 한 검색어로만 모으면 최신순 정렬 특성상
+    특정 주제(예: 속보성 이슈)가 결과를 독점해 다른 카테고리가 안 보일 수 있어,
+    카테고리별로 건수를 미리 배분해 다양한 주제가 고르게 섞이도록 한다."""
     def _do():
         all_items = []
         seen_titles = set()
-        for q in NEWS_QUERIES:
-            for it in fetch_news_for_query(q):
+        for query, take in NEWS_QUERIES:
+            try:
+                items = fetch_news_for_query(query)
+            except Exception as e:  # noqa: BLE001
+                log(f"WARN: 뉴스 검색어 '{query}' 수집 실패, 건너뜀: {e}")
+                continue
+            count = 0
+            for it in items:
                 if it["t"] in seen_titles:
                     continue
                 seen_titles.add(it["t"])
                 all_items.append(it)
+                count += 1
+                if count >= take:
+                    break
+
+        if not all_items:
+            raise RuntimeError("뉴스 0건 수집")
 
         def parse_date(s):
             for fmt in ("%a, %d %b %Y %H:%M:%S %Z", "%a, %d %b %Y %H:%M:%S %z"):
@@ -551,10 +577,8 @@ def build_news(old_news):
             return datetime.min
 
         all_items.sort(key=lambda x: parse_date(x["pubDate"]), reverse=True)
-        top5 = all_items[:5]
-        if not top5:
-            raise RuntimeError("뉴스 0건 수집")
-        return [{"t": it["t"], "src": it["src"], "link": it["link"]} for it in top5]
+        top = all_items[:NEWS_MAX_TOTAL]
+        return [{"t": it["t"], "src": it["src"], "link": it["link"]} for it in top]
 
     news = retry(_do, "뉴스 수집", default=None)
     return news if news else old_news
