@@ -565,10 +565,16 @@ def update_stocks(old_list):
                 new_item["price"] = round(price, 2) if item["unit"] == "$" else int(round(price))
                 new_item["chgPct"] = chg_pct
 
-            cap = info.get("marketCap")
-            cap_str = fmt_cap(item["market"], cap) if cap else None
-            if cap_str:
-                new_item["cap"] = cap_str
+            # top50(국내) 종목은 이미 네이버 스크리닝에서 정확한 시가총액을 받아왔고,
+            # 그 값으로 순위(top50 선정)까지 매겨졌다. yfinance의 marketCap은 국내 종목에서
+            # 종종 부정확/누락되는 경우가 있어(이미 주요종목 4탭에서 겪은 문제) 그 값으로
+            # 덮어쓰면 "표시된 시총"과 "실제 순위를 매긴 시총"이 어긋나 보일 수 있으므로,
+            # top50 종목은 네이버 값을 그대로 유지하고 yfinance 값으로 덮어쓰지 않는다.
+            if item.get("tier") != "top50":
+                cap = info.get("marketCap")
+                cap_str = fmt_cap(item["market"], cap) if cap else None
+                if cap_str:
+                    new_item["cap"] = cap_str
 
             per = info.get("trailingPE") or info.get("forwardPE")
             if per:
