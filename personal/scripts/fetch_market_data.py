@@ -420,6 +420,84 @@ def fetch_naver_top30(market):
     return cap_rows, chg_rows
 
 
+def naver_ticker(code, market):
+    """네이버 금융의 6자리 종목코드를 야후파이낸스 심볼로 변환한다."""
+    return f"{code}.KS" if market == "KOSPI" else f"{code}.KQ"
+
+
+def build_kr_top50_rows():
+    """코스피+코스닥 통합 시가총액 상위 50 종목을 네이버 금융 스크리닝으로 매번
+    새로 계산한다. 고정 목록이 아니라 실행할 때마다 통째로 다시 산출하므로,
+    순위가 바뀌면 목록도 자동으로 갱신되고 크기는 항상 정확히 50개로 유지된다."""
+    rows = []
+    for market in ("KOSPI", "KOSDAQ"):
+        def _do(market=market):
+            sosok = "0" if market == "KOSPI" else "1"
+            html = fetch_naver_html(
+                f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}&page=1"
+            )
+            r = parse_naver_table(html, limit=50)
+            for x in r:
+                x["market"] = market
+            return r
+
+        got = retry(_do, f"{market} 시총 상위 50 스크리닝", default=[])
+        rows.extend(got or [])
+
+    rows.sort(key=lambda r: r.get("cap") or 0, reverse=True)
+    return rows[:50]
+
+
+def build_kr_top50_stocks(old_stocks_by_ticker):
+    """시총 상위 50 스크리닝 결과를 STOCKS 항목 형태로 변환한다. 기존에 이미 추적하던
+    종목이면(old_stocks_by_ticker에 존재) 그동안 쌓인 재무값/뉴스 등을 이어받아 이번
+    실행의 update_stocks()가 값을 덮어쓸 때까지의 공백을 최소화하고, 이번에 새로
+    순위에 든 종목이면 네이버 스크리닝 값만으로 최소 항목을 만든다(상세 재무값은
+    이어지는 update_stocks()에서 즉시 채워진다)."""
+    rows = build_kr_top50_rows()
+    out = []
+    for r in rows:
+        ticker = naver_ticker(r["ticker"], r["market"])
+        cap_str = f"{r['cap']:,.1f}조원" if r.get("cap") is not None else None
+        old = old_stocks_by_ticker.get(ticker)
+        if old:
+            item = dict(old)
+        else:
+            item = {
+                "per": 0.0, "div": 0.0, "roe": 0.0,
+                "lo": r["price"], "hi": r["price"], "rec": "-", "target": None, "news": [],
+            }
+        item["name"] = r["name"]
+        item["ticker"] = ticker
+        item["market"] = "kr"
+        item["exch"] = r["market"]
+        item.setdefault("sector", "-")
+        item["unit"] = "원"
+        item["price"] = r["price"]
+        item["chgPct"] = r["chgPct"]
+        if cap_str:
+            item["cap"] = cap_str
+        item["tier"] = "top50"
+        out.append(item)
+    return out
+
+
+def build_watchlist_stocks(old_stocks):
+    """시총 순위와 무관하게 항상 유지하고 싶은 개별 관심종목(코스피/코스닥 top50 밖이라도
+    별도로 요청해서 추가한 국내 종목)만 남긴다. 종목검색은 국내로 한정하기로 했으므로
+    해외(market="us") 종목은 더 이상 유지하지 않고, tier가 명시적으로 "watchlist"인
+    항목만 관심종목으로 간주한다. 신규 추가는 tier="watchlist"를 붙여 수동으로 넣는다."""
+    out = []
+    seen = set()
+    for s in old_stocks:
+        if s.get("tier") != "watchlist" or s.get("market") != "kr" or s["ticker"] in seen:
+            continue
+        item = dict(s)
+        out.append(item)
+        seen.add(s["ticker"])
+    return out
+
+
 def build_major_stocks(old_data):
     """코스피/코스닥 x 시가총액상위30/등락률상위30 = 4개 탭.
     고정 종목 리스트가 아니라 네이버 금융 랭킹 페이지를 매일 다시 스크래핑해
@@ -642,7 +720,15 @@ def main():
     nikkei_last2 = fetch_nikkei_last2()
     indices = build_indices(idx_series, vol_series, nikkei_last2, old.get("INDICES", []))
     major_stocks = build_major_stocks(old.get("MAJOR_STOCKS", {}))
-    stocks = update_stocks(old.get("STOCKS", []))
+
+    old_stocks = old.get("STOCKS", [])
+    old_stocks_by_ticker = {s["ticker"]: s for s in old_stocks}
+    kr_top50 = build_kr_top50_stocks(old_stocks_by_ticker)
+    watchlist = build_watchlist_stocks(old_stocks)
+    top50_tickers = {s["ticker"] for s in kr_top50}
+    merged_seed = kr_top50 + [s for s in watchlist if s["ticker"] not in top50_tickers]
+
+    stocks = update_stocks(merged_seed)
     stock_series = build_stock_series(stocks, old.get("STOCK_SERIES", {}))
     news = build_news(old.get("NEWS", []))
 
