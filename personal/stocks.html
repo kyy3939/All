@@ -199,6 +199,36 @@ tbody tr:hover td{background:#151f2c}
 .stock-alt .lbl{font-size:11px;color:var(--sub);font-weight:700}
 .stock-alt-chip{padding:7px 14px;border-radius:999px;background:#161f2c;color:var(--sub);border:1px solid #283548;font-size:11.5px;font-weight:800;cursor:pointer}
 .stock-alt-chip:hover{border-color:#46679f;color:#c9d9ff}
+.ai-analysis{margin-top:16px;padding:20px 22px;border-radius:16px;background:linear-gradient(150deg,#161227,#110f1a);border:1px solid #322b52}
+.ai-analysis.ai-empty{padding:16px 18px}
+.ai-pending{margin-top:6px;font-size:11.5px;color:var(--sub)}
+.ai-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.ai-title{font-size:13.5px;font-weight:900;color:#c4b5fd}
+.ai-asof{font-size:10px;color:var(--sub)}
+.ai-opinion{display:inline-flex;align-items:center;padding:7px 16px;border-radius:999px;font-size:13.5px;font-weight:900;margin-bottom:14px}
+.ai-op-strongbuy{background:rgba(255,107,107,.18);color:#ff9494;border:1px solid rgba(255,107,107,.4)}
+.ai-op-buy{background:rgba(255,107,107,.1);color:#ffb0a8;border:1px solid rgba(255,107,107,.28)}
+.ai-op-hold{background:rgba(141,154,173,.14);color:#c3ccd9;border:1px solid rgba(141,154,173,.3)}
+.ai-op-sell{background:rgba(91,155,255,.1);color:#a7c6ff;border:1px solid rgba(91,155,255,.28)}
+.ai-op-strongsell{background:rgba(91,155,255,.18);color:#8ab4ff;border:1px solid rgba(91,155,255,.4)}
+.ai-scores{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.ai-score-item{background:#0e0c16;border-radius:10px;padding:10px 11px}
+.ai-score-item .l{font-size:9.8px;color:var(--sub);margin-bottom:5px;display:flex;justify-content:space-between;font-weight:700}
+.ai-score-item .bar{height:5px;background:#241f3a;border-radius:99px;overflow:hidden;margin-bottom:7px}
+.ai-score-item .bar i{display:block;height:100%;background:linear-gradient(90deg,#7c5cff,#c084fc)}
+.ai-score-item .t{font-size:10.5px;color:#d3cbe8;line-height:1.55}
+.ai-total{text-align:right;font-size:11.5px;color:var(--sub);font-weight:700;margin-bottom:4px}
+.ai-total b{color:#fff;font-size:15px}
+.ai-block{margin-top:14px}
+.ai-block .l{font-size:10.5px;color:var(--sub);font-weight:800;margin-bottom:6px}
+.ai-reasons ol{margin:0;padding-left:18px;font-size:12px;color:#e2ddef;line-height:1.75}
+.ai-action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.ai-action-item{background:#0e0c16;border-radius:10px;padding:8px 10px}
+.ai-action-item .k{font-size:9.3px;color:var(--sub)}
+.ai-action-item .v{font-size:11.5px;font-weight:700;color:#fff;margin-top:2px}
+.ai-risks ul{margin:0;padding-left:18px;font-size:12px;color:#e2ddef;line-height:1.75}
+.ai-disclaimer{margin-top:14px;font-size:10px;color:#8b83a3;line-height:1.65}
+
 
 .sc-range{margin-bottom:12px}
 .sc-range .lbl-row{display:flex;justify-content:space-between;font-size:9.5px;color:var(--sub);margin-bottom:5px}
@@ -353,6 +383,7 @@ const MAJOR_STOCKS = _MD.MAJOR_STOCKS;
 const NEWS = _MD.NEWS;
 const STOCKS = _MD.STOCKS;
 const STOCK_SERIES = _MD.STOCK_SERIES || {};
+const AI_ANALYSIS = _MD.AI_ANALYSIS || {};
 
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function chgClass(p){return p>0?'up':(p<0?'down':'flat')}
@@ -855,6 +886,64 @@ function saveMemo(ticker){
   tag.classList.add('show');
   setTimeout(()=>tag.classList.remove('show'), 1500);
 }
+const AI_AGENT_META = {
+  finance:{icon:'📊', score:'재무건전성'},
+  chart:{icon:'📈', score:'기술적흐름'},
+  sector:{icon:'🏭', score:'업종경쟁력'},
+  company:{icon:'🏢', score:'기업펀더멘털'},
+  news:{icon:'📰', score:'뉴스모멘텀'},
+  industry:{icon:'🔬', score:'산업구조'},
+};
+const AI_OPINION_CLASS = {'강력매수':'strongbuy','매수':'buy','중립':'hold','매도':'sell','강력매도':'strongsell'};
+function aiAnalysisHTML(ticker){
+  const a = AI_ANALYSIS[ticker];
+  if(!a){
+    return `<div class="ai-analysis ai-empty">
+      <div class="ai-title">🤖 AI 종합 분석 (6개 에이전트)</div>
+      <div class="ai-pending">다음 자동 갱신 때 재무·차트·업종·기업·기사·산업 6개 에이전트 분석이 채워집니다.</div>
+    </div>`;
+  }
+  const opClass = AI_OPINION_CLASS[a.opinion] || 'hold';
+  const scores = Object.keys(AI_AGENT_META).map(k=>{
+    const ag = (a.agents && a.agents[k]) || {score:0, text:''};
+    const meta = AI_AGENT_META[k];
+    const pct = Math.max(0, Math.min(100, (ag.score||0)*10));
+    return `<div class="ai-score-item">
+      <div class="l"><span>${meta.icon} ${meta.score}</span><span>${ag.score}/10</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="t">${esc(ag.text||'')}</div>
+    </div>`;
+  }).join('');
+  const act = a.action || {};
+  const actionRows = [
+    ['진입전략', act.entry], ['1차 매수구간', act.buy1], ['2차 매수구간', act.buy2],
+    ['목표가(단기)', act.targetShort], ['목표가(중기)', act.targetMid],
+    ['손절가', act.stopLoss], ['투자기간', act.horizon],
+  ].map(([k,v])=>`<div class="ai-action-item"><div class="k">${esc(k)}</div><div class="v">${esc(v||'-')}</div></div>`).join('');
+  return `
+  <div class="ai-analysis">
+    <div class="ai-head">
+      <div class="ai-title">🤖 AI 종합 분석 (6개 에이전트)</div>
+      <div class="ai-asof">${a.asOf ? esc(a.asOf.slice(0,16).replace('T',' ')) + ' 기준 자동 생성' : ''}</div>
+    </div>
+    <div class="ai-opinion ai-op-${opClass}">${esc(a.opinion||'-')}</div>
+    <div class="ai-scores">${scores}</div>
+    <div class="ai-total">종합 스코어 <b>${a.total!=null?a.total:'-'}</b>/60</div>
+    <div class="ai-block ai-reasons">
+      <div class="l">투자근거</div>
+      <ol>${(a.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ol>
+    </div>
+    <div class="ai-block">
+      <div class="l">액션플랜</div>
+      <div class="ai-action-grid">${actionRows}</div>
+    </div>
+    <div class="ai-block ai-risks">
+      <div class="l">핵심 모니터링 포인트</div>
+      <ul>${(a.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
+    </div>
+    <div class="ai-disclaimer">⚠️ 본 분석은 AI가 제공된 데이터만으로 자동 생성한 투자 참고용 콘텐츠이며 실시간 반영이 아닙니다(자동 갱신 시점 기준). 최종 투자 판단은 본인에게 있습니다.</div>
+  </div>`;
+}
 function stockDetail(s, alternates){
   const pos = s.hi > s.lo ? Math.max(0,Math.min(100, (s.price - s.lo)/(s.hi - s.lo) * 100)) : 50;
   const memoKey = 'memo_'+s.ticker;
@@ -892,6 +981,7 @@ function stockDetail(s, alternates){
       <div><div class="l">애널리스트 컨센서스</div><div class="v">${esc(s.rec)}</div></div>
       <div style="text-align:right"><div class="l">목표주가(평균)</div><div class="v">${s.target!=null ? (s.unit==='$'?'$':'')+s.target.toLocaleString()+(s.unit==='원'?'원':'') : '데이터 없음'}</div></div>
     </div>
+    ${aiAnalysisHTML(s.ticker)}
     ${s.news && s.news.length ? `<div class="sc-news">
       <div class="l">관련 뉴스</div>
       ${s.news.map(n=>`
