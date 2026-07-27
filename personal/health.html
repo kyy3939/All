@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>헬스 코치</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {
-  --bg:#080b14; --s1:#0e1220; --s2:#141829; --s3:#1b2035;
-  --border:#232b45; --text:#dde3f5; --muted:#4e5878; --dim:#8890b5;
-  --accent:#6c63ff; --run:#00e5a0; --eat:#f5a623; --bio:#e040fb;
-  --coach:#4fc3f7; --weight:#00e5ff; --skeletal:#69f0ae;
-  --fat-c:#ff4081; --fatrate:#ffd740; --cal:#ff7043;
-  --protein:#69f0ae; --carb:#f5a623; --pb:#ffd740;
+  --bg:#0b0d12; --s1:#111317; --s2:#171a20; --s3:#1d2128;
+  --border:#2b3038; --text:#f4f7fb; --muted:#8d9aad; --dim:#657286;
+  --accent:#60a5fa; --run:#35d39a; --eat:#ffb84d; --bio:#c084fc;
+  --coach:#39c6e8; --weight:#5b9bff; --skeletal:#35d39a;
+  --fat-c:#ff6678; --fatrate:#fbbf24; --cal:#ffb84d;
+  --protein:#35d39a; --carb:#ffb84d; --pb:#fbbf24;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;display:flex;flex-direction:column;}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 10%,rgba(108,99,255,.05) 0%,transparent 50%),radial-gradient(ellipse at 90% 90%,rgba(0,229,160,.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
+body{background:linear-gradient(180deg,#0a0d13 0%,#0d1118 100%);color:var(--text);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 10%,rgba(96,165,250,.05) 0%,transparent 50%),radial-gradient(ellipse at 90% 90%,rgba(53,211,154,.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
 
 /* ══ 상단 헤더 ══ */
 .topnav{
@@ -29,15 +29,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   display:flex;align-items:center;padding:0 16px;gap:8px;
   flex-shrink:0;z-index:100;position:relative;overflow:hidden;
 }
-.nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--coach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px;white-space:nowrap;}
+.nav-logo{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;font-weight:800;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--coach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px;white-space:nowrap;}
 .nav-logo{position:relative;z-index:105;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .nav-logo:active{opacity:.72;}
 @media(max-width:768px){.nav-logo{padding:14px 10px;margin:-14px -10px;min-height:52px;display:flex;align-items:center;}}
 .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--run);box-shadow:0 0 6px var(--run);animation:blink 2s infinite;flex-shrink:0;}
-.nav-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;display:none;}
-.nav-sync{padding:5px 10px;background:none;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;margin-left:auto;white-space:nowrap;flex-shrink:0;}
+.nav-date{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;display:none;}
+.nav-sync{padding:5px 10px;background:none;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;cursor:pointer;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:all .2s;margin-left:auto;white-space:nowrap;flex-shrink:0;}
 .nav-sync:hover{border-color:var(--run);color:var(--run);}
-.nav-ver{font-family:'DM Mono',monospace;font-size:10px;color:var(--text);opacity:.75;background:var(--s3);border:1px solid var(--dim);border-radius:6px;padding:3px 7px;letter-spacing:1px;flex-shrink:0;}
+.nav-ver{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--text);opacity:.75;background:var(--s3);border:1px solid var(--dim);border-radius:6px;padding:3px 7px;letter-spacing:1px;flex-shrink:0;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 @media(min-width:769px){
   .nav-date{display:block;}
@@ -53,7 +53,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .pc-nav-inner{display:flex;gap:2px;max-width:1100px;margin:0 auto;padding:0 32px;}
 .pc-tab{
   padding:15px 22px;border:none;background:none;
-  color:var(--muted);font-family:'Noto Sans KR',sans-serif;
+  color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   font-size:14px;font-weight:600;cursor:pointer;
   display:flex;align-items:center;gap:8px;
   border-bottom:3px solid transparent;margin-bottom:-1px;
@@ -78,7 +78,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .mob-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;transition:all .18s;}
 .mob-tab-icon{font-size:18px;transition:transform .18s;}
-.mob-tab-label{font-size:8px;letter-spacing:.3px;color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-weight:500;}
+.mob-tab-label{font-size:8px;letter-spacing:.3px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:500;}
 .mob-tab.active .mob-tab-label{color:var(--accent);}
 .mob-tab.active .mob-tab-icon{transform:scale(1.15);}
 
@@ -115,33 +115,33 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 /* ══ 공통 컴포넌트 ══ */
 .hdr{margin-bottom:28px;}
-.hdr-eyebrow{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
-.hdr-title{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1.1;color:var(--text);}
+.hdr-eyebrow{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+.hdr-title{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:30px;font-weight:800;line-height:1.1;color:var(--text);}
 .hdr-title .hl{background:linear-gradient(90deg,var(--accent),var(--coach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
 .card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;}
-.card-title{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .ct-line{flex:1;height:1px;background:var(--border);}
 .dt-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .inp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .inp-group{display:flex;flex-direction:column;gap:6px;}
 .inp-group.full{grid-column:1/-1;}
 .ig-label{font-size:12px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:5px;}
-.ig-unit{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-left:auto;font-weight:400;}
-.inp{background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--text);outline:none;transition:all .2s;width:100%;-moz-appearance:textfield;}
+.ig-unit{font-size:11px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-left:auto;font-weight:400;}
+.inp{background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;font-weight:500;color:var(--text);outline:none;transition:all .2s;width:100%;-moz-appearance:textfield;}
 .inp::-webkit-outer-spin-button,.inp::-webkit-inner-spin-button{-webkit-appearance:none;}
 .inp:focus{border-color:var(--accent);background:var(--s3);}
 .inp::placeholder{color:var(--muted);font-size:13px;}
 select.inp{cursor:pointer;font-size:14px;}
-.prev-hint{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
-.save-btn{width:100%;padding:16px;border:none;border-radius:13px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+.prev-hint{font-size:11px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+.save-btn{width:100%;padding:16px;border:none;border-radius:13px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
 .save-btn.primary{background:linear-gradient(135deg,var(--accent),var(--coach));color:#fff;}
 .save-btn.primary:hover{transform:translateY(-1px);filter:brightness(1.1);}
 .save-btn:disabled{background:var(--border);cursor:not-allowed;transform:none;}
 .hist-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:16px;}
 .hc-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.hc-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
-.hc-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+.hc-title{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;font-weight:700;}
+.hc-count{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--muted);}
 .hist-list{max-height:360px;overflow-y:auto;}
 .hist-list::-webkit-scrollbar{width:3px;}
 .hist-list::-webkit-scrollbar-thumb{background:var(--border);}
@@ -152,14 +152,14 @@ select.inp{cursor:pointer;font-size:14px;}
 .hi-item{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;transition:background .15s;}
 .hi-item:last-child{border-bottom:none;}
 .hi-item:hover{background:var(--s2);}
-.hi-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);width:56px;min-width:56px;flex-shrink:0;line-height:1.6;display:flex;flex-direction:column;gap:1px;}
+.hi-date{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--muted);width:56px;min-width:56px;flex-shrink:0;line-height:1.6;display:flex;flex-direction:column;gap:1px;}
 .hi-date-d{font-size:11px;color:var(--muted);}
 .hi-date-t{font-size:10px;color:var(--border);}
 .hi-body{flex:1;}
 .hi-main{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
-.hi-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.6;}
+.hi-sub{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--muted);line-height:1.6;}
 .hi-del{background:none;border:none;color:var(--border);font-size:16px;cursor:pointer;padding:3px 5px;border-radius:5px;transition:color .15s;flex-shrink:0;}
-.hi-del:hover{color:#ff5252;}
+.hi-del:hover{color:#ff6b6b;}
 .empty-state{padding:40px 18px;text-align:center;color:var(--muted);font-size:13px;}
 .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--text);color:var(--bg);padding:11px 24px;border-radius:100px;font-size:13px;font-weight:600;transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:999;white-space:nowrap;opacity:0;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
@@ -176,18 +176,18 @@ select.inp{cursor:pointer;font-size:14px;}
 .sum-card.sk::before{background:var(--skeletal);}
 .sum-card.ft::before{background:var(--fat-c);}
 .sum-card.cc::before{background:var(--cal);}
-.sc-label{font-size:11px;letter-spacing:.3px;color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-weight:700;margin-bottom:8px;}
-.sc-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;line-height:1;}
+.sc-label{font-size:11px;letter-spacing:.3px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:700;margin-bottom:8px;}
+.sc-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:22px;font-weight:700;line-height:1;}
 .sc-unit{font-size:11px;color:var(--muted);margin-left:2px;}
-.sc-chg{font-size:11px;margin-top:5px;font-family:'DM Mono',monospace;}
+.sc-chg{font-size:11px;margin-top:5px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 .sc-sub{font-size:10px;color:var(--muted);margin-top:4px;}
-.up{color:#ff4081;} .dn{color:var(--skeletal);}
+.up{color:#ff6678;} .dn{color:var(--skeletal);}
 .section{background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px;}
 .sec-hdr{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.sec-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;gap:5px;}
-.sec-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+.sec-title{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;gap:5px;}
+.sec-meta{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--muted);}
 .period-btns{display:flex;gap:5px;}
-.pb-btn{padding:4px 10px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s;}
+.pb-btn{padding:4px 10px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:all .15s;}
 .pb-btn.active{background:var(--s3);color:var(--text);border-color:var(--dim);}
 .dash-cols{display:flex;flex-direction:column;gap:12px;}
 .dash-left{order:2;}
@@ -214,53 +214,53 @@ select.inp{cursor:pointer;font-size:14px;}
 .nb-label{font-size:11px;color:var(--dim);width:52px;flex-shrink:0;}
 .nb-bar-bg{flex:1;height:7px;background:var(--s3);border-radius:4px;overflow:hidden;}
 .nb-bar-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.nb-vals{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);width:64px;text-align:right;flex-shrink:0;}
+.nb-vals{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--muted);width:64px;text-align:right;flex-shrink:0;}
 .nutrition-bars{padding:14px 18px 6px;}
 .meal-list-dash{padding:8px 18px 16px;display:flex;flex-direction:column;gap:6px;}
 .meal-item-dash{display:flex;gap:10px;align-items:center;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;}
 .meal-badge{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:20px;flex-shrink:0;}
-.badge-아침{background:rgba(255,193,7,.12);color:#e6a800;border:1px solid rgba(255,193,7,.25);}
-.badge-점심{background:rgba(105,240,174,.1);color:var(--protein);border:1px solid rgba(105,240,174,.25);}
-.badge-저녁{background:rgba(255,112,67,.1);color:var(--cal);border:1px solid rgba(255,112,67,.25);}
-.badge-간식{background:rgba(124,92,252,.1);color:#a78bfa;border:1px solid rgba(124,92,252,.25);}
+.badge-아침{background:rgba(251,191,36,.12);color:#e0a020;border:1px solid rgba(251,191,36,.25);}
+.badge-점심{background:rgba(53,211,154,.1);color:var(--protein);border:1px solid rgba(53,211,154,.25);}
+.badge-저녁{background:rgba(255,184,77,.1);color:var(--cal);border:1px solid rgba(255,184,77,.25);}
+.badge-간식{background:rgba(37,99,235,.1);color:#c4b5fd;border:1px solid rgba(37,99,235,.25);}
 .meal-food-dash{font-size:13px;flex:1;color:var(--dim);}
-.meal-kcal-dash{font-family:'DM Mono',monospace;font-size:11px;color:var(--cal);font-weight:700;flex-shrink:0;}
+.meal-kcal-dash{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--cal);font-weight:700;flex-shrink:0;}
 .ex-tabs-dash{display:flex;gap:6px;padding:12px 18px 0;}
-.ex-tab-dash{padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.ex-tab-dash{padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:all .15s;}
 .ex-tab-dash.active{color:var(--text);border-color:var(--dim);background:var(--s3);}
 .ex-list-dash{padding:10px 18px 16px;}
 .pb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 18px;}
 @media(max-width:400px){.pb-grid{grid-template-columns:1fr 1fr;}}
 .pb-card{background:var(--s2);border:1px solid var(--border);border-radius:11px;padding:13px;text-align:center;}
 .pb-card-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
-.pb-card-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--pb);}
+.pb-card-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:18px;font-weight:700;color:var(--pb);}
 .pb-card-sub{font-size:10px;color:var(--muted);margin-top:3px;}
-.pb-badge{display:inline-flex;align-items:center;gap:2px;background:rgba(255,215,64,.15);border:1px solid rgba(255,215,64,.35);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;color:var(--pb);letter-spacing:1px;}
+.pb-badge{display:inline-flex;align-items:center;gap:2px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.35);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;color:var(--pb);letter-spacing:1px;}
 
 /* ══ 체성분 ══ */
 .last-rec{background:var(--s2);border:1px solid var(--border);border-radius:13px;padding:14px 16px;margin-bottom:14px;}
-.lr-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:7px;}
+.lr-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:7px;}
 .lr-vals{display:flex;gap:16px;flex-wrap:wrap;}
 .lr-item{display:flex;flex-direction:column;gap:2px;}
 .lr-item-label{font-size:10px;color:var(--muted);}
-.lr-item-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--text);}
+.lr-item-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;font-weight:500;color:var(--text);}
 .dot{width:7px;height:7px;border-radius:50%;}
 
 /* ══ 운동 ══ */
 .type-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
 @media(max-width:480px){.type-tabs{grid-template-columns:repeat(3,1fr);}}
 .type-tab{background:var(--s1);border:1.5px solid var(--border);border-radius:14px;padding:14px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .18s;}
-.type-tab.active[data-type="run"]{border-color:var(--run);background:rgba(0,229,160,.08);}
-.type-tab.active[data-type="walk"]{border-color:var(--skeletal);background:rgba(105,240,174,.08);}
-.type-tab.active[data-type="bike"]{border-color:var(--coach);background:rgba(79,195,247,.08);}
-.type-tab.active[data-type="bodyweight"]{border-color:var(--cal);background:rgba(255,112,67,.08);}
+.type-tab.active[data-type="run"]{border-color:var(--run);background:rgba(53,211,154,.08);}
+.type-tab.active[data-type="walk"]{border-color:var(--skeletal);background:rgba(53,211,154,.08);}
+.type-tab.active[data-type="bike"]{border-color:var(--coach);background:rgba(57,198,232,.08);}
+.type-tab.active[data-type="bodyweight"]{border-color:var(--cal);background:rgba(255,184,77,.08);}
 /* 측정 시점 버튼 */
-.type-tab.active[data-timing="일반"]{border-color:var(--accent);background:rgba(108,99,255,.12);}
-.type-tab.active[data-timing="운동 전"]{border-color:var(--run);background:rgba(0,229,160,.1);}
-.type-tab.active[data-timing="운동 후"]{border-color:var(--cal);background:rgba(255,112,67,.1);}
+.type-tab.active[data-timing="일반"]{border-color:var(--accent);background:rgba(96,165,250,.12);}
+.type-tab.active[data-timing="운동 전"]{border-color:var(--run);background:rgba(53,211,154,.1);}
+.type-tab.active[data-timing="운동 후"]{border-color:var(--cal);background:rgba(255,184,77,.1);}
 /* 수면 타입 버튼 */
-.type-tab.active[data-sleeptype="밤잠"]{border-color:var(--accent);background:rgba(108,99,255,.12);}
-.type-tab.active[data-sleeptype="낮잠"]{border-color:var(--coach);background:rgba(79,195,247,.1);}
+.type-tab.active[data-sleeptype="밤잠"]{border-color:var(--accent);background:rgba(96,165,250,.12);}
+.type-tab.active[data-sleeptype="낮잠"]{border-color:var(--coach);background:rgba(57,198,232,.1);}
 .tt-icon{font-size:24px;}
 .tt-label{font-size:11px;font-weight:700;color:var(--muted);}
 .type-tab.active .tt-label{color:var(--text);}
@@ -269,66 +269,66 @@ select.inp{cursor:pointer;font-size:14px;}
 .exercise-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
 .ex-chip{padding:7px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:100px;font-size:13px;color:var(--dim);cursor:pointer;transition:all .15s;user-select:none;}
 .ex-chip:hover{border-color:var(--cal);color:var(--cal);}
-.ex-chip.selected{background:rgba(255,112,67,.12);border-color:var(--cal);color:var(--cal);font-weight:700;}
+.ex-chip.selected{background:rgba(255,184,77,.12);border-color:var(--cal);color:var(--cal);font-weight:700;}
 .added-exercises{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
 .added-ex-item{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px;animation:fadeIn .2s ease;}
 .aei-name{font-size:13px;font-weight:700;color:var(--cal);min-width:95px;}
 .aei-inputs{display:flex;gap:6px;align-items:center;flex:1;}
-.aei-inp{width:52px;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:'DM Mono',monospace;font-size:14px;color:var(--text);outline:none;text-align:center;-moz-appearance:textfield;}
+.aei-inp{width:52px;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:var(--text);outline:none;text-align:center;-moz-appearance:textfield;}
 .aei-inp::-webkit-outer-spin-button,.aei-inp::-webkit-inner-spin-button{-webkit-appearance:none;}
-.aei-sep{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+.aei-sep{font-size:11px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 .aei-x{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px;border-radius:5px;transition:color .15s;}
-.aei-x:hover{color:#ff5252;}
-.add-ex-btn{width:100%;padding:10px;background:none;border:1.5px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;display:none;}
+.aei-x:hover{color:#ff6b6b;}
+.add-ex-btn{width:100%;padding:10px;background:none;border:1.5px dashed var(--border);border-radius:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12px;cursor:pointer;transition:all .15s;display:none;}
 .add-ex-btn.show{display:block;}
 .add-ex-btn:hover{border-color:var(--cal);color:var(--cal);}
 .ex-hist-tabs{display:flex;gap:6px;margin-bottom:10px;}
-.eht-btn{padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
+.eht-btn{padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:all .15s;}
 .eht-btn.active{background:var(--s3);color:var(--text);border-color:var(--dim);}
 
 /* ══ 식사 ══ */
 .meal-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
 .meal-tab{background:var(--s1);border:1.5px solid var(--border);border-radius:12px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .18s;}
-.meal-tab.active{background:rgba(108,99,255,.1);border-color:var(--accent);}
+.meal-tab.active{background:rgba(96,165,250,.1);border-color:var(--accent);}
 .mt-icon{font-size:20px;}
 .mt-label{font-size:11px;font-weight:700;color:var(--muted);}
 .meal-tab.active .mt-label{color:var(--accent);}
-.food-textarea{width:100%;min-height:90px;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:14px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);line-height:1.7;resize:none;outline:none;transition:border-color .2s;}
+.food-textarea{width:100%;min-height:90px;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:14px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:var(--text);line-height:1.7;resize:none;outline:none;transition:border-color .2s;}
 .food-textarea:focus{border-color:var(--accent);}
 .food-textarea::placeholder{color:var(--muted);}
-.analyze-btn{margin-top:10px;width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--s3);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.analyze-btn{margin-top:10px;width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--s3);color:var(--text);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;}
 .analyze-btn:hover{background:var(--accent);border-color:var(--accent);}
 .analysis-result{margin-top:12px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;display:none;animation:fadeIn .25s ease;}
 .analysis-result.show{display:block;}
-.ar-title{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:10px;}
+.ar-title{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:10px;}
 .ar-foods{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
 .ar-food-item{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--s1);border:1px solid var(--border);border-radius:8px;}
 .ar-food-name{font-size:13px;font-weight:500;flex:1;}
-.ar-food-kcal{font-family:'DM Mono',monospace;font-size:11px;color:var(--cal);font-weight:700;}
+.ar-food-kcal{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--cal);font-weight:700;}
 .ar-totals{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding-top:10px;border-top:1px solid var(--border);}
 .ar-total-item{display:flex;flex-direction:column;align-items:center;gap:3px;}
-.ar-total-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:700;}
+.ar-total-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;font-weight:700;}
 .ar-total-label{font-size:10px;color:var(--muted);text-transform:uppercase;}
 .today-sum{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;}
 .ts-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
 .ts-num{display:flex;flex-direction:column;align-items:center;gap:3px;}
-.ts-num-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;}
+.ts-num-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:18px;font-weight:700;}
 .ts-num-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
 .ts-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.ts-bar-label{font-size:10px;color:var(--muted);width:46px;font-family:'DM Mono',monospace;}
+.ts-bar-label{font-size:10px;color:var(--muted);width:46px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 .ts-bar-bg{flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;}
 .ts-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.ts-bar-val{font-size:10px;font-family:'DM Mono',monospace;color:var(--dim);width:58px;text-align:right;}
+.ts-bar-val{font-size:10px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);width:58px;text-align:right;}
 
 /* ══ 채팅 ══ */
 .ctx-bar{background:var(--s1);border-bottom:1px solid var(--border);padding:12px 16px;flex-shrink:0;}
 .ctx-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.ctx-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--dim);}
+.ctx-logo{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;letter-spacing:2px;color:var(--dim);}
 .ctx-status{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--run);margin-left:auto;}
 .ctx-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
 .ctx-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:9px 11px;}
-.cc-label{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:3px;}
-.cc-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;line-height:1.3;}
+.cc-label{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:3px;}
+.cc-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;font-weight:700;line-height:1.3;}
 .cc-sub{font-size:9px;color:var(--muted);margin-top:2px;line-height:1.3;}
 .no-data{color:var(--muted);}
 .chat-frame{border:1px solid var(--border);border-radius:16px;background:var(--s1);overflow:hidden;display:flex;flex-direction:column;height:420px;}
@@ -338,38 +338,38 @@ select.inp{cursor:pointer;font-size:14px;}
 .msg{display:flex;flex-direction:column;max-width:88%;animation:fadeIn .25s ease;}
 .msg.user{align-self:flex-end;align-items:flex-end;}
 .msg.ai{align-self:flex-start;align-items:flex-start;}
-.msg-meta{font-size:10px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace;}
+.msg-meta{font-size:10px;color:var(--muted);margin-bottom:4px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 .bubble{padding:13px 16px;border-radius:16px;font-size:14px;line-height:1.7;}
 .msg.user .bubble{background:var(--accent);color:#fff;border-bottom-right-radius:3px;}
 .msg.ai .bubble{background:var(--s2);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:3px;}
-.msg-time{font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;}
+.msg-time{font-size:10px;color:var(--muted);margin-top:4px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 .coaching-sections{display:flex;flex-direction:column;gap:14px;margin-top:4px;}
 .cs-section{background:var(--s3);border-radius:12px;padding:16px 18px;border-left:3px solid;}
 .cs-section.bio{border-color:var(--bio);}
 .cs-section.exercise{border-color:var(--run);}
 .cs-section.nutrition{border-color:var(--eat);}
 .cs-section.overall{border-color:var(--coach);}
-.cs-section.recovery{border-color:#4fc3f7;}
-.cs-section.trend{border-color:#ffd740;}
-.cs-section.balance{border-color:#69f0ae;}
-.cs-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;}
+.cs-section.recovery{border-color:#39c6e8;}
+.cs-section.trend{border-color:#fbbf24;}
+.cs-section.balance{border-color:#35d39a;}
+.cs-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 .cs-section.bio .cs-title{color:var(--bio);}
 .cs-section.exercise .cs-title{color:var(--run);}
 .cs-section.nutrition .cs-title{color:var(--eat);}
 .cs-section.overall .cs-title{color:var(--coach);}
-.cs-section.recovery .cs-title{color:#4fc3f7;}
-.cs-section.trend .cs-title{color:#ffd740;}
-.cs-section.balance .cs-title{color:#69f0ae;}
+.cs-section.recovery .cs-title{color:#39c6e8;}
+.cs-section.trend .cs-title{color:#fbbf24;}
+.cs-section.balance .cs-title{color:#35d39a;}
 .cs-content{font-size:13px;line-height:2;color:var(--text);word-break:keep-all;}
 .typing-wrap{align-self:flex-start;display:flex;gap:5px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:3px;padding:13px 18px;}
 .td{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:td 1.2s infinite;}
 .td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
 @keyframes td{0%,80%,100%{opacity:.3;transform:scale(1)}40%{opacity:1;transform:scale(1.35)}}
 .quick-area{padding:8px 16px 5px;display:flex;gap:6px;flex-wrap:wrap;background:var(--s1);border-top:1px solid var(--border);flex-shrink:0;}
-.qb{padding:6px 12px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap;}
+.qb{padding:6px 12px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:all .15s;white-space:nowrap;}
 .qb:hover{border-color:var(--accent);color:var(--accent);}
 .input-row{padding:12px 16px;display:flex;gap:8px;background:var(--s1);border-top:1px solid var(--border);flex-shrink:0;}
-.chat-inp{flex:1;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:12px 15px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;resize:none;line-height:1.5;min-height:48px;max-height:120px;transition:border-color .2s;}
+.chat-inp{flex:1;background:var(--s2);border:1.5px solid var(--border);border-radius:12px;padding:12px 15px;color:var(--text);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;outline:none;resize:none;line-height:1.5;min-height:48px;max-height:120px;transition:border-color .2s;}
 .chat-inp:focus{border-color:var(--accent);}
 .chat-inp::placeholder{color:var(--muted);}
 .send-btn{width:48px;height:48px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--coach));color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
@@ -393,7 +393,7 @@ select.inp{cursor:pointer;font-size:14px;}
 @media(min-width:600px){.cal-balance-grid{grid-template-columns:repeat(4,1fr);}}
 .balance-card{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:13px;text-align:center;}
 .balance-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
-.balance-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;}
+.balance-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:18px;font-weight:700;}
 .balance-sub{font-size:10px;color:var(--muted);margin-top:3px;}
 .cal-balance-grid{display:block;padding:14px 18px;}
 .balance-bars{display:flex;flex-direction:column;gap:10px;}
@@ -401,7 +401,7 @@ select.inp{cursor:pointer;font-size:14px;}
 .balance-bar-label{font-size:11px;color:var(--dim);font-weight:700;white-space:nowrap;}
 .balance-bar-bg{height:11px;background:var(--s3);border:1px solid var(--border);border-radius:999px;overflow:hidden;}
 .balance-bar-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.balance-bar-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);text-align:right;}
+.balance-bar-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--text);text-align:right;}
 .balance-note{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--s2);border:1px solid var(--border);font-size:12px;color:var(--dim);line-height:1.6;}
 @media(max-width:420px){.balance-bar-row{grid-template-columns:68px 1fr 64px;gap:7px}.balance-bar-label,.balance-bar-val{font-size:10px;}}
 .report-box{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:16px;line-height:1.8;font-size:13px;color:var(--text);}
@@ -410,7 +410,7 @@ select.inp{cursor:pointer;font-size:14px;}
 /* ══ v1.3.5 추가: AI 코치 가독성/모바일 출력 개선 + 즐겨찾기 삭제 ══ */
 .fav-food-chip{display:inline-flex;align-items:center;gap:6px;}
 .fav-food-x{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;line-height:1;transition:all .15s;}
-.fav-food-x:hover{background:rgba(255,82,82,.18);color:#ff5252;}
+.fav-food-x:hover{background:rgba(255,107,107,.18);color:#ff6b6b;}
 .msg.ai{max-width:96%;}
 .msg.ai .bubble{width:100%;max-width:100%;overflow-wrap:anywhere;word-break:keep-word;}
 .coaching-sections{width:100%;}
@@ -432,7 +432,7 @@ select.inp{cursor:pointer;font-size:14px;}
 /* ══ v1.4.1 추가: 기록 히스토리 요약 칩 / 로고 새로고침 ══ */
 .hist-summary-chip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:54px;padding:5px 8px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.025);font-size:11px;line-height:1.2;text-align:center;white-space:nowrap;}
 .hist-summary-chip .hsc-icon{font-size:14px;line-height:1;}
-.hist-summary-chip .hsc-text{font-family:'DM Mono',monospace;font-size:10px;line-height:1.2;}
+.hist-summary-chip .hsc-text{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;line-height:1.2;}
 .hist-sec-title{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:48px;padding:4px 7px;border-radius:10px;background:rgba(255,255,255,.025);font-size:11px;font-weight:700;line-height:1.2;text-align:center;}
 .hist-sec-title .hst-icon{font-size:14px;line-height:1;}
 .hist-sec-title .hst-text{font-size:10px;line-height:1.2;}
@@ -490,7 +490,7 @@ select.inp{cursor:pointer;font-size:14px;}
   #m-hist-list .meal-history-item .hi-del:nth-last-child(2){right:30px;}
   #m-hist-list .meal-history-item .hi-del:last-child{right:8px;}
   #hist-content .meal-history-item{padding:12px 4px!important;}
-  #hist-content .meal-history-item .meal-time-title{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:6px;}
+  #hist-content .meal-history-item .meal-time-title{display:inline-flex;align-items:center;gap:6px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--dim);margin-bottom:6px;}
 }
 
 
@@ -527,8 +527,8 @@ select.inp{cursor:pointer;font-size:14px;}
 
 
 /* ══ v1.6.0 추가: 대시보드 운동 날짜/PB 걷기/히스토리 날짜 헤더 정리 ══ */
-.dash-ex-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin:2px 0 4px;}
-.dash-ex-day-label{padding:10px 18px 4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);}
+.dash-ex-date{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--muted);margin:2px 0 4px;}
+.dash-ex-day-label{padding:10px 18px 4px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:var(--dim);}
 @media(max-width:420px){#d-pb-grid [data-pb-walk-grid]{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;}}
 
 /* ══ v1.8.0 추가: 시간입력 UX / 자전거 통일 / 운동 히스토리 통일 / 대시보드 요약카드 ══ */
@@ -545,7 +545,7 @@ select.inp{cursor:pointer;font-size:14px;}
 /* ══ 차트 확대 모달 ══ */
 #chartModal{
   display:none;position:fixed;inset:0;z-index:9999;
-  background:rgba(5,7,20,.88);
+  background:rgba(6,8,12,.88);
   -webkit-backdrop-filter:blur(12px);
   backdrop-filter:blur(12px);
   /* 모바일 기본: 하단 바텀시트 */
@@ -595,7 +595,7 @@ select.inp{cursor:pointer;font-size:14px;}
   margin-bottom:14px;flex-shrink:0;padding-top:4px;
 }
 #chartModal .cm-title{
-  font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:700;
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:18px;font-weight:700;
   color:var(--text);letter-spacing:0;
   display:flex;align-items:center;gap:6px;
 }
@@ -644,7 +644,7 @@ select.inp{cursor:pointer;font-size:14px;}
   padding:8px 16px;
   background:var(--s2);border:1px solid var(--border);
   border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;
-  font-family:'DM Mono',monospace;font-weight:500;
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:500;
   transition:all .15s;white-space:nowrap;
   -webkit-tap-highlight-color:transparent;
   min-height:36px;
@@ -654,7 +654,7 @@ select.inp{cursor:pointer;font-size:14px;}
 #chartModal .cm-btn.active{background:var(--s3);color:var(--text);border-color:var(--dim);}
 #chartModal .cm-hint{
   font-size:10px;color:var(--muted);margin-left:auto;
-  font-family:'DM Mono',monospace;text-align:right;line-height:1.6;
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;line-height:1.6;
 }
 
 /* ══ PC (769px 이상): 화면 최대 활용 ══ */
@@ -708,7 +708,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
 /* 커스텀 시간 입력 */
 .time-inp-wrap{display:flex;align-items:center;gap:4px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;transition:border-color .2s;}
 .time-inp-wrap:focus-within{border-color:var(--accent);}
-.time-inp-wrap input[type=number]{background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--text);width:36px;text-align:center;-moz-appearance:textfield;padding:0;}
+.time-inp-wrap input[type=number]{background:transparent;border:none;outline:none;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:18px;font-weight:700;color:var(--text);width:36px;text-align:center;-moz-appearance:textfield;padding:0;}
 .time-inp-wrap input[type=number]::-webkit-outer-spin-button,
 .time-inp-wrap input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .time-inp-wrap .t-sep{font-size:18px;font-weight:700;color:var(--muted);margin:0 1px;}
@@ -717,9 +717,10 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
 .today-ex-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
 .tes-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
 .tes-card-label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;}
-.tes-card-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:var(--run);}
+.tes-card-val{font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;font-weight:700;color:var(--run);}
 .tes-card-sub{font-size:9px;color:var(--muted);margin-top:2px;}
 
+.app-ver-tag{position:fixed;right:10px;bottom:8px;font-size:10px;color:#657286;opacity:.55;z-index:9999;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;pointer-events:none}
 </style>
 </head>
 <body>
@@ -730,7 +731,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
   <div class="nav-dot"></div>
   <div class="nav-date" id="navDate"></div>
   <button class="nav-sync" onclick="syncFromSheet()">☁️ 동기화</button>
-  <span class="nav-ver">v2.1.1</span>
+  
 </div>
 
 <!-- PC 상단 탭 -->
@@ -801,7 +802,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
               </div>
               <div class="chart-wrap" onclick="openChartModal('chartFatMass','📉 체지방량 (kg)')" title="📉 체지방량 (kg) 클릭하면 확대">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                  <div class="sc-label" style="color:#ff6e8a;">📉 체지방량 (kg)</div>
+                  <div class="sc-label" style="color:#ff8fa3;">📉 체지방량 (kg)</div>
                   <span style="font-size:9px;color:var(--muted);opacity:.55;letter-spacing:0;">탭해서 확대</span>
                 </div>
                 <div class="chart-container" style="height:120px;"><canvas id="chartFatMass"></canvas></div>
@@ -865,7 +866,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
           </div>
           <!-- 날짜 선택 + 검색 -->
           <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;">날짜</span>
+            <span style="font-size:11px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap;">날짜</span>
             <input type="date" id="hist-date-pick" class="inp" style="font-size:12px;flex:1;min-width:130px;max-width:160px;">
             <button onclick="applyHistDate()" style="padding:8px 14px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 검색</button>
             <button onclick="clearHistDate()" style="padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:none;color:var(--muted);font-size:11px;cursor:pointer;white-space:nowrap;">전체</button>
@@ -918,13 +919,13 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
       <div class="card">
         <div class="card-title">⚖️ 측정 수치 <div class="ct-line"></div></div>
         <div class="inp-grid">
-          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#00e5ff;"></div>체중<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-weight" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-weight">—</div></div>
-          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#69f0ae;"></div>골격근량<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-skeletal" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-skeletal">—</div></div>
-          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#ff4081;"></div>체지방량<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-fatmass" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-fatmass">—</div></div>
-          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#4fc3f7;"></div>체수분<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-water" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-water">—</div></div>
-          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#ffd740;"></div>체지방률<span class="ig-unit">%</span></div><input type="number" class="inp" id="b-fatrate" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-fatrate">—</div></div>
-          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#e040fb;"></div>BMI</div><input type="number" class="inp" id="b-bmi" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-bmi">—</div></div>
-          <div class="inp-group full"><div class="ig-label"><div class="dot" style="background:#ff5252;"></div>기초대사량<span class="ig-unit">kcal</span></div><input type="number" class="inp" id="b-bmr" placeholder="0" step="1" style="font-size:22px;"><div class="prev-hint" id="ph-bmr">—</div></div>
+          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#5b9bff;"></div>체중<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-weight" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-weight">—</div></div>
+          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#35d39a;"></div>골격근량<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-skeletal" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-skeletal">—</div></div>
+          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#ff6678;"></div>체지방량<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-fatmass" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-fatmass">—</div></div>
+          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#39c6e8;"></div>체수분<span class="ig-unit">kg</span></div><input type="number" class="inp" id="b-water" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-water">—</div></div>
+          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#fbbf24;"></div>체지방률<span class="ig-unit">%</span></div><input type="number" class="inp" id="b-fatrate" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-fatrate">—</div></div>
+          <div class="inp-group"><div class="ig-label"><div class="dot" style="background:#c084fc;"></div>BMI</div><input type="number" class="inp" id="b-bmi" placeholder="0.0" step="0.1"><div class="prev-hint" id="ph-bmi">—</div></div>
+          <div class="inp-group full"><div class="ig-label"><div class="dot" style="background:#ff6b6b;"></div>기초대사량<span class="ig-unit">kcal</span></div><input type="number" class="inp" id="b-bmr" placeholder="0" step="1" style="font-size:22px;"><div class="prev-hint" id="ph-bmr">—</div></div>
         </div>
       </div>
       <button class="save-btn primary" onclick="saveBody()">💾 체성분 저장</button>
@@ -1079,12 +1080,12 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
           <div class="ts-num"><div class="ts-num-val" id="m-sum-cal" style="color:var(--cal)">0</div><div class="ts-num-label">kcal</div></div>
           <div class="ts-num"><div class="ts-num-val" id="m-sum-prot" style="color:var(--protein)">0g</div><div class="ts-num-label">단백질</div></div>
           <div class="ts-num"><div class="ts-num-val" id="m-sum-carb" style="color:var(--carb)">0g</div><div class="ts-num-label">탄수화물</div></div>
-          <div class="ts-num"><div class="ts-num-val" id="m-sum-fat" style="color:#e040fb">0g</div><div class="ts-num-label">지방</div></div>
+          <div class="ts-num"><div class="ts-num-val" id="m-sum-fat" style="color:#c084fc">0g</div><div class="ts-num-label">지방</div></div>
         </div>
         <div class="ts-bar-row"><div class="ts-bar-label">칼로리</div><div class="ts-bar-bg"><div class="ts-bar-fill" id="m-bar-cal" style="background:var(--cal);width:0%;"></div></div><div class="ts-bar-val" id="m-bar-cal-val">0/2100</div></div>
         <div class="ts-bar-row"><div class="ts-bar-label">단백질</div><div class="ts-bar-bg"><div class="ts-bar-fill" id="m-bar-prot" style="background:var(--protein);width:0%;"></div></div><div class="ts-bar-val" id="m-bar-prot-val">0/150g</div></div>
         <div class="ts-bar-row"><div class="ts-bar-label">탄수</div><div class="ts-bar-bg"><div class="ts-bar-fill" id="m-bar-carb" style="background:var(--carb);width:0%;"></div></div><div class="ts-bar-val" id="m-bar-carb-val">0/250g</div></div>
-        <div class="ts-bar-row"><div class="ts-bar-label">지방</div><div class="ts-bar-bg"><div class="ts-bar-fill" id="m-bar-fat" style="background:#e040fb;width:0%;"></div></div><div class="ts-bar-val" id="m-bar-fat-val">0/60g</div></div>
+        <div class="ts-bar-row"><div class="ts-bar-label">지방</div><div class="ts-bar-bg"><div class="ts-bar-fill" id="m-bar-fat" style="background:#c084fc;width:0%;"></div></div><div class="ts-bar-val" id="m-bar-fat-val">0/60g</div></div>
       </div>
       <div class="meal-tabs">
         <div class="meal-tab active" data-meal="아침" onclick="selectMeal('아침')"><div class="mt-icon">🌅</div><div class="mt-label">아침</div></div>
@@ -1114,7 +1115,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
             <div class="ar-total-item"><div class="ar-total-val" id="ar-cal" style="color:var(--cal)">—</div><div class="ar-total-label">kcal</div></div>
             <div class="ar-total-item"><div class="ar-total-val" id="ar-prot" style="color:var(--protein)">—</div><div class="ar-total-label">단백질</div></div>
             <div class="ar-total-item"><div class="ar-total-val" id="ar-carb" style="color:var(--carb)">—</div><div class="ar-total-label">탄수화물</div></div>
-            <div class="ar-total-item"><div class="ar-total-val" id="ar-fat" style="color:#e040fb">—</div><div class="ar-total-label">지방</div></div>
+            <div class="ar-total-item"><div class="ar-total-val" id="ar-fat" style="color:#c084fc">—</div><div class="ar-total-label">지방</div></div>
           </div>
         </div>
         <div class="manual-nutri">
@@ -1199,7 +1200,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
           <div class="inp-group full">
             <div class="ig-label">수면 시간 <span class="ig-unit">자동 계산</span></div>
             <div style="background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
-              <span id="sl-duration-display" style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--coach);">—</span>
+              <span id="sl-duration-display" style="font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:22px;font-weight:700;color:var(--coach);">—</span>
               <span style="font-size:13px;color:var(--muted);">시간</span>
               <span id="sl-quality-badge" style="margin-left:auto;font-size:13px;"></span>
             </div>
@@ -1231,7 +1232,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
         <div class="ctx-card"><div class="cc-label">오늘 운동</div><div class="cc-val no-data" id="ctx-ex-val">—</div><div class="cc-sub" id="ctx-ex-sub"></div></div>
         <div class="ctx-card"><div class="cc-label">수면</div><div class="cc-val no-data" id="ctx-fast-val">—</div><div class="cc-sub" id="ctx-fast-sub"></div></div>
       </div>
-      <div id="ctx-history-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);">
+      <div id="ctx-history-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--dim);">
         <span>📊 전체기록</span>
         <span id="ctx-hist-body" style="color:var(--weight);">체성분 —건</span>
         <span style="color:var(--border);">·</span>
@@ -1244,7 +1245,7 @@ input[type="date"].inp::-webkit-calendar-picker-indicator {
       <!-- 상태 표시 -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
         <div class="nav-dot"></div>
-        <span id="chat-status" style="font-size:11px;color:var(--run);font-family:'DM Mono',monospace;">준비 중...</span>
+        <span id="chat-status" style="font-size:11px;color:var(--run);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;">준비 중...</span>
       </div>
       <!-- 채팅 프레임 -->
       <div class="chat-frame">
@@ -1739,7 +1740,7 @@ function renderDashboard(){
       <div class="pb-card"><div class="pb-card-label">체중</div><div class="pb-card-val" style="color:var(--weight)">${latest.weight||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.weight,prev.weight,true):''}</div></div>
       <div class="pb-card"><div class="pb-card-label">골격근량</div><div class="pb-card-val" style="color:var(--skeletal)">${latest.skeletal||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.skeletal,prev.skeletal,false):''}</div></div>
       <div class="pb-card"><div class="pb-card-label">체지방률</div><div class="pb-card-val" style="color:var(--fat-c)">${latest.fatRate||'—'}</div><div class="pb-card-sub">%${prev?chg(latest.fatRate,prev.fatRate,true):''}</div></div>
-      <div class="pb-card"><div class="pb-card-label">체지방량</div><div class="pb-card-val" style="color:#ff6e8a">${latest.fatMass||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.fatMass,prev.fatMass,true):''}</div></div>
+      <div class="pb-card"><div class="pb-card-label">체지방량</div><div class="pb-card-val" style="color:#ff8fa3">${latest.fatMass||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.fatMass,prev.fatMass,true):''}</div></div>
       <div class="pb-card"><div class="pb-card-label">체수분</div><div class="pb-card-val" style="color:var(--coach)">${latest.water||'—'}</div><div class="pb-card-sub">kg${prev?chg(latest.water,prev.water,false):''}</div></div>
       <div class="pb-card"><div class="pb-card-label">BMI</div><div class="pb-card-val" style="color:var(--fatrate)">${latest.bmi||'—'}</div><div class="pb-card-sub">${prev?chg(latest.bmi,prev.bmi,true):''}</div></div>`;
   } else {
@@ -1753,7 +1754,7 @@ function renderDashboard(){
     <div class="nb-row"><div class="nb-label">칼로리</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.cal,GOALS.cal)}%;background:var(--cal);"></div></div><div class="nb-vals">${Math.round(totals.cal)}/${GOALS.cal}</div></div>
     <div class="nb-row"><div class="nb-label">단백질</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.protein,GOALS.protein)}%;background:var(--protein);"></div></div><div class="nb-vals">${fmtNutri(totals.protein)}g/${GOALS.protein}g</div></div>
     <div class="nb-row"><div class="nb-label">탄수화물</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.carb,GOALS.carb)}%;background:var(--carb);"></div></div><div class="nb-vals">${fmtNutri(totals.carb)}g/${GOALS.carb}g</div></div>
-    <div class="nb-row"><div class="nb-label">지방</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.fat,60)}%;background:#e040fb;"></div></div><div class="nb-vals">${fmtNutri(totals.fat)}g/60g</div></div>`;
+    <div class="nb-row"><div class="nb-label">지방</div><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${pct(totals.fat,60)}%;background:#c084fc;"></div></div><div class="nb-vals">${fmtNutri(totals.fat)}g/60g</div></div>`;
   document.getElementById('d-meal-list').innerHTML=tmDisplay.length?[...tmDisplay].sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<div class="meal-item-dash"><div class="meal-badge badge-${m.mealType}">${m.time||''} ${m.mealType}</div><div class="meal-food-dash">${esc(m.foodText)}</div><div class="meal-kcal-dash">${fmtKcal(m.total?.kcal)}kcal</div></div>`).join(''):'<div class="empty-state">오늘 식사 기록 없음</div>';
   renderDashExAll(er);
   renderAllPBs(er);
@@ -1774,7 +1775,7 @@ function renderDashboard(){
       ${lastSleep.quality?`<div class="lr-item"><div class="lr-item-label">품질</div><div class="lr-item-val">${sq[lastSleep.quality]||lastSleep.quality+'점'}</div></div>`:''}
     </div>
     <div style="margin-top:12px;"><div class="nb-bar-bg"><div class="nb-bar-fill" style="width:${Math.min(100,Math.round(lastSleep.durationHours/8*100))}%;background:${sc};"></div></div></div>
-    <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;">권장 수면 8시간 기준 ${Math.round(lastSleep.durationHours/8*100)}%</div>`;
+    <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;">권장 수면 8시간 기준 ${Math.round(lastSleep.durationHours/8*100)}%</div>`;
   } else {
     document.getElementById('d-sleep-meta').textContent='';
     sleepEl.innerHTML='<div class="empty-state">수면 기록 없음</div>';
@@ -1784,16 +1785,16 @@ let chartWeight=null,chartSkeletal=null,chartFatRate=null,chartBMI=null,chartFat
 function renderBodyCharts(br,days){
   let data=days===0?br:br.filter(r=>{const cut=new Date();cut.setDate(cut.getDate()-days);return r.date>=cut.toISOString().slice(0,10);});
   const labels=data.map(r=>r.date.slice(5));
-  const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}},y:{ticks:{color:'#4e5878',font:{size:9,family:'DM Mono'},maxTicksLimit:4},grid:{color:'#1b2035'}}}});
+  const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8d9aad',font:{size:9,family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif'},maxTicksLimit:4},grid:{color:'#1d2128'}},y:{ticks:{color:'#8d9aad',font:{size:9,family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif'},maxTicksLimit:4},grid:{color:'#1d2128'}}}});
   const mk=(label,vals,color)=>({
     label,data:vals,borderColor:color,backgroundColor:color+'18',
     borderWidth:2,pointRadius:4,pointBackgroundColor:color,
-    pointBorderColor:'#080b14',pointBorderWidth:2,
+    pointBorderColor:'#0b0d12',pointBorderWidth:2,
     tension:0.35,fill:true
   });
   const makeOpts=(color)=>{
     const base=baseOpts();
-    base.plugins.datalabels={display:true,color:color,font:{size:9,family:'DM Mono',weight:'bold'},
+    base.plugins.datalabels={display:true,color:color,font:{size:9,family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif',weight:'bold'},
       formatter:v=>v!=null?v:'',anchor:'end',align:'top',offset:2,
       clamp:true};
     return base;
@@ -1806,24 +1807,24 @@ function renderBodyCharts(br,days){
       options:makeOpts(color)
     });
   };
-  chartWeight  =make(chartWeight,  'chartWeight',  '체중',   data.map(r=>r.weight),  '#00e5ff');
-  chartSkeletal=make(chartSkeletal,'chartSkeletal','골격근', data.map(r=>r.skeletal),'#69f0ae');
-  chartFatRate =make(chartFatRate, 'chartFatRate', '체지방률',data.map(r=>r.fatRate), '#ff4081');
-  chartFatMass =make(chartFatMass, 'chartFatMass', '체지방량',data.map(r=>r.fatMass), '#ff6e8a');
-  chartWater   =make(chartWater,   'chartWater',   '체수분',  data.map(r=>r.water),   '#4fc3f7');
-  chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#ffd740');
+  chartWeight  =make(chartWeight,  'chartWeight',  '체중',   data.map(r=>r.weight),  '#5b9bff');
+  chartSkeletal=make(chartSkeletal,'chartSkeletal','골격근', data.map(r=>r.skeletal),'#35d39a');
+  chartFatRate =make(chartFatRate, 'chartFatRate', '체지방률',data.map(r=>r.fatRate), '#ff6678');
+  chartFatMass =make(chartFatMass, 'chartFatMass', '체지방량',data.map(r=>r.fatMass), '#ff8fa3');
+  chartWater   =make(chartWater,   'chartWater',   '체수분',  data.map(r=>r.water),   '#39c6e8');
+  chartBMI     =make(chartBMI,     'chartBMI',     'BMI',    data.map(r=>r.bmi),     '#fbbf24');
 }
 function setPeriod(d,btn){currentPeriod=d;document.querySelectorAll('.pb-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const br=JSON.parse(localStorage.getItem('bodyRecords')||'[]');renderBodyCharts(br,d);}
 
 // ══ 차트 확대 모달 v1.9.1 ══
 let modalChart=null, cmCurrentPeriod=7, cmCurrentId=null;
 const CM_MAP={
-  chartWeight:  {key:'weight',   label:'⚖ 체중 (kg)',     color:'#00e5ff'},
-  chartSkeletal:{key:'skeletal', label:'💪 골격근량 (kg)', color:'#69f0ae'},
-  chartFatRate: {key:'fatRate',  label:'🔥 체지방률 (%)', color:'#ff4081'},
-  chartFatMass: {key:'fatMass',  label:'📉 체지방량 (kg)',color:'#ff6e8a'},
-  chartWater:   {key:'water',    label:'💧 체수분 (kg)',   color:'#4fc3f7'},
-  chartBMI:     {key:'bmi',      label:'📊 BMI',           color:'#ffd740'},
+  chartWeight:  {key:'weight',   label:'⚖ 체중 (kg)',     color:'#5b9bff'},
+  chartSkeletal:{key:'skeletal', label:'💪 골격근량 (kg)', color:'#35d39a'},
+  chartFatRate: {key:'fatRate',  label:'🔥 체지방률 (%)', color:'#ff6678'},
+  chartFatMass: {key:'fatMass',  label:'📉 체지방량 (kg)',color:'#ff8fa3'},
+  chartWater:   {key:'water',    label:'💧 체수분 (kg)',   color:'#39c6e8'},
+  chartBMI:     {key:'bmi',      label:'📊 BMI',           color:'#fbbf24'},
 };
 
 function openChartModal(chartId, label){
@@ -1899,7 +1900,7 @@ function renderModalChart(){
         pointRadius:vals.length<=40?4:2,
         pointHoverRadius:8,
         pointBackgroundColor:color,
-        pointBorderColor:'#080b14',
+        pointBorderColor:'#0b0d12',
         pointBorderWidth:2,
         tension:0.35,
         fill:true,
@@ -1913,13 +1914,13 @@ function renderModalChart(){
       plugins:{
         legend:{display:false},
         tooltip:{
-          backgroundColor:'rgba(14,18,40,.96)',
+          backgroundColor:'rgba(23,26,32,.96)',
           borderColor:color,
           borderWidth:1.5,
           titleColor:color,
-          bodyColor:'#c8d0e8',
-          titleFont:{family:'DM Mono',size:13,weight:'bold'},
-          bodyFont:{family:'DM Mono',size:13},
+          bodyColor:'#c3ccd9',
+          titleFont:{family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif',size:13,weight:'bold'},
+          bodyFont:{family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif',size:13},
           padding:12,
           cornerRadius:10,
           displayColors:false,
@@ -1935,10 +1936,10 @@ function renderModalChart(){
         datalabels:{
           display: ctx => vals.length<=20,
           color:color,
-          font:{size:11,family:'DM Mono',weight:'bold'},
+          font:{size:11,family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif',weight:'bold'},
           formatter:v=>v!=null?v:'',
           anchor:'end',align:'top',offset:5,clamp:true,
-          backgroundColor: 'rgba(8,11,20,.5)',
+          backgroundColor: 'rgba(11,13,18,.5)',
           borderRadius:4,
           padding:{top:2,bottom:2,left:4,right:4},
         },
@@ -1958,12 +1959,12 @@ function renderModalChart(){
       },
       scales:{
         x:{
-          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:8,maxRotation:0},
+          ticks:{color:'#8d9aad',font:{size:11,family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif'},maxTicksLimit:8,maxRotation:0},
           grid:{color:'rgba(255,255,255,.05)'},
           border:{color:'rgba(255,255,255,.08)'}
         },
         y:{
-          ticks:{color:'#6a7495',font:{size:11,family:'DM Mono'},maxTicksLimit:6},
+          ticks:{color:'#8d9aad',font:{size:11,family:'Malgun Gothic, Apple SD Gothic Neo, sans-serif'},maxTicksLimit:6},
           grid:{color:'rgba(255,255,255,.05)'},
           border:{color:'rgba(255,255,255,.08)'}
         }
@@ -2168,12 +2169,12 @@ function renderHistPanel(){
       const section=(icon,title,meta,bodyHtml,color)=>`<div style="padding:7px 0;border-top:1px dashed var(--border);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
           <span class="hist-sec-title" style="color:${color};"><span class="hst-icon">${icon}</span><span class="hst-text">${title}</span></span>
-          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${meta||''}</span>
+          <span style="font-size:11px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;">${meta||''}</span>
         </div>
         <div style="font-size:12px;color:var(--dim);line-height:1.75;padding-left:2px;">${bodyHtml}</div>
       </div>`;
       const sleepHtml=sleeps.length?section('😴','수면',`총 ${sleepTotal.toFixed(1)}h`,sleeps.map(r=>`취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'} <span style="color:var(--fatrate);font-weight:700;">${r.durationHours||'—'}h</span>${r.quality?` · 품질${r.quality}점`:''}`).join('<br>'),'var(--fatrate)'):'';
-      const mealHtml=meals.length?section('🥗','식사',`총 ${totalCal}kcal · 단${totalProt}g · 탄${totalCarb}g · 지${totalFat}g`,meals.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<span class="meal-time-title">${m.time||''}</span> <span class="meal-badge badge-${m.mealType}">${m.mealType}</span><br><span style="display:inline-block;margin:4px 0 2px;">${esc(m.foodText||'')}</span><br><span style="color:var(--cal);font-family:'DM Mono',monospace;">🔥${fmtKcal(m.total?.kcal)}kcal · 단${fmtNutri(m.total?.protein)}g · 탄${fmtNutri(m.total?.carb)}g · 지${fmtNutri(m.total?.fat)}g</span>`).join('<div style="height:8px"></div>'),'var(--cal)'):'';
+      const mealHtml=meals.length?section('🥗','식사',`총 ${totalCal}kcal · 단${totalProt}g · 탄${totalCarb}g · 지${totalFat}g`,meals.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<span class="meal-time-title">${m.time||''}</span> <span class="meal-badge badge-${m.mealType}">${m.mealType}</span><br><span style="display:inline-block;margin:4px 0 2px;">${esc(m.foodText||'')}</span><br><span style="color:var(--cal);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;">🔥${fmtKcal(m.total?.kcal)}kcal · 단${fmtNutri(m.total?.protein)}g · 탄${fmtNutri(m.total?.carb)}g · 지${fmtNutri(m.total?.fat)}g</span>`).join('<div style="height:8px"></div>'),'var(--cal)'):'';
       const exLines=[
         ...runs.map(r=>`🏃 ${r.distance||'—'}km ${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+cleanSheetTime(r.pace)+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
         ...walks.map(r=>`🚶 ${r.distance||'—'}km ${r.duration?'⏱'+fmtDurStr(r.duration):''} ${r.pace?'· '+cleanSheetTime(r.pace)+'/km':''} ${r.cal?'· 🔥'+r.cal+'kcal':''}`),
@@ -2185,7 +2186,7 @@ function renderHistPanel(){
       const bodyHtml=bodies.length?section('⚖️','체성분',body?.time?`기록 ${body.time}`:'',bodies.map(b=>`체중 <span style="color:var(--weight);font-weight:700;">${b.weight||'—'}kg</span> · 골격근량 <span style="color:var(--skeletal);font-weight:700;">${b.skeletal||'—'}kg</span> · 체지방량 <span style="color:var(--fat-c);font-weight:700;">${b.fatMass||'—'}kg</span> · 체수분 ${b.water||'—'}kg · 체지방률 <span style="color:var(--fat-c);font-weight:700;">${b.fatRate||'—'}%</span> · BMI <span style="color:var(--fatrate);font-weight:700;">${b.bmi||'—'}</span>${b.timing?` <span style="color:var(--muted);">(${b.timing})</span>`:''}`).join('<br>'),'var(--bio)'):'';
       return`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;">
         <div style="background:var(--s2);padding:10px 14px;display:flex;align-items:center;border-bottom:1px solid var(--border);">
-          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
+          <span style="font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;font-weight:700;color:var(--text);">${date}</span>
         </div>
         <div style="padding:6px 14px 10px;display:flex;flex-direction:column;">
           ${sleepHtml}${mealHtml}${exHtml}${bodyHtml}
@@ -2205,7 +2206,7 @@ function renderHistPanel(){
           <div class="hi-main" style="color:${sc}">${r.durationHours}h ${r.quality?qEmoji[r.quality]:''}</div>
           <div class="hi-sub">취침 ${r.bedtime||'—'} → 기상 ${r.waketime||'—'}${r.memo?' · '+r.memo:''}</div>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:right;">
+        <div style="font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--muted);text-align:right;">
           ${r.durationHours>=7?'✅ 충분':r.durationHours>=6?'⚠️ 부족':'❌ 심각'}
         </div>
       </div>`;
@@ -2226,11 +2227,11 @@ function renderHistPanel(){
       const totalFat=Math.round(meals.reduce((a,m)=>a+(m.total?.fat||0),0));
       return`<div style="margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;">
-          <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--text);">${date}</span>
+          <span style="font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12px;font-weight:700;color:var(--text);">${date}</span>
           <span style="font-size:11px;color:var(--cal);">🔥${totalCal}kcal</span>
           <span style="font-size:11px;color:var(--protein);">단${totalProt}g</span>
           <span style="font-size:11px;color:var(--carb);">탄${totalCarb}g</span>
-          <span style="font-size:11px;color:#e040fb;">지${totalFat}g</span>
+          <span style="font-size:11px;color:#c084fc;">지${totalFat}g</span>
         </div>
         ${meals.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(m=>`<div class="hi-item meal-history-item">
           <div class="hi-date"><div class="hi-date-d">${date?.slice(5)||''}</div><div class="hi-date-t">${m.time||''}</div></div>
@@ -2304,11 +2305,11 @@ function renderExHistTable(er){
   if(!el)return;
   // 서브탭 버튼
   const subTabs=`<div class="ex-subtabs-dash">
-    <button class="ex-subtab-dash" onclick="switchExSub('run',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='run'?'var(--run)':'var(--border)'};background:${currentExHistSub==='run'?'rgba(0,229,160,.12)':'var(--s2)'};color:${currentExHistSub==='run'?'var(--run)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🏃</span><span class="est-label">런닝</span></button>
-    <button class="ex-subtab-dash" onclick="switchExSub('walk',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='walk'?'var(--skeletal)':'var(--border)'};background:${currentExHistSub==='walk'?'rgba(105,240,174,.12)':'var(--s2)'};color:${currentExHistSub==='walk'?'var(--skeletal)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🚶</span><span class="est-label">걷기</span></button>
-    <button class="ex-subtab-dash" onclick="switchExSub('bike',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='bike'?'var(--coach)':'var(--border)'};background:${currentExHistSub==='bike'?'rgba(79,195,247,.12)':'var(--s2)'};color:${currentExHistSub==='bike'?'var(--coach)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🚴</span><span class="est-label">자전거</span></button>
-    <button class="ex-subtab-dash" onclick="switchExSub('bodyweight',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='bodyweight'?'var(--cal)':'var(--border)'};background:${currentExHistSub==='bodyweight'?'rgba(255,112,67,.12)':'var(--s2)'};color:${currentExHistSub==='bodyweight'?'var(--cal)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">💪</span><span class="est-label">복합</span></button>
-    <button class="ex-subtab-dash" onclick="switchExSub('other',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='other'?'var(--accent)':'var(--border)'};background:${currentExHistSub==='other'?'rgba(108,99,255,.12)':'var(--s2)'};color:${currentExHistSub==='other'?'var(--accent)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">➕</span><span class="est-label">기타</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('run',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='run'?'var(--run)':'var(--border)'};background:${currentExHistSub==='run'?'rgba(53,211,154,.12)':'var(--s2)'};color:${currentExHistSub==='run'?'var(--run)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🏃</span><span class="est-label">런닝</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('walk',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='walk'?'var(--skeletal)':'var(--border)'};background:${currentExHistSub==='walk'?'rgba(53,211,154,.12)':'var(--s2)'};color:${currentExHistSub==='walk'?'var(--skeletal)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🚶</span><span class="est-label">걷기</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('bike',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='bike'?'var(--coach)':'var(--border)'};background:${currentExHistSub==='bike'?'rgba(57,198,232,.12)':'var(--s2)'};color:${currentExHistSub==='bike'?'var(--coach)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">🚴</span><span class="est-label">자전거</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('bodyweight',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='bodyweight'?'var(--cal)':'var(--border)'};background:${currentExHistSub==='bodyweight'?'rgba(255,184,77,.12)':'var(--s2)'};color:${currentExHistSub==='bodyweight'?'var(--cal)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">💪</span><span class="est-label">복합</span></button>
+    <button class="ex-subtab-dash" onclick="switchExSub('other',this)" style="border-radius:20px;border:1px solid ${currentExHistSub==='other'?'var(--accent)':'var(--border)'};background:${currentExHistSub==='other'?'rgba(96,165,250,.12)':'var(--s2)'};color:${currentExHistSub==='other'?'var(--accent)':'var(--muted)'};font-size:12px;cursor:pointer;"><span class="est-icon">➕</span><span class="est-label">기타</span></button>
   </div>`;
   if(currentExHistSub==='run'||currentExHistSub==='walk'){
     const isWalk=currentExHistSub==='walk';
@@ -2329,7 +2330,7 @@ function renderExHistTable(er){
       <div class="pb-card"><div class="pb-card-label">최고 페이스</div><div class="pb-card-val" style="color:${isWalk?'var(--skeletal)':'var(--run)'};font-size:16px;">${bestPace?fmtS(bestPace):'—'}</div><div class="pb-card-sub">/km</div></div>
       <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:${isWalk?'var(--skeletal)':'var(--run)'};font-size:16px;">${totalCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
     </div>`;
-    const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?(isWalk?'var(--skeletal)':'var(--run)'):'var(--muted)'};font-family:'DM Mono',monospace;text-align:${k==='date'?'left':'right'};cursor:pointer;white-space:nowrap;"`;
+    const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?(isWalk?'var(--skeletal)':'var(--run)'):'var(--muted)'};font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:${k==='date'?'left':'right'};cursor:pointer;white-space:nowrap;"`;
     const arrow=(k)=>exSortKey===k?(exSortAsc?'▲':'▼'):'';
     const table=`<div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -2341,23 +2342,23 @@ function renderExHistTable(er){
         <th ${thStyle('hr')} onclick="sortEx('hr')">심박${arrow('hr')}</th>
         <th ${thStyle('cal')} onclick="sortEx('cal')">칼로리${arrow('cal')}</th>
         <th ${thStyle('cadence')} onclick="sortEx('cadence')">케이던스${arrow('cadence')}</th>
-        ${!isWalk?`<th style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;white-space:nowrap;">메모/구간</th>`:''}
+        ${!isWalk?`<th style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:left;white-space:nowrap;">메모/구간</th>`:''}
       </tr></thead>
       <tbody>${sorted.map((r,i)=>{
         const isPB=!isWalk&&r.pace&&paces.length&&toS(r.pace)===bestPace;
         const hasSplits=!isWalk&&r.splits&&Object.keys(r.splits).length>0;
         const splitKeys=hasSplits?Object.keys(r.splits).sort((a,b)=>parseInt(a.slice(2))-parseInt(b.slice(2))):[];
-        const splitHtml=hasSplits?`<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">${splitKeys.map(k=>`<span style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:6px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--run);">${k.slice(2)}km <b>${r.splits[k]}</b></span>`).join('')}</div>`:'';
-        const memoHtml=r.memo?`<div style="font-size:11px;color:var(--muted);font-family:'Noto Sans KR',sans-serif;margin-top:${hasSplits?4:0}px;">📍 ${r.memo}</div>`:'';
+        const splitHtml=hasSplits?`<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">${splitKeys.map(k=>`<span style="background:rgba(53,211,154,.08);border:1px solid rgba(53,211,154,.2);border-radius:6px;padding:2px 6px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--run);">${k.slice(2)}km <b>${r.splits[k]}</b></span>`).join('')}</div>`:'';
+        const memoHtml=r.memo?`<div style="font-size:11px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:${hasSplits?4:0}px;">📍 ${r.memo}</div>`:'';
         const extraCell=!isWalk?`<td style="padding:8px 8px;min-width:120px;max-width:220px;">${memoHtml}${splitHtml}${!memoHtml&&!splitHtml?'<span style="color:var(--border);">—</span>':''}</td>`:'';
         return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}${isPB?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:${isWalk?'var(--skeletal)':'var(--run)'};text-align:right;font-weight:700;">${r.distance||'—'}<span style="color:var(--muted);font-size:10px;">km</span></td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.duration||'—'}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);text-align:right;font-weight:${isPB?'700':'400'};">${cleanSheetTime(r.pace)||'—'}<span style="color:var(--muted);font-size:10px;">/km</span></td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.cadence||'—'}<span style="color:var(--muted);font-size:10px;">spm</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);">${r.date?.slice(5)||''}${isPB?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:${isWalk?'var(--skeletal)':'var(--run)'};text-align:right;font-weight:700;">${r.distance||'—'}<span style="color:var(--muted);font-size:10px;">km</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.duration||'—'}</td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);text-align:right;font-weight:${isPB?'700':'400'};">${cleanSheetTime(r.pace)||'—'}<span style="color:var(--muted);font-size:10px;">/km</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.cadence||'—'}<span style="color:var(--muted);font-size:10px;">spm</span></td>
           ${extraCell}
         </tr>`;
       }).join('')}</tbody>
@@ -2379,7 +2380,7 @@ function renderExHistTable(er){
       <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="color:var(--coach);font-size:13px;">${histFmtMin(totalDurMin)||'—'}</div></div>
       <div class="pb-card"><div class="pb-card-label">총 소모</div><div class="pb-card-val" style="color:var(--coach);font-size:16px;">${totalCal||'—'}</div><div class="pb-card-sub">kcal</div></div>
     </div>`;
-    const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?'var(--coach)':'var(--muted)'};font-family:'DM Mono',monospace;text-align:${k==='date'?'left':'right'};cursor:pointer;"`;
+    const thStyle=(k)=>`style="padding:7px 8px;font-size:10px;letter-spacing:1px;color:${exSortKey===k?'var(--coach)':'var(--muted)'};font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:${k==='date'?'left':'right'};cursor:pointer;"`;
     const arrow=(k)=>exSortKey===k?(exSortAsc?'▲':'▼'):'';
     const table=`<div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -2394,11 +2395,11 @@ function renderExHistTable(er){
         const rMin=histDurToMin(r.duration);
         const isPBDur=rMin>0&&rMin===maxDurMin;
         return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:700;">${r.distance?r.distance+'<span style="color:var(--muted);font-size:10px;">km</span>':'—'}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${fmtDurStr(r.duration)||'—'}</td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
-          <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);">${r.date?.slice(5)||''}${isPBDur?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--coach);text-align:right;font-weight:700;">${r.distance?r.distance+'<span style="color:var(--muted);font-size:10px;">km</span>':'—'}</td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--coach);text-align:right;font-weight:${isPBDur?'700':'400'};">${fmtDurStr(r.duration)||'—'}</td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.hr||'—'}<span style="color:var(--muted);font-size:10px;">bpm</span></td>
+          <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--cal);text-align:right;">${r.cal||'—'}<span style="color:var(--muted);font-size:10px;">kcal</span></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>`;
@@ -2417,20 +2418,20 @@ function renderExHistTable(er){
     </div>`;
     const table=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead><tr style="border-bottom:1px solid var(--border);">
-        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;">날짜</th>
-        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;">운동</th>
-        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">시간</th>
-        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">거리</th>
-        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">심박</th>
-        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">칼로리</th>
+        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:left;">날짜</th>
+        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:left;">운동</th>
+        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">시간</th>
+        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">거리</th>
+        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">심박</th>
+        <th style="padding:7px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">칼로리</th>
       </tr></thead>
       <tbody>${sorted.map((r,i)=>`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
-        <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''} ${r.time||''}</td>
+        <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);">${r.date?.slice(5)||''} ${r.time||''}</td>
         <td style="padding:8px 8px;color:var(--accent);font-weight:700;">${esc(r.name||'기타')}</td>
-        <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.duration||'—'}</td>
-        <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.distance||'—'}${r.distance?'<span style="color:var(--muted);font-size:10px;">km</span>':''}</td>
-        <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.hr||'—'}${r.hr?'<span style="color:var(--muted);font-size:10px;">bpm</span>':''}</td>
-        <td style="padding:8px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal||'—'}${r.cal?'<span style="color:var(--muted);font-size:10px;">kcal</span>':''}</td>
+        <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.duration||'—'}</td>
+        <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.distance||'—'}${r.distance?'<span style="color:var(--muted);font-size:10px;">km</span>':''}</td>
+        <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.hr||'—'}${r.hr?'<span style="color:var(--muted);font-size:10px;">bpm</span>':''}</td>
+        <td style="padding:8px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--cal);text-align:right;">${r.cal||'—'}${r.cal?'<span style="color:var(--muted);font-size:10px;">kcal</span>':''}</td>
       </tr>`).join('')}</tbody></table></div>`;
     el.innerHTML=subTabs+statBar+table;
   }
@@ -2457,16 +2458,16 @@ function renderExHistTable(er){
     </div>
     <div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead><tr style="border-bottom:1px solid var(--border);">
-        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;">날짜</th>
-        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">종목</th>
-        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">시간</th>
-        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">칼로리</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:left;">날짜</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">종목</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">시간</th>
+        <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">칼로리</th>
       </tr></thead>
       <tbody>${sorted.map((r,i)=>`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
-        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
-        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.exercises?.length||0}종목</td>
-        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--dim);text-align:right;">${r.duration?r.duration+'분':'—'}</td>
-        <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--cal);text-align:right;">${r.cal?r.cal+'<span style="color:var(--muted);font-size:10px;">kcal</span>':'—'}</td>
+        <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);">${r.date?.slice(5)||''}</td>
+        <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.exercises?.length||0}종목</td>
+        <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--dim);text-align:right;">${r.duration?r.duration+'분':'—'}</td>
+        <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--cal);text-align:right;">${r.cal?r.cal+'<span style="color:var(--muted);font-size:10px;">kcal</span>':'—'}</td>
       </tr>`).join('')}</tbody>
     </table></div>`;
     // 종목별 PB 테이블
@@ -2476,25 +2477,25 @@ function renderExHistTable(er){
       const maxVol=Math.max(...records.map(r=>r.vol));
       const recsSorted=[...records].sort((a,b)=>b.date.localeCompare(a.date));
       return`<div style="margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--cal);letter-spacing:1px;font-family:'DM Mono',monospace;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+        <div style="font-size:11px;font-weight:700;color:var(--cal);letter-spacing:1px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
           💪 ${name}
           <span style="font-size:10px;color:var(--muted);font-weight:400;">최고 ${maxReps}회×${maxSets}세트</span>
         </div>
         <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="border-bottom:1px solid var(--border);">
-            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:left;">날짜</th>
-            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">횟수</th>
-            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">세트</th>
-            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;">볼륨</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:left;">날짜</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">횟수</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">세트</th>
+            <th style="padding:6px 8px;font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:right;">볼륨</th>
           </tr></thead>
           <tbody>${recsSorted.map((r,i)=>{
             const isPBVol=r.vol===maxVol;
             return`<tr style="border-bottom:1px solid var(--border);${i%2===0?'background:rgba(255,255,255,.01)':''}">
-              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--text);">${r.date?.slice(5)||''}</td>
-              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:${r.reps===maxReps?'var(--cal)':'var(--dim)'};text-align:right;font-weight:${r.reps===maxReps?700:400};">${r.reps}회</td>
-              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:${r.sets===maxSets?'var(--cal)':'var(--dim)'};text-align:right;font-weight:${r.sets===maxSets?700:400};">${r.sets}세트</td>
-              <td style="padding:7px 8px;font-family:'DM Mono',monospace;color:${isPBVol?'var(--pb)':'var(--dim)'};text-align:right;">${r.vol}${isPBVol?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
+              <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);">${r.date?.slice(5)||''}</td>
+              <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:${r.reps===maxReps?'var(--cal)':'var(--dim)'};text-align:right;font-weight:${r.reps===maxReps?700:400};">${r.reps}회</td>
+              <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:${r.sets===maxSets?'var(--cal)':'var(--dim)'};text-align:right;font-weight:${r.sets===maxSets?700:400};">${r.sets}세트</td>
+              <td style="padding:7px 8px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:${isPBVol?'var(--pb)':'var(--dim)'};text-align:right;">${r.vol}${isPBVol?'<span class="pb-badge" style="margin-left:4px;">PB</span>':''}</td>
             </tr>`;
           }).join('')}</tbody>
         </table></div>
@@ -2541,7 +2542,7 @@ function renderAllPBs(er){
     const bestPace=runs.filter(r=>r.pace).sort((a,b)=>toS(a.pace)-toS(b.pace))[0];
     const totalDist=runs.reduce((a,r)=>a+(parseFloat(r.distance)||0),0);
     const bestCal=Math.max(...runs.filter(r=>r.cal).map(r=>r.cal));
-    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--run);font-family:'DM Mono',monospace;margin-bottom:8px;">🏃 런닝</div>
+    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--run);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:8px;">🏃 런닝</div>
     <div data-pb-run-grid style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
       <div class="pb-card"><div class="pb-card-label">최장 거리</div><div class="pb-card-val">${isFinite(maxDist)?maxDist.toFixed(2):'—'}</div><div class="pb-card-sub">km</div></div>
       <div class="pb-card"><div class="pb-card-label">최고 페이스</div><div class="pb-card-val">${bestPace?.pace||'—'}</div><div class="pb-card-sub">/km</div></div>
@@ -2555,7 +2556,7 @@ function renderAllPBs(er){
     const bestPace=walks.filter(r=>r.pace).sort((a,b)=>toS(a.pace)-toS(b.pace))[0];
     const totalDist=walks.reduce((a,r)=>a+(parseFloat(r.distance)||0),0);
     const bestCal=Math.max(...walks.filter(r=>r.cal).map(r=>r.cal));
-    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--skeletal);font-family:'DM Mono',monospace;margin-bottom:8px;">🚶 걷기</div>
+    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--skeletal);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:8px;">🚶 걷기</div>
     <div data-pb-walk-grid style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
       <div class="pb-card"><div class="pb-card-label">최장 거리</div><div class="pb-card-val">${isFinite(maxDist)?maxDist.toFixed(2):'—'}</div><div class="pb-card-sub">km</div></div>
       <div class="pb-card"><div class="pb-card-label">최고 페이스</div><div class="pb-card-val">${bestPace?.pace||'—'}</div><div class="pb-card-sub">/km</div></div>
@@ -2573,7 +2574,7 @@ function renderAllPBs(er){
     const maxDurMin=durMins.length?Math.max(...durMins):0;
     const totalDurMin=bikes.reduce((a,r)=>a+histDurToMin(r.duration),0);
     const bestCal=Math.max(...bikes.filter(r=>r.cal).map(r=>r.cal));
-    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--coach);font-family:'DM Mono',monospace;margin-bottom:8px;">🚴 자전거</div>
+    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--coach);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:8px;">🚴 자전거</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
       <div class="pb-card"><div class="pb-card-label">최장 시간</div><div class="pb-card-val" style="font-size:16px;">${maxDurMin?histFmtMin(maxDurMin):'—'}</div></div>
       <div class="pb-card"><div class="pb-card-label">누적 시간</div><div class="pb-card-val" style="font-size:16px;">${totalDurMin?histFmtMin(totalDurMin):'—'}</div><div class="pb-card-sub">${bikes.length}회</div></div>
@@ -2583,7 +2584,7 @@ function renderAllPBs(er){
   // 복합운동 PB
   if(bws.length){
     const allEx={};bws.forEach(r=>r.exercises.forEach(e=>{if(!allEx[e.name])allEx[e.name]={maxReps:0,maxSets:0};if(e.reps>allEx[e.name].maxReps)allEx[e.name].maxReps=e.reps;if(e.sets>allEx[e.name].maxSets)allEx[e.name].maxSets=e.sets;}));
-    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--cal);font-family:'DM Mono',monospace;margin-bottom:8px;">💪 복합운동 (총 ${bws.length}회)</div>
+    html+=`<div style="font-size:10px;letter-spacing:1.5px;color:var(--cal);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:8px;">💪 복합운동 (총 ${bws.length}회)</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
       ${Object.entries(allEx).map(([name,v])=>`<div class="pb-card"><div class="pb-card-label">${name}</div><div class="pb-card-val" style="font-size:16px;">${v.maxReps}</div><div class="pb-card-sub">회 × ${v.maxSets}세트 최고</div></div>`).join('')}
     </div>`;
@@ -2604,7 +2605,7 @@ const BMAP={weight:'b-weight',skeletal:'b-skeletal',fatMass:'b-fatmass',water:'b
 const BFIELDS=[{id:'weight',label:'체중',unit:'kg'},{id:'skeletal',label:'골격근량',unit:'kg'},{id:'fatmass',label:'체지방량',unit:'kg'},{id:'water',label:'체수분',unit:'kg'},{id:'fatrate',label:'체지방률',unit:'%'},{id:'bmi',label:'BMI',unit:''},{id:'bmr',label:'기초대사량',unit:'kcal'}];
 function initBodyPage(){showPrevHints();showLastBodyRec();renderBodyHist();}
 function showPrevHints(){if(!bodyRecs.length)return;const last=bodyRecs[bodyRecs.length-1];BFIELDS.forEach(f=>{const el=document.getElementById('ph-'+f.id);if(el&&last[f.id]!=null)el.textContent=`이전 ${last[f.id]}${f.unit}`;});}
-function showLastBodyRec(){const el=document.getElementById('b-last-rec');if(!bodyRecs.length){el.innerHTML='<span style="font-size:12px;color:var(--muted);">기록 없음</span>';return;}const l=bodyRecs[bodyRecs.length-1];el.innerHTML=`<div class="lr-vals"><div class="lr-item"><div class="lr-item-label">체중</div><div class="lr-item-val">${l.weight||'—'}kg</div></div><div class="lr-item"><div class="lr-item-label">골격근량</div><div class="lr-item-val">${l.skeletal||'—'}kg</div></div><div class="lr-item"><div class="lr-item-label">체지방량</div><div class="lr-item-val">${l.fatMass||'—'}kg</div></div><div class="lr-item"><div class="lr-item-label">체지방률</div><div class="lr-item-val">${l.fatRate||'—'}%</div></div><div class="lr-item"><div class="lr-item-label">BMI</div><div class="lr-item-val">${l.bmi||'—'}</div></div></div><div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'DM Mono',monospace;">${l.date} ${l.time}</div>`;}
+function showLastBodyRec(){const el=document.getElementById('b-last-rec');if(!bodyRecs.length){el.innerHTML='<span style="font-size:12px;color:var(--muted);">기록 없음</span>';return;}const l=bodyRecs[bodyRecs.length-1];el.innerHTML=`<div class="lr-vals"><div class="lr-item"><div class="lr-item-label">체중</div><div class="lr-item-val">${l.weight||'—'}kg</div></div><div class="lr-item"><div class="lr-item-label">골격근량</div><div class="lr-item-val">${l.skeletal||'—'}kg</div></div><div class="lr-item"><div class="lr-item-label">체지방량</div><div class="lr-item-val">${l.fatMass||'—'}kg</div></div><div class="lr-item"><div class="lr-item-label">체지방률</div><div class="lr-item-val">${l.fatRate||'—'}%</div></div><div class="lr-item"><div class="lr-item-label">BMI</div><div class="lr-item-val">${l.bmi||'—'}</div></div></div><div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;">${l.date} ${l.time}</div>`;}
 function saveBody(){
   const date=document.getElementById('b-date').value;const time=document.getElementById('b-time').value;
   const rec={date,time,timing:currentTiming};let has=false;
@@ -2624,7 +2625,7 @@ function renderBodyHist(){
   document.getElementById('b-hist-count').textContent=`${bodyRecs.length}건`;
   if(!bodyRecs.length){list.innerHTML='<div class="empty-state">기록 없음</div>';return;}
   list.innerHTML=[...bodyRecs].reverse().map((r,ri)=>{const i=bodyRecs.length-1-ri;
-    const timingBadge=r.timing&&r.timing!=='일반'?`<span style="font-size:10px;background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);color:var(--accent);border-radius:4px;padding:1px 6px;margin-left:4px;">${r.timing}</span>`:'';
+    const timingBadge=r.timing&&r.timing!=='일반'?`<span style="font-size:10px;background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.3);color:var(--accent);border-radius:4px;padding:1px 6px;margin-left:4px;">${r.timing}</span>`:'';
     return`<div class="hi-item"><div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div><div class="hi-date-t">${r.time||''}</div></div><div class="hi-body"><div class="hi-main">${r.weight||'—'}kg${timingBadge}</div><div class="hi-sub">골격근량 ${r.skeletal||'—'}kg · 체지방량 ${r.fatMass||'—'}kg · 체지방률 ${r.fatRate||'—'}% · BMI ${r.bmi||'—'}</div></div><button class="hi-del" onclick="editBodyRec(${i})" style="color:var(--dim);font-size:12px;margin-right:2px;">✏️</button><button class="hi-del" onclick="delBodyRec(${i})">×</button></div>`;}).join('');
 }
 function delBodyRec(i){if(!confirm('삭제할까요?'))return;bodyRecs.splice(i,1);localStorage.setItem('bodyRecords',JSON.stringify(bodyRecs));showPrevHints();showLastBodyRec();renderBodyHist();}
@@ -2816,7 +2817,7 @@ function renderExHist(type){
       const gKeys=splitKeys.filter(k=>{const n=parseInt(k.slice(2));return n>=start&&n<=end;});
       if(gKeys.length){
         const lastKm=parseInt(gKeys[gKeys.length-1].slice(2));
-        groups.push(`<div style="margin-top:6px;"><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:3px;">${start}~${Math.min(end,lastKm)}km 구간</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${gKeys.map(k=>`<span style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:6px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--run);">${k.slice(2)}km <b>${r.splits[k]}</b></span>`).join('')}</div></div>`);
+        groups.push(`<div style="margin-top:6px;"><div style="font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:3px;">${start}~${Math.min(end,lastKm)}km 구간</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${gKeys.map(k=>`<span style="background:rgba(53,211,154,.08);border:1px solid rgba(53,211,154,.2);border-radius:6px;padding:2px 6px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;color:var(--run);">${k.slice(2)}km <b>${r.splits[k]}</b></span>`).join('')}</div></div>`);
       }
     }
     splitsHtml=groups.join('');
@@ -3363,7 +3364,7 @@ function detectAiError(text){
 function foodDetailsHtml(m){
   const foods=Array.isArray(m.foods)?m.foods.filter(f=>f&&f.name):[];
   if(foods.length){
-    return `<div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">${foods.map(f=>`<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.55;">• ${esc(f.name||'음식')} <span style="color:var(--cal);">${fmtKcal(f.kcal)}kcal</span> · 단${fmtNutri(f.protein)}g · 탄${fmtNutri(f.carb)}g · 지${fmtNutri(f.fat)}g</div>`).join('')}</div>`;
+    return `<div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">${foods.map(f=>`<div style="font-size:10px;color:var(--muted);font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55;">• ${esc(f.name||'음식')} <span style="color:var(--cal);">${fmtKcal(f.kcal)}kcal</span> · 단${fmtNutri(f.protein)}g · 탄${fmtNutri(f.carb)}g · 지${fmtNutri(f.fat)}g</div>`).join('')}</div>`;
   }
   const parts=String(m.foodText||'').split(/[,，、\/]+|\s+및\s+/).map(x=>x.trim()).filter(Boolean);
   if(parts.length>1){
@@ -3921,7 +3922,7 @@ function showLastSleepRec(){
     <div class="lr-item"><div class="lr-item-label">수면 시간</div><div class="lr-item-val" style="color:${sleepColor}">${l.durationHours}h</div></div>
     ${l.quality?`<div class="lr-item"><div class="lr-item-label">품질</div><div class="lr-item-val">${qEmoji[l.quality]} ${l.quality}점</div></div>`:''}
   </div>
-  <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'DM Mono',monospace;">${l.date}</div>`;
+  <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;">${l.date}</div>`;
 }
 
 function renderSleepHist(){
@@ -3933,7 +3934,7 @@ function renderSleepHist(){
   list.innerHTML=[...sleepRecs].reverse().map(r=>{
     const sleepColor=r.durationHours>=7?'var(--run)':r.durationHours>=6?'var(--fatrate)':'var(--fat-c)';
     const rid=r.id||r.date;
-    const typeBadge=r.sleepType==='낮잠'?`<span style="font-size:10px;background:rgba(79,195,247,.15);border:1px solid rgba(79,195,247,.3);color:var(--coach);border-radius:4px;padding:1px 6px;margin-left:4px;">낮잠</span>`:'';
+    const typeBadge=r.sleepType==='낮잠'?`<span style="font-size:10px;background:rgba(57,198,232,.15);border:1px solid rgba(57,198,232,.3);color:var(--coach);border-radius:4px;padding:1px 6px;margin-left:4px;">낮잠</span>`:'';
     return`<div class="hi-item">
       <div class="hi-date"><div class="hi-date-d">${r.date?.slice(5)||''}</div></div>
       <div class="hi-body">
@@ -4063,5 +4064,6 @@ switchTab = function(tab){
 };
 </script>
 
+<div class="app-ver-tag">헬스 코치 · 2026-07-27</div>
 </body>
 </html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
