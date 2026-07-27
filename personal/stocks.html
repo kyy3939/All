@@ -183,6 +183,23 @@ tbody tr:hover td{background:#151f2c}
 .sc-metric{background:#0e151f;border-radius:10px;padding:8px 9px}
 .sc-metric .l{font-size:9.5px;color:var(--sub)}
 .sc-metric .v{font-size:12.5px;font-weight:800;margin-top:3px;color:#fff}
+.stock-detail{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:20px;padding:26px 28px}
+.sd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.sd-name{font-size:24px;font-weight:900;letter-spacing:-.3px}
+.sd-ticker{font-size:12px;color:var(--sub);margin-top:5px}
+.sd-price{text-align:right}
+.sd-price .v{font-size:27px;font-weight:900}
+.sd-price .c{font-size:13px;font-weight:700;margin-top:4px}
+.sd-desc{margin:14px 0 18px;font-size:13px;color:#c3ccd9;line-height:1.75}
+.sd-chart-wrap{background:#0e151f;border-radius:14px;padding:14px 16px 10px;margin-bottom:10px}
+.sd-chart-wrap svg{width:100%;height:auto;display:block;max-height:300px}
+.sd-chart-expand{margin-bottom:18px;text-align:center;font-size:11.5px;font-weight:800;color:#93c5fd;background:#182741;border:1px solid #315084;border-radius:10px;padding:9px;cursor:pointer}
+.sd-chart-expand:hover{background:#22355a}
+.stock-alt{margin:16px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stock-alt .lbl{font-size:11px;color:var(--sub);font-weight:700}
+.stock-alt-chip{padding:7px 14px;border-radius:999px;background:#161f2c;color:var(--sub);border:1px solid #283548;font-size:11.5px;font-weight:800;cursor:pointer}
+.stock-alt-chip:hover{border-color:#46679f;color:#c9d9ff}
+
 .sc-range{margin-bottom:12px}
 .sc-range .lbl-row{display:flex;justify-content:space-between;font-size:9.5px;color:var(--sub);margin-bottom:5px}
 .sc-range .track{height:6px;background:#202b3a;border-radius:9px;position:relative;overflow:visible}
@@ -297,6 +314,7 @@ tbody tr:hover td{background:#151f2c}
     <p class="caveat" style="margin-bottom:14px">코스피·코스닥 시가총액 상위 50 종목을 매일 자동으로 다시 계산해 반영합니다(순위가 바뀌면 목록도 자동 갱신). 카드의 "차트 보기"를 누르면 최근 가격 추이를, 종목별 관련 뉴스도 함께 확인할 수 있습니다. 상위 50위 밖이라도 계속 추적하고 싶은 종목은 다음 대화에서 관심종목으로 추가해 드릴 수 있습니다.</p>
     <p class="caveat ai-hint">💬 재무·차트·업종·뉴스·산업을 6개 에이전트가 종합 분석한 투자의견이 필요하면, 채팅에서 "삼성전자 분석해줘"처럼 종목명을 바로 물어보세요 — 실시간 분석은 이 대시보드가 아니라 대화창에서 제공됩니다.</p>
     <div class="stock-grid" id="stockGrid"></div>
+    <div id="stockDetail" style="display:none"></div>
     <div class="empty" id="stockEmpty" style="display:none">검색 결과가 없습니다.</div>
   </section>
 
@@ -837,16 +855,113 @@ function saveMemo(ticker){
   tag.classList.add('show');
   setTimeout(()=>tag.classList.remove('show'), 1500);
 }
+function stockDetail(s, alternates){
+  const pos = s.hi > s.lo ? Math.max(0,Math.min(100, (s.price - s.lo)/(s.hi - s.lo) * 100)) : 50;
+  const memoKey = 'memo_'+s.ticker;
+  const saved = localStorage.getItem(memoKey) || '';
+  const series = STOCK_SERIES[s.ticker] || [];
+  const chart6m = series.length ? slicePeriod(series, '6M') : [];
+  return `
+  <div class="stock-detail">
+    <div class="sd-top">
+      <div>
+        <div class="sd-name">${esc(s.name)}</div>
+        <div class="sd-ticker">${esc(s.ticker)} · ${esc(s.exch)} · ${esc(s.sector)}</div>
+      </div>
+      <div class="sd-price">
+        <div class="v">${s.unit==='$'?'$':''}${s.price.toLocaleString()}${s.unit==='원'?'원':''}</div>
+        <div class="c ${chgClass(s.chgPct)}">${chgSign(s.chgPct)} ${s.chgPct.toFixed(2)}%</div>
+      </div>
+    </div>
+    <div class="sd-desc">${esc(s.desc || '')}</div>
+    ${chart6m.length ? `
+    <div class="sd-chart-wrap">${idxChartSvg(chart6m)}</div>
+    <div class="sd-chart-expand" onclick="openChartModal('stock','${esc(s.ticker)}')">🔍 차트 확대해서 보기 (기간 선택 · 휠 줌 · 드래그 이동)</div>
+    ` : ''}
+    <div class="sc-metrics">
+      <div class="sc-metric"><div class="l">시가총액</div><div class="v">${esc(s.cap)}</div></div>
+      <div class="sc-metric"><div class="l">PER(forward)</div><div class="v">${s.per.toFixed(1)}배</div></div>
+      <div class="sc-metric"><div class="l">배당수익률</div><div class="v">${s.div.toFixed(2)}%</div></div>
+      <div class="sc-metric"><div class="l">ROE</div><div class="v">${s.roe.toFixed(1)}%</div></div>
+    </div>
+    <div class="sc-range">
+      <div class="lbl-row"><span>52주 최저 ${s.lo.toLocaleString()}</span><span>52주 최고 ${s.hi.toLocaleString()}</span></div>
+      <div class="track"><div class="fill" style="width:${pos}%"></div><div class="dot" style="left:${pos}%"></div></div>
+    </div>
+    <div class="sc-rec">
+      <div><div class="l">애널리스트 컨센서스</div><div class="v">${esc(s.rec)}</div></div>
+      <div style="text-align:right"><div class="l">목표주가(평균)</div><div class="v">${s.target!=null ? (s.unit==='$'?'$':'')+s.target.toLocaleString()+(s.unit==='원'?'원':'') : '데이터 없음'}</div></div>
+    </div>
+    ${s.news && s.news.length ? `<div class="sc-news">
+      <div class="l">관련 뉴스</div>
+      ${s.news.map(n=>`
+        <a class="sc-news-item" href="${esc(n.link)}" target="_blank" rel="noopener">
+          <div class="t">${esc(n.t)}</div>
+          <div class="m">${esc(n.src)}${n.date ? ' · 작성일: '+esc(n.date) : ''}</div>
+        </a>`).join('')}
+    </div>` : ''}
+    <div class="sc-memo">
+      <div class="memo-row"><span>투자의견 메모 (직접 작성, 브라우저에 저장)</span><span class="memo-saved-tag" id="tag-${esc(s.ticker)}">저장됨</span></div>
+      <textarea id="memo-${esc(s.ticker)}" placeholder="이 종목에 대한 나만의 투자의견을 적어두세요...">${esc(saved)}</textarea>
+      <div style="text-align:right;margin-top:6px"><button class="memo-save" onclick="saveMemo('${esc(s.ticker)}')">메모 저장</button></div>
+    </div>
+  </div>
+  ${alternates.length ? `<div class="stock-alt"><span class="lbl">다른 일치 종목:</span>${alternates.map(a=>`<span class="stock-alt-chip" onclick="selectStock('${esc(a.ticker)}')">${esc(a.name)}</span>`).join('')}</div>` : ''}`;
+}
+function selectStock(ticker){
+  const s = STOCKS.find(x=>x.ticker===ticker);
+  if(!s) return;
+  document.getElementById('stockSearch').value = s.name;
+  renderStocks();
+  document.getElementById('stockDetail').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function matchScore(s, q){
+  const name = s.name.toLowerCase();
+  const ticker = s.ticker.toLowerCase();
+  const tickerBase = ticker.split('.')[0];
+  if(name === q || ticker === q || tickerBase === q) return 0;
+  if(name.startsWith(q)) return 1;
+  if(tickerBase.startsWith(q)) return 2;
+  if(name.includes(q)) return 3;
+  if(ticker.includes(q)) return 4;
+  return -1;
+}
 function renderStocks(){
   const q = document.getElementById('stockSearch').value.trim().toLowerCase();
-  const filtered = STOCKS.filter(s=>{
-    const mktOk = currentMkt==='all' || s.market===currentMkt;
-    const qOk = !q || s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().includes(q);
-    return mktOk && qOk;
-  });
-  document.getElementById('stockGrid').innerHTML = filtered.map(stockCard).join('');
-  document.getElementById('stockGrid').style.display = filtered.length ? 'grid' : 'none';
-  document.getElementById('stockEmpty').style.display = filtered.length ? 'none' : 'block';
+  const byMkt = STOCKS.filter(s=> currentMkt==='all' || s.market===currentMkt);
+  const gridEl = document.getElementById('stockGrid');
+  const detailEl = document.getElementById('stockDetail');
+  const emptyEl = document.getElementById('stockEmpty');
+
+  if(!q){
+    detailEl.style.display = 'none';
+    detailEl.innerHTML = '';
+    gridEl.innerHTML = byMkt.map(stockCard).join('');
+    gridEl.style.display = byMkt.length ? 'grid' : 'none';
+    emptyEl.style.display = byMkt.length ? 'none' : 'block';
+    return;
+  }
+
+  const matches = byMkt
+    .map(s=>({s, score: matchScore(s, q)}))
+    .filter(x=>x.score >= 0)
+    .sort((a,b)=> a.score - b.score);
+
+  gridEl.style.display = 'none';
+  gridEl.innerHTML = '';
+
+  if(!matches.length){
+    detailEl.style.display = 'none';
+    detailEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  const primary = matches[0].s;
+  const alternates = matches.slice(1).map(x=>x.s);
+  detailEl.innerHTML = stockDetail(primary, alternates);
+  detailEl.style.display = 'block';
 }
 document.getElementById('stockSearch').addEventListener('input', renderStocks);
 document.querySelectorAll('.mkt-chip').forEach(c=>c.onclick=()=>{
