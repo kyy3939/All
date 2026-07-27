@@ -35,6 +35,7 @@ jobs:
       - name: Fetch market data & update stocks.html
         env:
           HTML_PATH: personal/stocks.html
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python personal/scripts/fetch_market_data.py
 
       - name: Commit & push if changed
