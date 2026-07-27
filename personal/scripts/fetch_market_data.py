@@ -551,6 +551,152 @@ def fetch_stock_news(name):
     ]
 
 
+# ----------------------------------------------------------------------------
+# 4.5 AI 종합 분석 (6개 에이전트 + 투자전문가) — Anthropic API, 선택적 기능
+# ----------------------------------------------------------------------------
+# ANTHROPIC_API_KEY 환경변수(리포지토리 시크릿)가 없으면 이 단계 전체를 건너뛰고
+# 기존 값을 유지한다. 다른 수집 단계와 동일하게 "실패해도 페이지는 안 깨진다" 원칙을 따른다.
+# 실시간 웹 검색 없이, 이 스크립트가 이미 수집한 데이터(시세/재무 스냅샷/최근 뉴스)만
+# 근거로 삼아 배치로 생성한다 — 실시간성이 필요하면 채팅에서 직접 종목명을 물어보면 된다.
+
+AI_MODEL = "claude-haiku-4-5-20251001"
+AI_AGENT_KEYS = ("finance", "chart", "sector", "company", "news", "industry")
+AI_AGENT_LABEL = {
+    "finance": "재무전문가", "chart": "차트분석가", "sector": "업종분석가",
+    "company": "기업분석전문가", "news": "기사분석가", "industry": "산업분석전문가",
+}
+AI_SYSTEM_PROMPT = (
+    "당신은 재무전문가·차트분석가·업종분석가·기업분석전문가·기사분석가·산업분석전문가 "
+    "6명과 투자전문가 1명으로 구성된 투자 분석 팀이다. 사용자가 제공하는 종목 스냅샷 데이터"
+    "(실시간 웹 검색 불가, 제공된 데이터가 근거의 전부)만 근거로 6개 에이전트 관점의 짧은 "
+    "분석과 투자전문가 종합의견을 submit_analysis 도구로 제출하라. 데이터가 부족해 특정 "
+    "항목을 판단할 수 없으면 텍스트에 \"확인 필요\"라고 명시하라. 항상 한국어로 작성하고, "
+    "전문 금융 용어는 그대로 사용한다."
+)
+AI_ANALYSIS_TOOL = {
+    "name": "submit_analysis",
+    "description": "6개 에이전트 분석과 투자전문가 종합의견을 구조화된 형태로 제출한다.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "agents": {
+                "type": "object",
+                "properties": {
+                    k: {
+                        "type": "object",
+                        "properties": {
+                            "score": {"type": "integer", "minimum": 1, "maximum": 10},
+                            "text": {"type": "string"},
+                        },
+                        "required": ["score", "text"],
+                    }
+                    for k in AI_AGENT_KEYS
+                },
+                "required": list(AI_AGENT_KEYS),
+            },
+            "opinion": {
+                "type": "string",
+                "enum": ["강력매수", "매수", "중립", "매도", "강력매도"],
+            },
+            "reasons": {
+                "type": "array", "items": {"type": "string"}, "minItems": 3, "maxItems": 3,
+            },
+            "action": {
+                "type": "object",
+                "properties": {
+                    "entry": {"type": "string"},
+                    "buy1": {"type": "string"},
+                    "buy2": {"type": "string"},
+                    "targetShort": {"type": "string"},
+                    "targetMid": {"type": "string"},
+                    "stopLoss": {"type": "string"},
+                    "horizon": {"type": "string"},
+                },
+                "required": ["entry", "buy1", "buy2", "targetShort", "targetMid", "stopLoss", "horizon"],
+            },
+            "risks": {
+                "type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 3,
+            },
+        },
+        "required": ["agents", "opinion", "reasons", "action", "risks"],
+    },
+}
+
+
+def _ai_user_prompt(item):
+    news = item.get("news") or []
+    news_txt = "\n".join(
+        f"- ({n.get('date','-')}) {n.get('t','')} [{n.get('src','-')}]" for n in news[:3]
+    ) or "- (수집된 관련 뉴스 없음)"
+    return f"""종목: {item.get('name')} ({item.get('ticker')}, {item.get('exch','-')}, 섹터: {item.get('sector','-')})
+현재가: {item.get('price')}{item.get('unit','원')} (전일 대비 {item.get('chgPct', 0):+.2f}%)
+시가총액: {item.get('cap','-')}
+PER(forward): {item.get('per','-')}
+배당수익률: {item.get('div','-')}%
+ROE: {item.get('roe','-')}%
+52주 최저/최고: {item.get('lo','-')} / {item.get('hi','-')}
+애널리스트 컨센서스: {item.get('rec','-')}
+목표주가(평균): {item.get('target','-')}
+최근 관련 뉴스:
+{news_txt}
+
+위 데이터만 근거로 submit_analysis 도구를 호출하라. 각 에이전트 텍스트는 1~2문장으로 간결하게."""
+
+
+def call_claude_analysis(client, item):
+    resp = client.messages.create(
+        model=AI_MODEL,
+        max_tokens=1200,
+        system=AI_SYSTEM_PROMPT,
+        tools=[AI_ANALYSIS_TOOL],
+        tool_choice={"type": "tool", "name": "submit_analysis"},
+        messages=[{"role": "user", "content": _ai_user_prompt(item)}],
+    )
+    for block in resp.content:
+        if getattr(block, "type", None) == "tool_use" and block.name == "submit_analysis":
+            return block.input
+    raise RuntimeError("submit_analysis tool_use 블록을 찾지 못함")
+
+
+def build_ai_analysis(stocks, old_analysis):
+    """STOCKS 각 항목에 대해 AI 종합 분석을 생성한다. STOCK_SERIES와 동일하게 이번 실행의
+    stocks 목록에 있는 티커만 결과에 남긴다(top50에서 밀려난 종목은 자동으로 정리됨).
+    개별 종목 생성 실패 시 그 종목만 이전 값을 유지하고 나머지는 계속 진행한다."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        log("WARN: ANTHROPIC_API_KEY 미설정 — AI 분석 생성 단계 전체를 건너뜁니다(이전 값 유지).")
+        return {s["ticker"]: old_analysis[s["ticker"]] for s in stocks if s["ticker"] in old_analysis}
+    try:
+        import anthropic
+    except ImportError:
+        log("WARN: anthropic 패키지가 설치되지 않아 AI 분석 생성을 건너뜁니다.")
+        return {s["ticker"]: old_analysis[s["ticker"]] for s in stocks if s["ticker"] in old_analysis}
+
+    client = anthropic.Anthropic(api_key=api_key)
+    out = {}
+    for item in stocks:
+        def _do(item=item):
+            return call_claude_analysis(client, item)
+
+        data = retry(_do, f"{item['name']} AI 분석 생성", default=None)
+        if data:
+            agents = data["agents"]
+            total = sum(int(agents[k]["score"]) for k in AI_AGENT_KEYS)
+            out[item["ticker"]] = {
+                "asOf": datetime.now(KST).strftime("%Y-%m-%dT%H:%M:%S+09:00"),
+                "agents": agents,
+                "total": total,
+                "opinion": data["opinion"],
+                "reasons": data["reasons"],
+                "action": data["action"],
+                "risks": data["risks"],
+            }
+        elif item["ticker"] in old_analysis:
+            out[item["ticker"]] = old_analysis[item["ticker"]]
+        time.sleep(0.3)
+    return out
+
+
 def update_stocks(old_list):
     out = []
     for item in old_list:
@@ -737,6 +883,7 @@ def main():
     stocks = update_stocks(merged_seed)
     stock_series = build_stock_series(stocks, old.get("STOCK_SERIES", {}))
     news = build_news(old.get("NEWS", []))
+    ai_analysis = build_ai_analysis(stocks, old.get("AI_ANALYSIS", {}))
 
     as_of = None
     if idx_series.get("KOSPI"):
@@ -752,6 +899,7 @@ def main():
         "NEWS": news,
         "STOCKS": stocks,
         "STOCK_SERIES": stock_series,
+        "AI_ANALYSIS": ai_analysis,
         "IDX_SERIES": idx_series,
         "VOL_SERIES": vol_series,
     }
@@ -789,8 +937,9 @@ def main():
     )
     stocks_with_series = sum(1 for s in stocks if stock_series.get(s["ticker"]))
     stocks_with_news = sum(1 for s in stocks if s.get("news"))
+    stocks_with_ai = sum(1 for s in stocks if ai_analysis.get(s["ticker"]))
     log(f"완료. asOf={as_of}, INDICES={len(indices)}, MAJOR_STOCKS=({ms_summary}), "
-        f"STOCKS={len(stocks)}(차트 {stocks_with_series}·뉴스 {stocks_with_news}), NEWS={len(news)}")
+        f"STOCKS={len(stocks)}(차트 {stocks_with_series}·뉴스 {stocks_with_news}·AI분석 {stocks_with_ai}), NEWS={len(news)}")
 
 
 if __name__ == "__main__":
