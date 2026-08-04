@@ -74,13 +74,14 @@ h1{margin:0;font-size:34px;line-height:1.15;letter-spacing:-1.1px}
 .weather-icon{font-size:28px}.weather-temp{font-size:27px;font-weight:800;line-height:1}.weather-desc{margin-top:4px;font-size:11px;color:#a8b4c7}
 .weather-meta{margin-top:11px;font-size:10px;color:#76859a}
 .schedule-empty{display:flex;align-items:center;gap:11px;margin-top:10px}
-.schedule-dot{width:9px;height:9px;border-radius:50%;background:#60a5fa;box-shadow:0 0 0 5px rgba(96,165,250,.1)}
+.schedule-dot{width:9px;height:9px;border-radius:50%;background:#60a5fa;box-shadow:0 0 0 5px rgba(96,165,250,.1);flex-shrink:0}
 .schedule-empty strong{display:block;font-size:12px;color:#e8edf5}.schedule-empty span{display:block;margin-top:2px;font-size:10.5px;color:#8290a4}
 @media(max-width:900px){.hero-dashboard{grid-template-columns:1fr}.info-panel{max-width:none}}
 @media(max-width:620px){.hero-copy h1{font-size:32px}.info-panel{grid-template-columns:1fr}.clock-time{font-size:26px}}
 
 .today-section{margin-bottom:28px}
 .today-head{margin-bottom:12px}
+#todaySchedule{display:flex;flex-direction:column;gap:10px}
 .today-card{display:flex;align-items:center;gap:14px;min-height:84px;padding:18px 20px;border-radius:16px;background:linear-gradient(145deg,#151a25,#11151d);border:1px solid var(--line);box-shadow:0 12px 28px rgba(0,0,0,.14)}
 .today-copy{min-width:0;flex:1}.today-copy strong{display:block;font-size:13px;color:#edf3fb}.today-copy span{display:block;margin-top:4px;font-size:11px;color:#7f8a9b}
 .today-action{padding:7px 11px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.22);color:#93c5fd;font-size:10px;font-weight:800;white-space:nowrap}
@@ -125,12 +126,14 @@ h1{margin:0;font-size:34px;line-height:1.15;letter-spacing:-1.1px}
   <section class="today-section">
     <div class="section-head today-head">
       <div><h2>오늘 일정</h2><p>오늘 예정된 일정을 한눈에 확인합니다.</p></div>
-      <div class="section-status">캘린더 <b>연동 준비</b></div>
+      <div class="section-status" id="scheduleStatus">캘린더 <b>확인중</b></div>
     </div>
-    <div class="today-card">
-      <div class="schedule-dot"></div>
-      <div class="today-copy"><strong>등록된 일정이 없습니다.</strong><span>추후 Google Calendar 일정을 연결할 수 있습니다.</span></div>
-      <div class="today-action">일정 준비중</div>
+    <div id="todaySchedule">
+      <div class="today-card">
+        <div class="schedule-dot"></div>
+        <div class="today-copy"><strong>일정을 불러오는 중입니다...</strong><span>Google Calendar에서 오늘 일정을 확인하고 있습니다.</span></div>
+        <div class="today-action">확인중</div>
+      </div>
     </div>
   </section>
 
@@ -227,7 +230,69 @@ if(navigator.geolocation){
     {enableHighAccuracy:false,timeout:5000,maximumAge:600000}
   );
 }else loadWeather(37.5665,126.9780,'서울 기준');
+
+const GCAL_API_KEY='AIzaSyDghC9YqjadB3U0IZ2k0f_O1ikmw1vkEmk';
+const GCAL_CALENDAR_ID='dydsuekd@gmail.com';
+
+function escapeHtml(str){
+  const d=document.createElement('div'); d.textContent=str==null?'':str; return d.innerHTML;
+}
+
+function loadTodaySchedule(){
+  const now=new Date();
+  const startOfDay=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+  const endOfDay=new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59);
+  const url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GCAL_CALENDAR_ID)}/events?key=${GCAL_API_KEY}&timeMin=${encodeURIComponent(startOfDay.toISOString())}&timeMax=${encodeURIComponent(endOfDay.toISOString())}&singleEvents=true&orderBy=startTime`;
+
+  const statusEl=document.getElementById('scheduleStatus');
+  const container=document.getElementById('todaySchedule');
+
+  fetch(url).then(r=>r.json()).then(data=>{
+    if(data.error){throw new Error(data.error.message||'API 오류');}
+    const events=data.items||[];
+    if(!events.length){
+      statusEl.innerHTML='캘린더 <b>연동됨</b>';
+      container.innerHTML=`
+        <div class="today-card">
+          <div class="schedule-dot"></div>
+          <div class="today-copy"><strong>오늘 등록된 일정이 없습니다.</strong><span>여유로운 하루 보내세요.</span></div>
+          <div class="today-action">일정 없음</div>
+        </div>`;
+      return;
+    }
+    statusEl.innerHTML=`캘린더 <b>${events.length}건 연동</b>`;
+    container.innerHTML=events.map(ev=>{
+      const title=escapeHtml(ev.summary||'(제목 없음)');
+      let timeLabel='하루 종일';
+      if(ev.start&&ev.start.dateTime){
+        const s=new Date(ev.start.dateTime);
+        const fmt=d=>new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:true}).format(d);
+        if(ev.end&&ev.end.dateTime){
+          timeLabel=`${fmt(s)} - ${fmt(new Date(ev.end.dateTime))}`;
+        }else{
+          timeLabel=fmt(s);
+        }
+      }
+      const location=ev.location?escapeHtml(ev.location):'';
+      return `
+        <div class="today-card">
+          <div class="schedule-dot"></div>
+          <div class="today-copy"><strong>${title}</strong><span>${timeLabel}${location?' · '+location:''}</span></div>
+          <div class="today-action">일정</div>
+        </div>`;
+    }).join('');
+  }).catch(err=>{
+    statusEl.innerHTML='캘린더 <b>연동 오류</b>';
+    container.innerHTML=`
+      <div class="today-card">
+        <div class="schedule-dot" style="background:#fb7185;box-shadow:0 0 0 5px rgba(251,113,133,.1)"></div>
+        <div class="today-copy"><strong>일정을 불러오지 못했습니다.</strong><span>잠시 후 다시 시도해주세요.</span></div>
+        <div class="today-action">오류</div>
+      </div>`;
+  });
+}
+loadTodaySchedule();
 </script>
-<div class="app-ver-tag">개인현황 · 2026-07-27</div>
+<div class="app-ver-tag">개인현황 · 2026-08-04</div>
 </body>
 </html>
