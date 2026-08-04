@@ -84,6 +84,8 @@ h1{margin:0;font-size:34px;line-height:1.15;letter-spacing:-1.1px}
 #todaySchedule{display:flex;flex-direction:column;gap:10px}
 .today-card{display:flex;align-items:center;gap:14px;min-height:84px;padding:18px 20px;border-radius:16px;background:linear-gradient(145deg,#151a25,#11151d);border:1px solid var(--line);box-shadow:0 12px 28px rgba(0,0,0,.14)}
 .today-copy{min-width:0;flex:1}.today-copy strong{display:block;font-size:13px;color:#edf3fb}.today-copy span{display:block;margin-top:4px;font-size:11px;color:#7f8a9b}
+.today-date{flex-shrink:0;min-width:64px;text-align:center;padding:6px 4px;border-radius:10px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2)}
+.today-date b{display:block;font-size:15px;color:#dbe8fb}.today-date span{display:block;margin-top:1px;font-size:10px;color:#93c5fd}
 .today-action{padding:7px 11px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.22);color:#93c5fd;font-size:10px;font-weight:800;white-space:nowrap}
 .menu-head{margin-top:0}
 @media(max-width:620px){.today-card{padding:16px}.today-action{display:none}.today-section{margin-bottom:24px}}
@@ -125,13 +127,13 @@ h1{margin:0;font-size:34px;line-height:1.15;letter-spacing:-1.1px}
 <main class="wrap">
   <section class="today-section">
     <div class="section-head today-head">
-      <div><h2>오늘 일정</h2><p>오늘 예정된 일정을 한눈에 확인합니다.</p></div>
+      <div><h2>다가오는 일정</h2><p>앞으로 한 달간 예정된 일정을 한눈에 확인합니다.</p></div>
       <div class="section-status" id="scheduleStatus">캘린더 <b>확인중</b></div>
     </div>
     <div id="todaySchedule">
       <div class="today-card">
         <div class="schedule-dot"></div>
-        <div class="today-copy"><strong>일정을 불러오는 중입니다...</strong><span>Google Calendar에서 오늘 일정을 확인하고 있습니다.</span></div>
+        <div class="today-copy"><strong>일정을 불러오는 중입니다...</strong><span>Google Calendar에서 일정을 확인하고 있습니다.</span></div>
         <div class="today-action">확인중</div>
       </div>
     </div>
@@ -233,16 +235,18 @@ if(navigator.geolocation){
 
 const GCAL_API_KEY='AIzaSyDghC9YqjadB3U0IZ2k0f_O1ikmw1vkEmk';
 const GCAL_CALENDAR_ID='dydsuekd@gmail.com';
+const GCAL_RANGE_DAYS=30;
+const GCAL_MAX_EVENTS=20;
 
 function escapeHtml(str){
   const d=document.createElement('div'); d.textContent=str==null?'':str; return d.innerHTML;
 }
 
-function loadTodaySchedule(){
+function loadUpcomingSchedule(){
   const now=new Date();
-  const startOfDay=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
-  const endOfDay=new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59);
-  const url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GCAL_CALENDAR_ID)}/events?key=${GCAL_API_KEY}&timeMin=${encodeURIComponent(startOfDay.toISOString())}&timeMax=${encodeURIComponent(endOfDay.toISOString())}&singleEvents=true&orderBy=startTime`;
+  const startOfToday=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+  const rangeEnd=new Date(startOfToday.getTime()+GCAL_RANGE_DAYS*24*60*60*1000);
+  const url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GCAL_CALENDAR_ID)}/events?key=${GCAL_API_KEY}&timeMin=${encodeURIComponent(startOfToday.toISOString())}&timeMax=${encodeURIComponent(rangeEnd.toISOString())}&singleEvents=true&orderBy=startTime&maxResults=${GCAL_MAX_EVENTS}`;
 
   const statusEl=document.getElementById('scheduleStatus');
   const container=document.getElementById('todaySchedule');
@@ -255,28 +259,36 @@ function loadTodaySchedule(){
       container.innerHTML=`
         <div class="today-card">
           <div class="schedule-dot"></div>
-          <div class="today-copy"><strong>오늘 등록된 일정이 없습니다.</strong><span>여유로운 하루 보내세요.</span></div>
+          <div class="today-copy"><strong>앞으로 ${GCAL_RANGE_DAYS}일간 등록된 일정이 없습니다.</strong><span>여유로운 시간 보내세요.</span></div>
           <div class="today-action">일정 없음</div>
         </div>`;
       return;
     }
     statusEl.innerHTML=`캘린더 <b>${events.length}건 연동</b>`;
+    const todayKey=startOfToday.toDateString();
     container.innerHTML=events.map(ev=>{
       const title=escapeHtml(ev.summary||'(제목 없음)');
+      const isAllDay=!(ev.start&&ev.start.dateTime);
+      const startRaw=isAllDay?new Date(ev.start.date+'T00:00:00'):new Date(ev.start.dateTime);
+      const dateFmt=new Intl.DateTimeFormat('ko-KR',{month:'short',day:'numeric',weekday:'short'});
+      const parts=dateFmt.formatToParts(startRaw);
+      const md=parts.filter(p=>p.type==='month'||p.type==='day').map(p=>p.value).join(' ');
+      const wd=(parts.find(p=>p.type==='weekday')||{}).value||'';
+      const isToday=startRaw.toDateString()===todayKey;
+
       let timeLabel='하루 종일';
-      if(ev.start&&ev.start.dateTime){
-        const s=new Date(ev.start.dateTime);
+      if(!isAllDay){
         const fmt=d=>new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:true}).format(d);
         if(ev.end&&ev.end.dateTime){
-          timeLabel=`${fmt(s)} - ${fmt(new Date(ev.end.dateTime))}`;
+          timeLabel=`${fmt(startRaw)} - ${fmt(new Date(ev.end.dateTime))}`;
         }else{
-          timeLabel=fmt(s);
+          timeLabel=fmt(startRaw);
         }
       }
       const location=ev.location?escapeHtml(ev.location):'';
       return `
         <div class="today-card">
-          <div class="schedule-dot"></div>
+          <div class="today-date"><b>${md}</b><span>${isToday?'오늘':wd}</span></div>
           <div class="today-copy"><strong>${title}</strong><span>${timeLabel}${location?' · '+location:''}</span></div>
           <div class="today-action">일정</div>
         </div>`;
@@ -291,7 +303,7 @@ function loadTodaySchedule(){
       </div>`;
   });
 }
-loadTodaySchedule();
+loadUpcomingSchedule();
 </script>
 <div class="app-ver-tag">개인현황 · 2026-08-04</div>
 </body>
