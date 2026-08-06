@@ -81,17 +81,18 @@ h1{margin:0;font-size:34px;line-height:1.15;letter-spacing:-1.1px}
 
 .today-section{margin-bottom:28px}
 .today-head{margin-bottom:12px}
-#todaySchedule{display:flex;flex-direction:column;gap:10px}
-.today-card{display:flex;align-items:center;gap:16px;min-height:76px;padding:16px 20px;border-radius:16px;background:linear-gradient(145deg,#151a25,#11151d);border:1px solid var(--line);box-shadow:0 12px 28px rgba(0,0,0,.14)}
+#todaySchedule{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.today-card{display:flex;align-items:center;gap:12px;min-height:76px;padding:14px 16px;border-radius:16px;background:linear-gradient(145deg,#151a25,#11151d);border:1px solid var(--line);box-shadow:0 12px 28px rgba(0,0,0,.14)}
 .today-card.is-today{border-color:rgba(96,165,250,.4)}
-.today-copy{min-width:0;flex:1}.today-copy strong{display:block;font-size:13px;color:#edf3fb}.today-copy span{display:block;margin-top:4px;font-size:11px;color:#7f8a9b}
-.today-date{flex-shrink:0;white-space:nowrap;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-size:13px;font-weight:800;color:#dbe8fb}
+.today-copy{min-width:0;flex:1}.today-copy strong{display:block;font-size:13px;color:#edf3fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.today-copy span{display:block;margin-top:4px;font-size:11px;color:#7f8a9b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today-date{flex-shrink:0;white-space:nowrap;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-size:13px;font-weight:800;color:#dbe8fb}
 .today-date .wd{margin-left:5px;font-size:11px;font-weight:700;color:#7f8a9b}
 .today-card.is-today .today-date{background:rgba(96,165,250,.14);border-color:rgba(96,165,250,.35)}
 .today-card.is-today .today-date .wd{color:#93c5fd}
-.today-action{padding:7px 11px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.22);color:#93c5fd;font-size:10px;font-weight:800;white-space:nowrap}
+.today-action{display:none}
 .menu-head{margin-top:0}
-@media(max-width:620px){.today-card{padding:14px 16px;flex-wrap:wrap}.today-action{display:none}.today-section{margin-bottom:24px}}
+@media(max-width:900px){#todaySchedule{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){#todaySchedule{grid-template-columns:1fr}.today-card{padding:14px 16px;gap:14px}.today-section{margin-bottom:24px}}
 .app-ver-tag{position:fixed;right:10px;bottom:8px;font-size:10px;color:#657286;opacity:.55;z-index:9999;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;pointer-events:none}
 </style>
 </head>
@@ -148,7 +149,7 @@ h1{margin:0;font-size:34px;line-height:1.15;letter-spacing:-1.1px}
   </div>
 
   <section class="grid">
-    <a class="card asset" href="assets.html">
+    <a class="card asset" href="assets/index.html">
       <div class="card-inner">
         <div class="card-main">
           <div class="card-top"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5M5 9.5V20h14V9.5M9 20v-6h6v6"/></svg></div><span class="card-num">01</span></div>
@@ -306,6 +307,6 @@ function loadUpcomingSchedule(){
 }
 loadUpcomingSchedule();
 </script>
-<div class="app-ver-tag">개인현황 · 2026-08-06</div>
+<div class="app-ver-tag">개인현황 · 2026-08-04</div>
 </body>
 </html>
