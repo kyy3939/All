@@ -48,6 +48,40 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .alloc-legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#c3cede}
 .alloc-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
 
+.chart-row{display:flex;align-items:center;gap:20px}
+.donut-wrap{position:relative;width:112px;height:112px;flex-shrink:0}
+.donut-wrap svg{width:100%;height:100%}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.donut-center .v{font-size:15px;font-weight:900;line-height:1.15}
+.donut-center .l{font-size:9.5px;color:var(--sub);margin-top:2px}
+.chart-legend{flex:1;display:flex;flex-direction:column;gap:8px}
+.chart-legend .row{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#c3cede}
+.chart-legend .row i{width:9px;height:9px;border-radius:3px;display:inline-block;flex-shrink:0}
+.chart-legend .row b{color:#fff;margin-left:auto;font-variant-numeric:tabular-nums}
+.chart-legend .row .pct{color:#7f8a9b;font-size:10.5px;width:38px;text-align:right}
+
+.acct-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px}
+.acct-bar-item{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.acct-bar-item:last-child{margin-bottom:0}
+.acct-bar-item .nm{width:56px;font-size:12px;font-weight:800;color:#dbe3ee;flex-shrink:0}
+.acct-bar-item .track{flex:1;height:18px;border-radius:7px;background:#0c1420;overflow:hidden}
+.acct-bar-item .fill{height:100%;border-radius:7px}
+.acct-bar-item .amt{width:120px;text-align:right;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0}
+
+.group-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:16px 18px;margin-bottom:10px}
+.group-card:last-child{margin-bottom:0}
+.group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.group-head .name{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px}
+.group-head .name i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.group-head .total{font-size:12.5px;font-weight:900;color:#9fe6c8}
+.bar-item{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-item:last-child{margin-bottom:0}
+.bar-item .nm{width:130px;font-size:11.5px;color:#dbe3ee;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-item .track{flex:1;height:15px;border-radius:5px;background:#0c1420;overflow:hidden}
+.bar-item .fill{height:100%;border-radius:5px}
+.bar-item .amt{width:100px;text-align:right;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;color:#c3cede}
+.bar-item .type-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
 .wrap{max-width:1280px;margin:0 auto;padding:26px 20px 64px}
 
 .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:30px 0 13px}
@@ -62,11 +96,15 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .kpi-card .lbl{font-size:10.5px;color:var(--sub);font-weight:700;letter-spacing:.03em}
 .kpi-card .val{font-size:19px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
 .kpi-card .sub{font-size:10.5px;margin-top:4px;color:#7f8a9b}
+.kpi-card .sub2{font-size:10px;margin-top:3px;color:#6ee7b7;font-weight:700}
 
-.flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .flow-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:16px 17px}
 .flow-card .lbl{font-size:10.5px;color:var(--sub);font-weight:700}
 .flow-card .val{font-size:20px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
+.flow-card .sub{font-size:10.5px;margin-top:7px;color:#7f8a9b;line-height:1.6}
+
+.compose-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px}
 
 .trend-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px 12px}
 .trend-bars{display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:6px}
@@ -84,13 +122,23 @@ table.dt tbody tr:hover td{background:#141a25}
 table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-top:1px solid #2b3a4e}
 .num-cell{text-align:right;font-variant-numeric:tabular-nums}
 
+.badge-pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:800}
+.badge-soon{background:rgba(255,171,64,.15);color:#ffb74d;border:1px solid rgba(255,171,64,.3)}
+.badge-over{background:rgba(141,154,173,.12);color:#8d9aad;border:1px solid rgba(141,154,173,.25)}
+.badge-ok{background:rgba(96,165,250,.12);color:#93c5fd;border:1px solid rgba(96,165,250,.25)}
+
+.progress-wrap{display:flex;flex-direction:column;gap:4px;min-width:100px}
+.progress-track{width:100%;height:6px;border-radius:999px;background:#1b2230;overflow:hidden}
+.progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#34d399,#10b981)}
+.progress-label{font-size:10px;color:#8fa0b7}
+
 .loading-row td{text-align:center;color:var(--sub);padding:22px}
 
 .footer-note{margin-top:34px;padding:16px 18px;border-radius:14px;background:#0f141d;border:1px solid #202836;font-size:11px;color:#8493a8;line-height:1.7}
 .app-ver-tag{position:fixed;right:10px;bottom:8px;font-size:10px;color:#657286;opacity:.55;z-index:9999;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;pointer-events:none}
 
-@media(max-width:900px){.hero-total{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.flow-grid{grid-template-columns:1fr}}
-@media(max-width:620px){.topbar-inner{padding:11px 15px}.hero-inner{padding:28px 15px 22px}h1{font-size:24px}.wrap{padding:18px 14px 48px}.total-value{font-size:28px}.footer{text-align:center}}
+@media(max-width:900px){.hero-total{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.flow-grid{grid-template-columns:repeat(2,1fr)}.cat-amt{width:90px}}
+@media(max-width:620px){.topbar-inner{padding:11px 15px}.hero-inner{padding:28px 15px 22px}h1{font-size:24px}.wrap{padding:18px 14px 48px}.total-value{font-size:28px}.footer{text-align:center}.cat-name{white-space:normal}}
 </style>
 </head>
 <body>
@@ -120,8 +168,10 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
       </div>
       <div class="alloc-card">
         <div class="alloc-label">자산배분 비중</div>
-        <div class="alloc-bar" id="allocBar"><i style="width:100%;background:#232b3a"></i></div>
-        <div class="alloc-legend" id="allocLegend"></div>
+        <div class="chart-row">
+          <div class="donut-wrap" id="allocDonut"></div>
+          <div class="chart-legend" id="allocLegend"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -134,20 +184,58 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     <div class="section-note" id="asOfNote">기준일 확인 중</div>
   </div>
   <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi-card" style="--kpi-accent:#34d399"><div class="lbl">현금성자산</div><div class="val" id="kpiCash">-</div><div class="sub">예금·현금</div></div>
-    <div class="kpi-card" style="--kpi-accent:#60a5fa"><div class="lbl">저축성자산</div><div class="val" id="kpiSavings">-</div><div class="sub">적금·연금·IRP 등 (추정)</div></div>
-    <div class="kpi-card" style="--kpi-accent:#a78bfa"><div class="lbl">실물자산</div><div class="val" id="kpiReal">-</div><div class="sub">부동산·차량 (현재 추정가)</div></div>
-    <div class="kpi-card" style="--kpi-accent:#8d9aad"><div class="lbl">부채</div><div class="val">미반영</div><div class="sub">시트에 부채 항목 없음</div></div>
+    <div class="kpi-card" style="--kpi-accent:#34d399">
+      <div class="lbl">현금성자산</div><div class="val" id="kpiCash">-</div>
+      <div class="sub">예금·현금</div><div class="sub2" id="kpiCashSub"></div>
+    </div>
+    <div class="kpi-card" style="--kpi-accent:#60a5fa">
+      <div class="lbl">저축성자산</div><div class="val" id="kpiSavings">-</div>
+      <div class="sub">적금·연금·IRP 등 (추정)</div><div class="sub2" id="kpiSavingsSub"></div>
+    </div>
+    <div class="kpi-card" style="--kpi-accent:#a78bfa">
+      <div class="lbl">실물자산</div><div class="val" id="kpiReal">-</div>
+      <div class="sub">부동산·차량 (현재 추정가)</div><div class="sub2" id="kpiRealSub"></div>
+    </div>
+    <div class="kpi-card" style="--kpi-accent:#8d9aad">
+      <div class="lbl">부채</div><div class="val">미반영</div>
+      <div class="sub">시트에 부채 항목 없음</div><div class="sub2" id="kpiDebtSub"></div>
+    </div>
   </div>
 
   <div class="section-head">
-    <div><h2 id="flowTitle">이번달 현금흐름</h2><p>급여 이체 계좌 기준 이번달 수입·지출·잔액입니다.</p></div>
+    <div><h2 id="flowTitle">이번달 현금흐름</h2><p>급여 이체 계좌 기준 이번달 수입·지출·저축 비율입니다.</p></div>
     <div class="section-note">월이체항목 시트 기준</div>
   </div>
   <div class="flow-grid">
     <div class="flow-card"><div class="lbl">수입 (급여 실수령액)</div><div class="val" id="flowIncome">-</div></div>
-    <div class="flow-card"><div class="lbl">지출 (계좌이체 합계)</div><div class="val" id="flowExpense">-</div></div>
+    <div class="flow-card">
+      <div class="lbl">지출 (계좌이체 합계)</div><div class="val" id="flowExpense">-</div>
+      <div class="sub" id="flowExpenseSub"></div>
+    </div>
     <div class="flow-card"><div class="lbl">월 잔액</div><div class="val" id="flowBalance">-</div></div>
+    <div class="flow-card" style="--kpi-accent:#34d399"><div class="lbl">저축·투자 비율</div><div class="val" id="flowSavingRate">-</div><div class="sub" id="flowSavingRateSub"></div></div>
+  </div>
+
+  <div class="section-head">
+    <div><h2>이번달 지출 구성</h2><p>계좌이체 전체를 소비·저축투자·대출상환으로 나눠봤습니다.</p></div>
+  </div>
+  <div class="compose-card">
+    <div class="chart-row">
+      <div class="donut-wrap" id="composeDonut"></div>
+      <div class="chart-legend" id="composeLegend"></div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div><h2>계좌별 이체 비교</h2><p>개인·생활·하준 계좌에서 이번달 실제로 나간 총액입니다.</p></div>
+  </div>
+  <div class="acct-card" id="acctBars"></div>
+
+  <div class="section-head">
+    <div><h2>이번달 실제 지출 항목</h2><p>개인·생활·하준 계좌별 전체 이체 항목을 금액순으로 정리했습니다. 초록은 저축·투자, 보라는 대출상환, 회색은 소비입니다.</p></div>
+  </div>
+  <div id="catGroups">
+    <div class="group-card"><div class="group-head"><div class="name">불러오는 중…</div></div></div>
   </div>
 
   <div class="section-head">
@@ -158,39 +246,41 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>현금성자산 상세</h2><p>계좌별 예금 잔액입니다.</p></div>
+    <div><h2>현금성자산 상세</h2><p>계좌별 예금 잔액입니다. 만기가 가까운 순으로 정렬했습니다.</p></div>
+    <div class="section-note" id="cashAvgNote"></div>
   </div>
   <div class="table-wrap">
     <table class="dt">
-      <thead><tr><th>구분</th><th>금융기관</th><th>계좌명</th><th>금리</th><th>시작일</th><th>만기일</th><th style="text-align:right">잔액</th></tr></thead>
-      <tbody id="cashTbody"><tr class="loading-row"><td colspan="7">불러오는 중…</td></tr></tbody>
+      <thead><tr><th>구분</th><th>금융기관</th><th>계좌명</th><th>금리</th><th>시작일</th><th>만기일</th><th>만기까지</th><th style="text-align:right">잔액</th></tr></thead>
+      <tbody id="cashTbody"><tr class="loading-row"><td colspan="8">불러오는 중…</td></tr></tbody>
     </table>
   </div>
 
   <div class="section-head">
-    <div><h2>저축성자산 상세</h2><p>적금·청약·연금저축·IRP·DB랩 등입니다.</p></div>
+    <div><h2>저축성자산 상세</h2><p>적금·청약·연금저축·IRP·DB랩 등입니다. 만기가 있는 상품은 진행률을 함께 표시합니다.</p></div>
   </div>
   <div class="table-wrap">
     <table class="dt">
-      <thead><tr><th>상품명</th><th>유형</th><th>시작일</th><th>종료일</th><th style="text-align:right">월납입액</th><th style="text-align:right">적용잔액(추정)</th></tr></thead>
-      <tbody id="savingsTbody"><tr class="loading-row"><td colspan="6">불러오는 중…</td></tr></tbody>
+      <thead><tr><th>상품명</th><th>유형</th><th>시작일</th><th>종료일</th><th>진행률</th><th style="text-align:right">월납입액</th><th style="text-align:right">적용잔액(추정)</th></tr></thead>
+      <tbody id="savingsTbody"><tr class="loading-row"><td colspan="7">불러오는 중…</td></tr></tbody>
     </table>
   </div>
 
   <div class="section-head">
-    <div><h2>실물자산 상세</h2><p>부동산·차량 등 취득가 대비 평가손익입니다.</p></div>
+    <div><h2>실물자산 상세</h2><p>부동산·차량 등 취득가 대비 평가손익과 수익률입니다.</p></div>
   </div>
   <div class="table-wrap">
     <table class="dt">
-      <thead><tr><th>자산명</th><th>유형</th><th>취득일</th><th style="text-align:right">취득가</th><th style="text-align:right">현재추정가</th><th style="text-align:right">평가손익</th></tr></thead>
-      <tbody id="realTbody"><tr class="loading-row"><td colspan="6">불러오는 중…</td></tr></tbody>
+      <thead><tr><th>자산명</th><th>유형</th><th>취득일</th><th style="text-align:right">취득가</th><th style="text-align:right">현재추정가</th><th style="text-align:right">평가손익</th><th style="text-align:right">수익률</th></tr></thead>
+      <tbody id="realTbody"><tr class="loading-row"><td colspan="7">불러오는 중…</td></tr></tbody>
     </table>
   </div>
 
   <div class="footer-note">
     ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b>)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
-    ※ 대출·부채 항목은 시트에 아직 반영되어 있지 않아 순자산 계산에서 제외했습니다.<br>
-    ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.
+    ※ 대출·부채 항목은 시트에 아직 반영되어 있지 않아 순자산 계산에서 제외했습니다. (아파트 대출 원리금 상환액만 월이체항목에서 확인 가능)<br>
+    ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.<br>
+    ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.
   </div>
 </main>
 
@@ -248,6 +338,32 @@ function signWon(n){
   const s = n<0 ? '-' : '+';
   return s + comma(Math.abs(n)) + '원';
 }
+function signPct(n, digits){
+  if(n==null) return '-';
+  digits = digits==null ? 1 : digits;
+  const s = n<0 ? '-' : '+';
+  return s + Math.abs(n).toFixed(digits) + '%';
+}
+function parseDate(s){
+  if(!s) return null;
+  const t = String(s).trim();
+  if(!t) return null;
+  const d = new Date(t);
+  return isNaN(d.getTime()) ? null : d;
+}
+function todayMidnight(){
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+function daysUntil(date){
+  if(!date) return null;
+  const ms = date.getTime() - todayMidnight().getTime();
+  return Math.round(ms / 86400000);
+}
+function monthsBetween(a,b){
+  if(!a || !b) return null;
+  return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth());
+}
 
 function buildKeyValueMap(rows){
   const m={};
@@ -280,74 +396,159 @@ function findRow(rows, exactLabel){
   return rows.find(r => (r[1]||'').trim() === exactLabel);
 }
 
+// 도넛(원형) 차트 SVG 생성. segments: [{value, color}]
+function donutSVG(segments, size, thickness){
+  size = size || 112; thickness = thickness || 16;
+  const total = segments.reduce((s,x) => s + Math.max(0,x.value||0), 0);
+  const r = (size - thickness) / 2;
+  const c = size / 2;
+  const circumference = 2 * Math.PI * r;
+  if(!total){
+    return `<svg viewBox="0 0 ${size} ${size}"><circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#1b2230" stroke-width="${thickness}"/></svg>`;
+  }
+  let offset = 0;
+  const circles = segments.filter(s => s.value > 0).map(seg => {
+    const frac = seg.value / total;
+    const dash = frac * circumference;
+    const gap = circumference - dash;
+    const el = `<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${thickness}" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${c} ${c})"/>`;
+    offset += dash;
+    return el;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}">${circles}</svg>`;
+}
+function donutCenterHtml(value, label){
+  return `<div class="donut-center"><div class="v">${value}</div><div class="l">${label}</div></div>`;
+}
+
 function setBadge(text, isErr){
   const el = document.getElementById('heroBadge');
   el.textContent = text;
   el.className = 'update-badge' + (isErr ? ' err' : '');
 }
 
+// ---- 현금성자산 ----
 function renderCashTable(rows){
   const { data, totalRow } = extractTable(rows, '구분');
   const tbody = document.getElementById('cashTbody');
-  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return; }
-  let html = data.map(r => `
-    <tr>
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="8">데이터 없음</td></tr>'; return { avgRate:null, soonAmt:0, soonCnt:0 }; }
+
+  const parsed = data.map(r => ({
+    r, balance:num(r[4]), rate:num(r[5]), start:r[6]||'-', end:r[7]||'-', maturity:parseDate(r[7])
+  }));
+  // 만기 가까운 순 정렬 (만기일 없는 항목은 맨 뒤)
+  parsed.sort((a,b) => {
+    if(!a.maturity && !b.maturity) return 0;
+    if(!a.maturity) return 1;
+    if(!b.maturity) return -1;
+    return a.maturity - b.maturity;
+  });
+
+  let weightedSum = 0, balSum = 0, soonAmt = 0, soonCnt = 0;
+  const rowsHtml = parsed.map(({r, balance, rate, start, end, maturity}) => {
+    if(balance!=null && rate!=null){ weightedSum += balance*rate; balSum += balance; }
+    let dBadge = '-';
+    if(maturity){
+      const d = daysUntil(maturity);
+      if(d < 0) dBadge = `<span class="badge-pill badge-over">만기 ${Math.abs(d)}일 경과</span>`;
+      else if(d <= 90){ dBadge = `<span class="badge-pill badge-soon">D-${d}</span>`; soonAmt += (balance||0); soonCnt++; }
+      else dBadge = `<span class="badge-pill badge-ok">D-${d}</span>`;
+    }
+    return `<tr>
       <td>${r[1]||'-'}</td>
       <td>${r[2]||'-'}</td>
       <td>${r[3]||'-'}</td>
       <td>${r[5]||'-'}</td>
-      <td>${r[6]||'-'}</td>
-      <td>${r[7]||'-'}</td>
-      <td class="num-cell">${won(num(r[4]))}</td>
-    </tr>`).join('');
+      <td>${start}</td>
+      <td>${end}</td>
+      <td>${dBadge}</td>
+      <td class="num-cell">${won(balance)}</td>
+    </tr>`;
+  }).join('');
+
+  let html = rowsHtml;
   if(totalRow){
-    html += `<tr class="total-row"><td colspan="6">합계</td><td class="num-cell">${won(num(totalRow[2]))}</td></tr>`;
+    html += `<tr class="total-row"><td colspan="7">합계</td><td class="num-cell">${won(num(totalRow[2]))}</td></tr>`;
   }
   tbody.innerHTML = html;
+
+  const avgRate = balSum ? weightedSum/balSum : null;
+  return { avgRate, soonAmt, soonCnt };
 }
 
+// ---- 저축성자산 ----
 function renderSavingsTable(rows){
   const { data, totalRow } = extractTable(rows, '상품명');
   const tbody = document.getElementById('savingsTbody');
-  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="6">데이터 없음</td></tr>'; return; }
-  let html = data.map(r => `
-    <tr>
-      <td>${r[1]||'-'}</td>
-      <td>${r[2]||'-'}</td>
-      <td>${r[3]||'-'}</td>
-      <td>${r[4]||'-'}</td>
-      <td class="num-cell">${won(num(r[6]))}</td>
-      <td class="num-cell">${won(num(r[10]))}</td>
-    </tr>`).join('');
-  if(totalRow){
-    html += `<tr class="total-row"><td colspan="4">합계</td><td class="num-cell">${won(num(totalRow[6]))}</td><td class="num-cell">${won(num(totalRow[10]))}</td></tr>`;
-  }
-  tbody.innerHTML = html;
-}
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return { monthlyTotal:0 }; }
 
-function renderRealTable(rows){
-  const { data, totalRow } = extractTable(rows, '자산명');
-  const tbody = document.getElementById('realTbody');
-  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="6">데이터 없음</td></tr>'; return; }
+  let monthlyTotal = 0;
   let html = data.map(r => {
-    const gain = num(r[6]);
-    const cls = gain==null ? '' : (gain >= 0 ? 'up' : 'down');
+    const start = parseDate(r[3]);
+    const end = parseDate(r[4]);
+    const elapsed = num(r[7]);
+    const monthly = num(r[6]);
+    if(monthly!=null) monthlyTotal += monthly;
+    let progressHtml = '<span style="color:#657286;font-size:11px">진행중</span>';
+    if(start && end && elapsed!=null){
+      const total = monthsBetween(start,end);
+      if(total && total>0){
+        const pct = Math.max(0, Math.min(100, Math.round(elapsed/total*100)));
+        progressHtml = `<div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-label">${pct}% (${elapsed}/${total}개월)</div></div>`;
+      }
+    }
     return `
     <tr>
       <td>${r[1]||'-'}</td>
       <td>${r[2]||'-'}</td>
       <td>${r[3]||'-'}</td>
-      <td class="num-cell">${won(num(r[4]))}</td>
-      <td class="num-cell">${won(num(r[5]))}</td>
-      <td class="num-cell ${cls}">${signWon(gain)}</td>
+      <td>${r[4]||'-'}</td>
+      <td>${progressHtml}</td>
+      <td class="num-cell">${won(monthly)}</td>
+      <td class="num-cell">${won(num(r[10]))}</td>
     </tr>`;
   }).join('');
   if(totalRow){
-    const gain = num(totalRow[6]);
-    const cls = gain==null ? '' : (gain >= 0 ? 'up' : 'down');
-    html += `<tr class="total-row"><td colspan="3">합계</td><td class="num-cell">${won(num(totalRow[4]))}</td><td class="num-cell">${won(num(totalRow[5]))}</td><td class="num-cell ${cls}">${signWon(gain)}</td></tr>`;
+    html += `<tr class="total-row"><td colspan="5">합계</td><td class="num-cell">${won(num(totalRow[6]))}</td><td class="num-cell">${won(num(totalRow[10]))}</td></tr>`;
   }
   tbody.innerHTML = html;
+  return { monthlyTotal };
+}
+
+// ---- 실물자산 ----
+function renderRealTable(rows){
+  const { data, totalRow } = extractTable(rows, '자산명');
+  const tbody = document.getElementById('realTbody');
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return { totalCost:0, totalGain:0 }; }
+
+  let totalCost = 0;
+  let html = data.map(r => {
+    const cost = num(r[4]);
+    const gain = num(r[6]);
+    const cls = gain==null ? '' : (gain >= 0 ? 'up' : 'down');
+    const pct = (cost && gain!=null) ? gain/cost*100 : null;
+    if(cost) totalCost += cost;
+    return `
+    <tr>
+      <td>${r[1]||'-'}</td>
+      <td>${r[2]||'-'}</td>
+      <td>${r[3]||'-'}</td>
+      <td class="num-cell">${won(cost)}</td>
+      <td class="num-cell">${won(num(r[5]))}</td>
+      <td class="num-cell ${cls}">${signWon(gain)}</td>
+      <td class="num-cell ${cls}">${signPct(pct)}</td>
+    </tr>`;
+  }).join('');
+  let totalGain = null;
+  if(totalRow){
+    totalGain = num(totalRow[6]);
+    const totalCostRow = num(totalRow[4]);
+    const cls = totalGain==null ? '' : (totalGain >= 0 ? 'up' : 'down');
+    const totalPct = (totalCostRow && totalGain!=null) ? totalGain/totalCostRow*100 : null;
+    html += `<tr class="total-row"><td colspan="3">합계</td><td class="num-cell">${won(totalCostRow)}</td><td class="num-cell">${won(num(totalRow[5]))}</td><td class="num-cell ${cls}">${signWon(totalGain)}</td><td class="num-cell ${cls}">${signPct(totalPct)}</td></tr>`;
+  }
+  tbody.innerHTML = html;
+  return { totalCost, totalGain };
 }
 
 function renderSummary(summary){
@@ -366,19 +567,22 @@ function renderSummary(summary){
   const savingsPct = num(summary['저축성자산 비중']) ?? (total ? savings/total*100 : 0);
   const realPct = num(summary['실물자산 비중']) ?? (total ? real/total*100 : 0);
 
-  document.getElementById('allocBar').innerHTML = `
-    <i style="width:${cashPct}%;background:#34d399" title="현금성 ${cashPct.toFixed(1)}%"></i>
-    <i style="width:${savingsPct}%;background:#60a5fa" title="저축성 ${savingsPct.toFixed(1)}%"></i>
-    <i style="width:${realPct}%;background:#a78bfa" title="실물 ${realPct.toFixed(1)}%"></i>`;
+  const allocDonut = document.getElementById('allocDonut');
+  allocDonut.innerHTML = donutSVG([
+    { value:cash, color:'#34d399' },
+    { value:savings, color:'#60a5fa' },
+    { value:real, color:'#a78bfa' },
+  ]) + donutCenterHtml(eok(total), '총자산');
   document.getElementById('allocLegend').innerHTML = `
-    <span><i style="background:#34d399"></i>현금성 ${cashPct.toFixed(1)}%</span>
-    <span><i style="background:#60a5fa"></i>저축성 ${savingsPct.toFixed(1)}%</span>
-    <span><i style="background:#a78bfa"></i>실물 ${realPct.toFixed(1)}%</span>`;
+    <div class="row"><i style="background:#34d399"></i>현금성 <b>${won(cash)}</b><span class="pct">${cashPct.toFixed(1)}%</span></div>
+    <div class="row"><i style="background:#60a5fa"></i>저축성 <b>${won(savings)}</b><span class="pct">${savingsPct.toFixed(1)}%</span></div>
+    <div class="row"><i style="background:#a78bfa"></i>실물 <b>${won(real)}</b><span class="pct">${realPct.toFixed(1)}%</span></div>`;
 
   const monthStart = summary['월시작일'];
   document.getElementById('asOfNote').textContent = monthStart ? `이번달 시작일 ${monthStart}` : '';
 }
 
+// ---- 월이체항목: 상단 요약(수입/지출/잔액/추이) ----
 function renderFlow(transferRows){
   const now = new Date();
   const mIdx = now.getMonth(); // 0=1월
@@ -402,19 +606,131 @@ function renderFlow(transferRows){
 
   // 12개월 추이
   const bars = document.getElementById('trendBars');
-  if(!balanceRow){ bars.innerHTML = '<div class="section-note">데이터 없음</div>'; return; }
-  const values = [];
-  for(let i=0;i<12;i++) values.push(num(balanceRow[4+i]));
-  const maxAbs = Math.max(1, ...values.map(v => Math.abs(v||0)));
-  bars.innerHTML = values.map((v,i) => {
-    const h = v==null ? 2 : Math.max(3, Math.round(Math.abs(v)/maxAbs*90));
-    const color = v==null ? '#2b3038' : (v>=0 ? '#34d399' : '#ff6b6b');
-    const isNow = i===mIdx ? ' now' : '';
-    return `<div class="trend-col${isNow}">
-      <div class="bar" style="height:${h}px;background:${color}"></div>
-      <div class="m">${i+1}월</div>
+  if(!balanceRow){ bars.innerHTML = '<div class="section-note">데이터 없음</div>'; }
+  else{
+    const values = [];
+    for(let i=0;i<12;i++) values.push(num(balanceRow[4+i]));
+    const maxAbs = Math.max(1, ...values.map(v => Math.abs(v||0)));
+    bars.innerHTML = values.map((v,i) => {
+      const h = v==null ? 2 : Math.max(3, Math.round(Math.abs(v)/maxAbs*90));
+      const color = v==null ? '#2b3038' : (v>=0 ? '#34d399' : '#ff6b6b');
+      const isNow = i===mIdx ? ' now' : '';
+      return `<div class="trend-col${isNow}">
+        <div class="bar" style="height:${h}px;background:${color}"></div>
+        <div class="m">${i+1}월</div>
+      </div>`;
+    }).join('');
+  }
+
+  return { income, expense, balance, colIdx, mIdx };
+}
+
+// 항목명 → 소비/저축투자/대출상환 분류
+function classifyItem(label){
+  const l = (label||'').toLowerCase().replace(/\s/g,'');
+  if(l.includes('대출')) return 'debt';
+  if(l.includes('적금') || l.includes('청약') || l.includes('연금') || l.includes('irp') || l.includes('db랩')) return 'saving';
+  return 'spend';
+}
+const TYPE_LABEL = { saving:'저축·투자', debt:'대출상환', spend:'소비' };
+
+// 월이체항목 시트를 "항목 (...)" 헤더 기준으로 구간 분리 → [전체요약, 개인, 생활, 하준]
+function splitByHeader(rows){
+  const headerIdxs = [];
+  rows.forEach((r,i) => { if((r[1]||'').trim().startsWith('항목')) headerIdxs.push(i); });
+  const sections = [];
+  for(let h=0; h<headerIdxs.length; h++){
+    const start = headerIdxs[h]+1;
+    const end = h+1<headerIdxs.length ? headerIdxs[h+1] : rows.length;
+    sections.push(rows.slice(start, end));
+  }
+  return sections;
+}
+
+const TYPE_COLOR = { saving:'#34d399', debt:'#a78bfa', spend:'#8d9aad' };
+const ACCT_COLOR = { '개인':'#60a5fa', '생활':'#34d399', '하준':'#f59e0b' };
+
+function renderCategoryBreakdown(transferRows, colIdx, income, expense){
+  const sections = splitByHeader(transferRows);
+  const groups = [
+    { name:'개인', rows: sections[1]||[] },
+    { name:'생활', rows: sections[2]||[] },
+    { name:'하준', rows: sections[3]||[] },
+  ];
+
+  const items = [];
+  let savingTotal = 0, debtTotal = 0, spendTotal = 0;
+  groups.forEach(g => {
+    g.items = [];
+    g.total = 0;
+    g.rows.forEach(r => {
+      const label = (r[1]||'').trim();
+      if(!label || label==='합계') return;
+      const amt = num(r[colIdx]);
+      if(amt==null) return;
+      const type = classifyItem(label);
+      if(type==='saving') savingTotal += amt;
+      else if(type==='debt') debtTotal += amt;
+      else spendTotal += amt;
+      const item = { label, group:g.name, amt, type };
+      items.push(item);
+      g.items.push(item);
+      g.total += amt;
+    });
+  });
+
+  const total = savingTotal + debtTotal + spendTotal;
+
+  // 지출 구성 도넛(소비/저축투자/대출상환)
+  const spendPct = total ? spendTotal/total*100 : 0;
+  const savingPct = total ? savingTotal/total*100 : 0;
+  const debtPct = total ? debtTotal/total*100 : 0;
+  document.getElementById('composeDonut').innerHTML = donutSVG([
+    { value:spendTotal, color:TYPE_COLOR.spend },
+    { value:savingTotal, color:TYPE_COLOR.saving },
+    { value:debtTotal, color:TYPE_COLOR.debt },
+  ]) + donutCenterHtml(won(total), '이체 합계');
+  document.getElementById('composeLegend').innerHTML = `
+    <div class="row"><i style="background:${TYPE_COLOR.spend}"></i>소비 <b>${won(spendTotal)}</b><span class="pct">${spendPct.toFixed(1)}%</span></div>
+    <div class="row"><i style="background:${TYPE_COLOR.saving}"></i>저축·투자 <b>${won(savingTotal)}</b><span class="pct">${savingPct.toFixed(1)}%</span></div>
+    <div class="row"><i style="background:${TYPE_COLOR.debt}"></i>대출상환 <b>${won(debtTotal)}</b><span class="pct">${debtPct.toFixed(1)}%</span></div>`;
+
+  // 계좌별 이체 비교 (막대)
+  const maxAcct = Math.max(1, ...groups.map(g => g.total));
+  document.getElementById('acctBars').innerHTML = groups.map(g => `
+    <div class="acct-bar-item">
+      <div class="nm">${g.name}</div>
+      <div class="track"><div class="fill" style="width:${Math.max(2, g.total/maxAcct*100)}%;background:${ACCT_COLOR[g.name]}"></div></div>
+      <div class="amt">${won(g.total)}</div>
+    </div>`).join('');
+
+  // 계좌별 전체 항목 (막대 리스트, 금액순 정렬)
+  const catGroups = document.getElementById('catGroups');
+  catGroups.innerHTML = groups.map(g => {
+    const sorted = g.items.slice().sort((a,b) => b.amt - a.amt);
+    const maxAmt = Math.max(1, ...sorted.map(it => it.amt));
+    const rowsHtml = sorted.map(it => `
+      <div class="bar-item">
+        <span class="type-dot" style="background:${TYPE_COLOR[it.type]}"></span>
+        <div class="nm" title="${it.label}">${it.label}</div>
+        <div class="track"><div class="fill" style="width:${Math.max(2, it.amt/maxAmt*100)}%;background:${TYPE_COLOR[it.type]}"></div></div>
+        <div class="amt">${won(it.amt)}</div>
+      </div>`).join('');
+    return `
+    <div class="group-card">
+      <div class="group-head">
+        <div class="name"><i style="background:${ACCT_COLOR[g.name]}"></i>${g.name} 계좌</div>
+        <div class="total">${won(g.total)}</div>
+      </div>
+      ${rowsHtml || '<div class="section-note">데이터 없음</div>'}
     </div>`;
   }).join('');
+
+  // 저축·투자 비율 카드
+  const savingRate = income ? savingTotal/income*100 : null;
+  document.getElementById('flowSavingRate').textContent = savingRate==null ? '-' : savingRate.toFixed(1) + '%';
+  document.getElementById('flowSavingRateSub').textContent = `${won(savingTotal)} · 급여 대비`;
+  document.getElementById('flowExpenseSub').textContent = `소비 ${won(spendTotal)} · 저축/투자 ${won(savingTotal)} · 대출상환 ${won(debtTotal)}`;
 }
 
 async function loadAll(){
@@ -429,10 +745,24 @@ async function loadAll(){
 
     const summary = buildKeyValueMap(summaryRows);
     renderSummary(summary);
-    renderFlow(transferRows);
-    renderCashTable(cashRows);
-    renderSavingsTable(savingsRows);
-    renderRealTable(realRows);
+    const { income, expense, colIdx } = renderFlow(transferRows);
+    const cashInfo = renderCashTable(cashRows);
+    const savingsInfo = renderSavingsTable(savingsRows);
+    const realInfo = renderRealTable(realRows);
+    renderCategoryBreakdown(transferRows, colIdx, income, expense);
+
+    // KPI 카드 보조 지표
+    document.getElementById('kpiCashSub').textContent = cashInfo.avgRate!=null
+      ? `평균금리 ${cashInfo.avgRate.toFixed(2)}%${cashInfo.soonCnt ? ` · 90일내 만기 ${cashInfo.soonCnt}건 ${eok(cashInfo.soonAmt)}` : ''}`
+      : '';
+    document.getElementById('cashAvgNote').textContent = cashInfo.avgRate!=null ? `가중평균금리 ${cashInfo.avgRate.toFixed(2)}%` : '';
+    document.getElementById('kpiSavingsSub').textContent = savingsInfo.monthlyTotal ? `월 총납입 ${won(savingsInfo.monthlyTotal)}` : '';
+    if(realInfo.totalCost && realInfo.totalGain!=null){
+      const pct = realInfo.totalGain/realInfo.totalCost*100;
+      const el = document.getElementById('kpiRealSub');
+      el.textContent = `평가수익률 ${signPct(pct)}`;
+      el.style.color = pct>=0 ? 'var(--up)' : 'var(--down)';
+    }
 
     const now = new Date();
     const stamp = new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(now);
