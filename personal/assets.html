@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자산현황</title>
+<style>
+:root{
+  --bg:#0b0d12; --panel:#111317; --panel2:#171a20; --line:#2b3038;
+  --ink:#f4f7fb; --sub:#8d9aad; --muted:#657286;
+  --brand:#60a5fa; --brand2:#2563eb; --asset:#34d399;
+  --up:#ff6b6b; --down:#5b9bff; --flat:#8d9aad;
+  --shadow:0 12px 28px rgba(0,0,0,.18);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#0a0d13 0%,#0d1118 100%);color:var(--ink);line-height:1.5}
+a{text-decoration:none;color:inherit}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(11,13,18,.9);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
+.topbar-inner{max-width:1280px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.4px}
+.brand-mark{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--asset),#059669);display:grid;place-items:center;box-shadow:0 8px 24px rgba(52,211,153,.3)}
+.brand-mark svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+.back-link{display:flex;align-items:center;gap:6px;color:#9fb0c8;font-size:12px;font-weight:700}
+.top-meta{font-size:11px;color:#687386;letter-spacing:.06em}
+
+.hero{border-bottom:1px solid rgba(255,255,255,.06);background:radial-gradient(circle at 75% 10%,rgba(52,211,153,.18),transparent 30%),linear-gradient(135deg,#0f1d1a 0%,#123324 58%,#0f2a20 100%)}
+.hero-inner{max-width:1280px;margin:0 auto;padding:36px 20px 26px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;color:#6ee7b7;font-size:11px;font-weight:800;letter-spacing:.13em}
+.eyebrow:before{content:"";width:22px;height:2px;border-radius:2px;background:var(--asset)}
+h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
+.hero p{margin:10px 0 0;color:rgba(229,231,235,.72);font-size:13px}
+.update-badge{margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);font-size:11px;color:#b8c6d9}
+.update-badge.err{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.3);color:#ffb4b4}
+
+.hero-total{margin-top:24px;display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:stretch}
+.total-card{background:rgba(8,15,28,.5);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:20px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.total-label{font-size:11px;color:#9fe6c8;font-weight:800;letter-spacing:.06em}
+.total-value{font-size:36px;font-weight:900;margin-top:6px;letter-spacing:-1px}
+.total-sub{font-size:11.5px;color:#8fa1ba;margin-top:6px}
+.alloc-card{background:rgba(8,15,28,.5);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:18px 20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.alloc-label{font-size:11px;color:#9fe6c8;font-weight:800;letter-spacing:.06em;margin-bottom:12px}
+.alloc-bar{height:14px;border-radius:999px;overflow:hidden;display:flex;background:#0c1420}
+.alloc-bar i{display:block;height:100%}
+.alloc-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.alloc-legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#c3cede}
+.alloc-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+.wrap{max-width:1280px;margin:0 auto;padding:26px 20px 64px}
+
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:30px 0 13px}
+.section-head:first-child{margin-top:0}
+.section-head h2{margin:0 0 4px;font-size:16px;letter-spacing:-.3px}
+.section-head p{margin:0;color:var(--sub);font-size:11.5px}
+.section-note{font-size:10.5px;color:#6b7789}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:16px 17px;position:relative;overflow:hidden}
+.kpi-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kpi-accent,var(--brand))}
+.kpi-card .lbl{font-size:10.5px;color:var(--sub);font-weight:700;letter-spacing:.03em}
+.kpi-card .val{font-size:19px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
+.kpi-card .sub{font-size:10.5px;margin-top:4px;color:#7f8a9b}
+
+.flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.flow-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:16px 17px}
+.flow-card .lbl{font-size:10.5px;color:var(--sub);font-weight:700}
+.flow-card .val{font-size:20px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
+
+.trend-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px 12px}
+.trend-bars{display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:6px}
+.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.trend-col .bar{width:100%;border-radius:5px 5px 3px 3px;min-height:3px}
+.trend-col .m{font-size:9.5px;color:#7f8a9b}
+.trend-col.now .m{color:#6ee7b7;font-weight:800}
+
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:#111621}
+table.dt{width:100%;border-collapse:collapse;min-width:640px;font-size:12px}
+table.dt th{position:sticky;top:0;background:#171d29;color:#8fa0b7;text-align:left;padding:10px 13px;border-bottom:1px solid #263244;font-size:10.5px;white-space:nowrap}
+table.dt td{padding:10px 13px;border-bottom:1px solid #1d2531;color:#dbe3ee;white-space:nowrap}
+table.dt tbody tr:last-child td{border-bottom:none}
+table.dt tbody tr:hover td{background:#141a25}
+table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-top:1px solid #2b3a4e}
+.num-cell{text-align:right;font-variant-numeric:tabular-nums}
+
+.loading-row td{text-align:center;color:var(--sub);padding:22px}
+
+.footer-note{margin-top:34px;padding:16px 18px;border-radius:14px;background:#0f141d;border:1px solid #202836;font-size:11px;color:#8493a8;line-height:1.7}
+.app-ver-tag{position:fixed;right:10px;bottom:8px;font-size:10px;color:#657286;opacity:.55;z-index:9999;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;pointer-events:none}
+
+@media(max-width:900px){.hero-total{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.flow-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.topbar-inner{padding:11px 15px}.hero-inner{padding:28px 15px 22px}h1{font-size:24px}.wrap{padding:18px 14px 48px}.total-value{font-size:28px}.footer{text-align:center}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5M5 9.5V20h14V9.5M9 20v-6h6v6"/></svg></div>
+      <span>개인현황</span>
+    </div>
+    <a class="back-link" href="../index.html">← 메인으로</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">ASSET OVERVIEW</div>
+    <h1>자산현황</h1>
+    <p>Google 시트를 DB로 실시간 연동해 현금성·저축성·실물자산과 월 현금흐름을 한눈에 확인합니다.</p>
+    <div class="update-badge" id="heroBadge">📊 시트에서 자산 데이터를 불러오는 중…</div>
+
+    <div class="hero-total">
+      <div class="total-card">
+        <div class="total-label">총자산 (부채 미반영)</div>
+        <div class="total-value" id="totalValue">-</div>
+        <div class="total-sub" id="totalSub">불러오는 중…</div>
+      </div>
+      <div class="alloc-card">
+        <div class="alloc-label">자산배분 비중</div>
+        <div class="alloc-bar" id="allocBar"><i style="width:100%;background:#232b3a"></i></div>
+        <div class="alloc-legend" id="allocLegend"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+
+  <div class="section-head">
+    <div><h2>자산 요약</h2><p>구분별 보유 자산과 순자산 흐름입니다.</p></div>
+    <div class="section-note" id="asOfNote">기준일 확인 중</div>
+  </div>
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card" style="--kpi-accent:#34d399"><div class="lbl">현금성자산</div><div class="val" id="kpiCash">-</div><div class="sub">예금·현금</div></div>
+    <div class="kpi-card" style="--kpi-accent:#60a5fa"><div class="lbl">저축성자산</div><div class="val" id="kpiSavings">-</div><div class="sub">적금·연금·IRP 등 (추정)</div></div>
+    <div class="kpi-card" style="--kpi-accent:#a78bfa"><div class="lbl">실물자산</div><div class="val" id="kpiReal">-</div><div class="sub">부동산·차량 (현재 추정가)</div></div>
+    <div class="kpi-card" style="--kpi-accent:#8d9aad"><div class="lbl">부채</div><div class="val">미반영</div><div class="sub">시트에 부채 항목 없음</div></div>
+  </div>
+
+  <div class="section-head">
+    <div><h2 id="flowTitle">이번달 현금흐름</h2><p>급여 이체 계좌 기준 이번달 수입·지출·잔액입니다.</p></div>
+    <div class="section-note">월이체항목 시트 기준</div>
+  </div>
+  <div class="flow-grid">
+    <div class="flow-card"><div class="lbl">수입 (급여 실수령액)</div><div class="val" id="flowIncome">-</div></div>
+    <div class="flow-card"><div class="lbl">지출 (계좌이체 합계)</div><div class="val" id="flowExpense">-</div></div>
+    <div class="flow-card"><div class="lbl">월 잔액</div><div class="val" id="flowBalance">-</div></div>
+  </div>
+
+  <div class="section-head">
+    <div><h2>최근 12개월 잔액 추이</h2><p>월별 수입에서 고정 지출을 제외한 잔액입니다.</p></div>
+  </div>
+  <div class="trend-card">
+    <div class="trend-bars" id="trendBars"></div>
+  </div>
+
+  <div class="section-head">
+    <div><h2>현금성자산 상세</h2><p>계좌별 예금 잔액입니다.</p></div>
+  </div>
+  <div class="table-wrap">
+    <table class="dt">
+      <thead><tr><th>구분</th><th>금융기관</th><th>계좌명</th><th>금리</th><th>시작일</th><th>만기일</th><th style="text-align:right">잔액</th></tr></thead>
+      <tbody id="cashTbody"><tr class="loading-row"><td colspan="7">불러오는 중…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-head">
+    <div><h2>저축성자산 상세</h2><p>적금·청약·연금저축·IRP·DB랩 등입니다.</p></div>
+  </div>
+  <div class="table-wrap">
+    <table class="dt">
+      <thead><tr><th>상품명</th><th>유형</th><th>시작일</th><th>종료일</th><th style="text-align:right">월납입액</th><th style="text-align:right">적용잔액(추정)</th></tr></thead>
+      <tbody id="savingsTbody"><tr class="loading-row"><td colspan="6">불러오는 중…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-head">
+    <div><h2>실물자산 상세</h2><p>부동산·차량 등 취득가 대비 평가손익입니다.</p></div>
+  </div>
+  <div class="table-wrap">
+    <table class="dt">
+      <thead><tr><th>자산명</th><th>유형</th><th>취득일</th><th style="text-align:right">취득가</th><th style="text-align:right">현재추정가</th><th style="text-align:right">평가손익</th></tr></thead>
+      <tbody id="realTbody"><tr class="loading-row"><td colspan="6">불러오는 중…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="footer-note">
+    ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b>)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
+    ※ 대출·부채 항목은 시트에 아직 반영되어 있지 않아 순자산 계산에서 제외했습니다.<br>
+    ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.
+  </div>
+</main>
+
+<div class="app-ver-tag">자산현황 · 2026-08-06</div>
+
+<script>
+const SHEET_ID = '1zWWunW7_XJfocsJZEoUMF75eFzI7o8R6fAynypcctbE';
+function sheetUrl(name){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
+}
+
+function parseCSV(text){
+  const rows=[]; let row=[]; let field=''; let inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){
+        if(text[i+1]==='"'){ field+='"'; i++; } else { inQuotes=false; }
+      } else field+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c==='\r'){ /* skip */ }
+      else field+=c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function fetchSheet(name){
+  const r = await fetch(sheetUrl(name));
+  if(!r.ok) throw new Error('시트를 불러오지 못했습니다: ' + name);
+  const t = await r.text();
+  return parseCSV(t);
+}
+
+function num(s){
+  if(s==null) return null;
+  const cleaned = String(s).replace(/[,%]/g,'').trim();
+  if(cleaned==='') return null;
+  const v = parseFloat(cleaned);
+  return isNaN(v) ? null : v;
+}
+function comma(n){ return n==null ? '-' : Math.round(n).toLocaleString('ko-KR'); }
+function won(n){ return n==null ? '-' : comma(n) + '원'; }
+function eok(n){
+  if(n==null) return '-';
+  const v = n/100000000;
+  return (v>=10 ? v.toFixed(1) : v.toFixed(2)) + '억원';
+}
+function signWon(n){
+  if(n==null) return '-';
+  const s = n<0 ? '-' : '+';
+  return s + comma(Math.abs(n)) + '원';
+}
+
+function buildKeyValueMap(rows){
+  const m={};
+  for(const r of rows){
+    const label=(r[1]||'').trim();
+    const val=(r[2]||'').trim();
+    if(label && val) m[label]=val;
+  }
+  return m;
+}
+
+// 헤더 행(col[1]에 headerHint 포함)을 찾고, 그 다음부터 col[1]이 "합계"로 시작하는 행 전까지를 데이터로 반환
+function extractTable(rows, headerHint){
+  let hIdx=-1;
+  for(let i=0;i<rows.length;i++){
+    if((rows[i][1]||'').includes(headerHint)){ hIdx=i; break; }
+  }
+  if(hIdx<0) return { data:[], totalRow:null };
+  const data=[]; let totalRow=null;
+  for(let i=hIdx+1;i<rows.length;i++){
+    const first=(rows[i][1]||'').trim();
+    if(!first) continue;
+    if(first.startsWith('합계')){ totalRow=rows[i]; break; }
+    data.push(rows[i]);
+  }
+  return { data, totalRow };
+}
+
+function findRow(rows, exactLabel){
+  return rows.find(r => (r[1]||'').trim() === exactLabel);
+}
+
+function setBadge(text, isErr){
+  const el = document.getElementById('heroBadge');
+  el.textContent = text;
+  el.className = 'update-badge' + (isErr ? ' err' : '');
+}
+
+function renderCashTable(rows){
+  const { data, totalRow } = extractTable(rows, '구분');
+  const tbody = document.getElementById('cashTbody');
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return; }
+  let html = data.map(r => `
+    <tr>
+      <td>${r[1]||'-'}</td>
+      <td>${r[2]||'-'}</td>
+      <td>${r[3]||'-'}</td>
+      <td>${r[5]||'-'}</td>
+      <td>${r[6]||'-'}</td>
+      <td>${r[7]||'-'}</td>
+      <td class="num-cell">${won(num(r[4]))}</td>
+    </tr>`).join('');
+  if(totalRow){
+    html += `<tr class="total-row"><td colspan="6">합계</td><td class="num-cell">${won(num(totalRow[2]))}</td></tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function renderSavingsTable(rows){
+  const { data, totalRow } = extractTable(rows, '상품명');
+  const tbody = document.getElementById('savingsTbody');
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="6">데이터 없음</td></tr>'; return; }
+  let html = data.map(r => `
+    <tr>
+      <td>${r[1]||'-'}</td>
+      <td>${r[2]||'-'}</td>
+      <td>${r[3]||'-'}</td>
+      <td>${r[4]||'-'}</td>
+      <td class="num-cell">${won(num(r[6]))}</td>
+      <td class="num-cell">${won(num(r[10]))}</td>
+    </tr>`).join('');
+  if(totalRow){
+    html += `<tr class="total-row"><td colspan="4">합계</td><td class="num-cell">${won(num(totalRow[6]))}</td><td class="num-cell">${won(num(totalRow[10]))}</td></tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function renderRealTable(rows){
+  const { data, totalRow } = extractTable(rows, '자산명');
+  const tbody = document.getElementById('realTbody');
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="6">데이터 없음</td></tr>'; return; }
+  let html = data.map(r => {
+    const gain = num(r[6]);
+    const cls = gain==null ? '' : (gain >= 0 ? 'up' : 'down');
+    return `
+    <tr>
+      <td>${r[1]||'-'}</td>
+      <td>${r[2]||'-'}</td>
+      <td>${r[3]||'-'}</td>
+      <td class="num-cell">${won(num(r[4]))}</td>
+      <td class="num-cell">${won(num(r[5]))}</td>
+      <td class="num-cell ${cls}">${signWon(gain)}</td>
+    </tr>`;
+  }).join('');
+  if(totalRow){
+    const gain = num(totalRow[6]);
+    const cls = gain==null ? '' : (gain >= 0 ? 'up' : 'down');
+    html += `<tr class="total-row"><td colspan="3">합계</td><td class="num-cell">${won(num(totalRow[4]))}</td><td class="num-cell">${won(num(totalRow[5]))}</td><td class="num-cell ${cls}">${signWon(gain)}</td></tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function renderSummary(summary){
+  const cash = num(summary['총현금성자산']);
+  const savings = num(summary['총저축성자산(추정)']);
+  const real = num(summary['총실물자산(현재추정가)']);
+  const total = num(summary['총자산(순자산, 부채 미반영)']) ?? ((cash||0)+(savings||0)+(real||0));
+
+  document.getElementById('totalValue').textContent = eok(total);
+  document.getElementById('totalSub').textContent = `${comma(total)}원 · 순자산(부채 미반영)`;
+  document.getElementById('kpiCash').textContent = eok(cash);
+  document.getElementById('kpiSavings').textContent = eok(savings);
+  document.getElementById('kpiReal').textContent = eok(real);
+
+  const cashPct = num(summary['현금성자산 비중']) ?? (total ? cash/total*100 : 0);
+  const savingsPct = num(summary['저축성자산 비중']) ?? (total ? savings/total*100 : 0);
+  const realPct = num(summary['실물자산 비중']) ?? (total ? real/total*100 : 0);
+
+  document.getElementById('allocBar').innerHTML = `
+    <i style="width:${cashPct}%;background:#34d399" title="현금성 ${cashPct.toFixed(1)}%"></i>
+    <i style="width:${savingsPct}%;background:#60a5fa" title="저축성 ${savingsPct.toFixed(1)}%"></i>
+    <i style="width:${realPct}%;background:#a78bfa" title="실물 ${realPct.toFixed(1)}%"></i>`;
+  document.getElementById('allocLegend').innerHTML = `
+    <span><i style="background:#34d399"></i>현금성 ${cashPct.toFixed(1)}%</span>
+    <span><i style="background:#60a5fa"></i>저축성 ${savingsPct.toFixed(1)}%</span>
+    <span><i style="background:#a78bfa"></i>실물 ${realPct.toFixed(1)}%</span>`;
+
+  const monthStart = summary['월시작일'];
+  document.getElementById('asOfNote').textContent = monthStart ? `이번달 시작일 ${monthStart}` : '';
+}
+
+function renderFlow(transferRows){
+  const now = new Date();
+  const mIdx = now.getMonth(); // 0=1월
+  const colIdx = 4 + mIdx;
+  const monthLabel = (mIdx+1) + '월';
+  document.getElementById('flowTitle').textContent = `이번달(${monthLabel}) 현금흐름`;
+
+  const incomeRow = findRow(transferRows, '급여 실수령금 (용연+현미)');
+  const expenseRow = findRow(transferRows, '지출 합계');
+  const balanceRow = findRow(transferRows, '월잔액');
+
+  const income = incomeRow ? num(incomeRow[colIdx]) : null;
+  const expense = expenseRow ? num(expenseRow[colIdx]) : null;
+  const balance = balanceRow ? num(balanceRow[colIdx]) : null;
+
+  document.getElementById('flowIncome').textContent = won(income);
+  document.getElementById('flowExpense').textContent = won(expense);
+  const balEl = document.getElementById('flowBalance');
+  balEl.textContent = signWon(balance);
+  balEl.className = 'val ' + (balance==null ? '' : (balance>=0 ? 'up' : 'down'));
+
+  // 12개월 추이
+  const bars = document.getElementById('trendBars');
+  if(!balanceRow){ bars.innerHTML = '<div class="section-note">데이터 없음</div>'; return; }
+  const values = [];
+  for(let i=0;i<12;i++) values.push(num(balanceRow[4+i]));
+  const maxAbs = Math.max(1, ...values.map(v => Math.abs(v||0)));
+  bars.innerHTML = values.map((v,i) => {
+    const h = v==null ? 2 : Math.max(3, Math.round(Math.abs(v)/maxAbs*90));
+    const color = v==null ? '#2b3038' : (v>=0 ? '#34d399' : '#ff6b6b');
+    const isNow = i===mIdx ? ' now' : '';
+    return `<div class="trend-col${isNow}">
+      <div class="bar" style="height:${h}px;background:${color}"></div>
+      <div class="m">${i+1}월</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadAll(){
+  try{
+    const [summaryRows, cashRows, savingsRows, realRows, transferRows] = await Promise.all([
+      fetchSheet('요약'),
+      fetchSheet('현금성자산'),
+      fetchSheet('저축성자산'),
+      fetchSheet('실물자산'),
+      fetchSheet('월이체항목'),
+    ]);
+
+    const summary = buildKeyValueMap(summaryRows);
+    renderSummary(summary);
+    renderFlow(transferRows);
+    renderCashTable(cashRows);
+    renderSavingsTable(savingsRows);
+    renderRealTable(realRows);
+
+    const now = new Date();
+    const stamp = new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(now);
+    setBadge(`✅ Google 시트 실시간 연동 · ${stamp} 기준 조회`, false);
+  }catch(e){
+    console.error(e);
+    setBadge('⚠️ 시트를 불러오지 못했습니다. 잠시 후 새로고침해주세요.', true);
+  }
+}
+loadAll();
+</script>
+</body>
+</html>
