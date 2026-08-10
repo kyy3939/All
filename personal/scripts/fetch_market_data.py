@@ -10,17 +10,21 @@ stocks.html 안의 <script type="application/json" id="marketData"> 블록을
   1. stocks.html에서 기존 marketData JSON을 읽는다 (실패 시 폴백용 기준값).
   2. yfinance로 지수/환율/금리/유가/보유·관심종목 시세를 새로 받아온다.
   3. Google 뉴스 RSS로 증시 관련 최신 뉴스를 받아온다.
-  4. 위 데이터를 marketData 형식으로 합쳐 stocks.html의 JSON 블록만 치환해 저장한다.
+  4. (선택) Google Sheets("주식투자" 폴더)에서 실제 보유 계좌/종목 데이터를 받아온다.
+  5. 위 데이터를 marketData 형식으로 합쳐 stocks.html의 JSON 블록만 치환해 저장한다.
 
 원칙: 개별 항목 수집에 실패해도 스크립트 전체가 죽지 않고, 실패한 항목은
 직전 값을 그대로 유지한다 (페이지가 빈 값/에러로 깨지는 것을 방지).
 """
 
+import csv
+import io
 import json
 import os
 import re
 import sys
 import time
+import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
@@ -860,7 +864,202 @@ def build_news(old_news):
 
 
 # ----------------------------------------------------------------------------
-# 6. 메인
+# 6. 내 포트폴리오 (Google Sheets 연동)
+# ----------------------------------------------------------------------------
+# "개인현황 > 주식투자" 드라이브 폴더의 스프레드시트들이 전부 "링크가 있는 모든 사용자 -
+# 뷰어"로 공유되어 있으므로, 인증(서비스계정/API 키) 없이 구글의 공개 gviz CSV export
+# 엔드포인트(docs.google.com/spreadsheets/d/{id}/gviz/tq?tqx=out:csv&sheet=...)로
+# 그대로 읽어온다. 별도 GitHub Secret이나 GCP 설정이 필요 없다.
+#
+# 드라이브 폴더 목록 API는 인증 없이 쓸 수 없어서, 대상 스프레드시트 9개(마스터 1개 +
+# 계좌 8개, "[백업] 지수관련주" 제외)는 아래에 ID를 고정해 둔다. 계좌를 새로 추가/삭제
+# 하면 이 목록을 수동으로 갱신해야 한다 — 대화창에서 "계좌 시트 추가/삭제해줘"라고
+# 요청하면 그때 반영한다.
+#
+# 개인정보 보호: 계좌번호는 절대 수집/저장하지 않는다(마스터 시트의 "계좌번호" 열은
+# 의도적으로 읽지 않음). 원금/평가금액/손익 등 금액 정보는 사용자가 명시적으로
+# "포함해서 표시"를 선택했으므로 그대로 가져온다.
+
+PORTFOLIO_MASTER_ID = "1zmLvhAmSErtEnH1isRGcYrU4Fl3SFvJEVe98PuUx18o"  # [개인] 주식 전체 계좌 관리
+PORTFOLIO_ACCOUNTS = [
+    {"id": "1m6UXquZA49Y6ZsYCRg-bJhYpncgC7V_MapoFmvO4lHs", "name": "용연", "extra": None},
+    {"id": "1yG_2JV2Fl3lqNpg8u3lPlZhwA3oebphmQG83ty10iEs", "name": "박현미", "extra": None},
+    {"id": "1EkNdyjKZSzG_dWLuWFiU38UbEGckjgXKkF7WpVe96TI", "name": "김하준", "extra": None},
+    {"id": "1SbhFd8WxdVVFqQvH1KC8nMd7tEfP7cjrdVYohMD0-Sc", "name": "지수관련", "extra": None},
+    {"id": "1WNt0nS4lCibBjbEhFaSe2YiuurZmCTdyQ8v3udGlvsc", "name": "생활비", "extra": None},
+    {"id": "1CoOS8uRoO5xS7iho-Paa35E47XsFXc7x3y2RKVKH0_4", "name": "연말정산용", "extra": "DB증권"},
+    {"id": "1DaM7WrrnrphjQMFyfCKkp54ICGiHk3k34vzxno0Do9g", "name": "우리은행", "extra": "IRP - 연말정산용"},
+    {"id": "1FDhP4Netdq3tRvjDHk7ShwVZYdTPEJO29s3ioauEItE", "name": "DB랩", "extra": None},
+]
+
+
+def _pf_num(s):
+    """시트 셀 문자열("1,234", "-71.0", "(1,234)", "" 등)을 숫자로 변환한다. 실패/빈값은 None."""
+    if s is None:
+        return None
+    s = str(s).replace(",", "").replace("원", "").strip()
+    if s in ("", "-"):
+        return None
+    neg = s.startswith("(") and s.endswith(")")
+    if neg:
+        s = s[1:-1]
+    try:
+        v = float(s)
+    except ValueError:
+        return None
+    v = -v if neg else v
+    return int(v) if v == int(v) else round(v, 2)
+
+
+def _pf_cell(row, i):
+    return row[i] if i is not None and i < len(row) else ""
+
+
+def _pf_find_row(rows, *needles):
+    for i, row in enumerate(rows):
+        joined = "".join(row)
+        if all(n in joined for n in needles):
+            return i
+    return None
+
+
+def _pf_col_index(headers, name):
+    for i, h in enumerate(headers):
+        if name in h:
+            return i
+    return None
+
+
+def fetch_sheet_csv_rows(spreadsheet_id, sheet_name):
+    """공개(링크 있으면 보기 가능) 구글시트의 특정 탭을 gviz CSV export로 받아
+    행(list of list) 형태로 반환한다. 인증이 전혀 필요 없다."""
+    url = (
+        f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq"
+        f"?tqx=out:csv&sheet={urllib.parse.quote(sheet_name)}"
+    )
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(req, timeout=15) as resp:
+        raw = resp.read()
+    text = raw.decode("utf-8", errors="replace")
+    return list(csv.reader(io.StringIO(text)))
+
+
+def parse_overview(rows):
+    """마스터 시트의 "전체정리" 탭(계좌별 합산 요약)을 파싱한다. 이 탭은 헤더 텍스트가
+    gviz CSV에서도 깨지지 않아 헤더명 매칭으로 안전하게 읽을 수 있다. "계좌번호" 열은
+    의도적으로 읽지 않는다(개인정보 제외 원칙)."""
+    header_i = _pf_find_row(rows, "항목", "은행명")
+    if header_i is None:
+        raise RuntimeError("전체정리 헤더 행을 찾지 못함")
+    headers = rows[header_i]
+    col = {
+        name: _pf_col_index(headers, name)
+        for name in ["항목", "은행명", "원금", "누적수익", "누적합계", "매입금액", "현금잔액", "평가금액", "평가손익금", "수익률"]
+    }
+    if col["항목"] is None:
+        raise RuntimeError("전체정리 '항목' 열을 찾지 못함")
+
+    def get(row, key):
+        return _pf_cell(row, col[key]).strip()
+
+    accounts, total = [], None
+    for row in rows[header_i + 1:]:
+        name = get(row, "항목")
+        if not name:
+            continue
+        item = {
+            "name": name,
+            "bank": get(row, "은행명") or None,
+            "principal": _pf_num(get(row, "원금")),
+            "cumPnl": _pf_num(get(row, "누적수익")),
+            "cumTotal": _pf_num(get(row, "누적합계")),
+            "buyAmount": _pf_num(get(row, "매입금액")),
+            "cashBalance": _pf_num(get(row, "현금잔액")),
+            "evalAmount": _pf_num(get(row, "평가금액")),
+            "evalPnl": _pf_num(get(row, "평가손익금")),
+            "returnPct": _pf_num(get(row, "수익률")),
+        }
+        if name == "합계":
+            total = item
+        else:
+            accounts.append(item)
+    return {"accounts": accounts, "total": total}
+
+
+# 계좌별 "보유종목" 탭의 고정 열 위치. gviz CSV export가 이 탭 특유의 병합 셀
+# (구역 제목 "1. 현재 보유 자산" / "2. 보유종목")을 처리하면서 "현재가"/"단가"/"수량" 등
+# 뒤쪽 헤더 텍스트를 비워버리는 현상이 실측(용연/박현미/김하준/우리은행/생활비/DB랩
+# 6개 계좌 시트)에서 공통으로 확인됐다. 헤더명 매칭 대신, 모든 계좌 시트에서 동일하게
+# 확인된 고정 열 순서로 파싱한다. "종목코드"/"원금"/"평가 총액" 같은 마커 텍스트로
+# 구역의 시작 행만 찾고, 그 안의 실제 값은 열 번호로 읽는다.
+HOLD_COL = {"code": 1, "name": 2, "price": 3, "avgPrice": 4, "qty": 5, "buyAmount": 6, "evalAmount": 7, "evalPnl": 8, "returnPct": 9}
+SUM_COL = {"principal": 1, "buyAmount": 3, "cashBalance": 4, "evalAmount": 5, "evalPnl": 6, "returnPct": 7}
+
+
+def parse_account_holdings(rows):
+    """계좌별 시트의 "보유종목" 탭을 파싱한다. 이 탭 안에 요약(1. 현재 보유 자산)과
+    보유종목 상세(2. 보유종목) 두 구역이 함께 들어있어 한 번에 둘 다 얻는다."""
+    summary = None
+    sum_header_i = _pf_find_row(rows, "원금")
+    if sum_header_i is not None and sum_header_i + 1 < len(rows):
+        data = rows[sum_header_i + 1]
+        summary = {k: _pf_num(_pf_cell(data, i)) for k, i in SUM_COL.items()}
+
+    holdings = []
+    hold_header_i = _pf_find_row(rows, "종목코드")
+    if hold_header_i is not None:
+        for row in rows[hold_header_i + 1:]:
+            code = _pf_cell(row, HOLD_COL["code"]).strip()
+            name = _pf_cell(row, HOLD_COL["name"]).strip()
+            if not code and not name:
+                break
+            if code in ("평가 총액", "합계") or name in ("평가 총액", "합계"):
+                break
+            holdings.append({
+                "code": code or None,
+                "name": name,
+                "price": _pf_num(_pf_cell(row, HOLD_COL["price"])),
+                "avgPrice": _pf_num(_pf_cell(row, HOLD_COL["avgPrice"])),
+                "qty": _pf_num(_pf_cell(row, HOLD_COL["qty"])),
+                "buyAmount": _pf_num(_pf_cell(row, HOLD_COL["buyAmount"])),
+                "evalAmount": _pf_num(_pf_cell(row, HOLD_COL["evalAmount"])),
+                "evalPnl": _pf_num(_pf_cell(row, HOLD_COL["evalPnl"])),
+                "returnPct": _pf_num(_pf_cell(row, HOLD_COL["returnPct"])),
+            })
+    return summary, holdings
+
+
+def build_portfolio(old_portfolio):
+    empty = {"asOf": None, "overview": {"accounts": [], "total": None}, "accounts": []}
+
+    def _do():
+        master_rows = fetch_sheet_csv_rows(PORTFOLIO_MASTER_ID, "전체정리")
+        overview = parse_overview(master_rows)
+
+        accounts = []
+        for acc in PORTFOLIO_ACCOUNTS:
+            def _one(acc=acc):
+                rows = fetch_sheet_csv_rows(acc["id"], "보유종목")
+                summary, holdings = parse_account_holdings(rows)
+                return {"name": acc["name"], "extra": acc["extra"], "summary": summary, "holdings": holdings}
+
+            got = retry(_one, f"포트폴리오 계좌 수집 [{acc['name']}]", default=None)
+            if got:
+                accounts.append(got)
+        accounts.sort(key=lambda a: a["name"])
+
+        return {
+            "asOf": datetime.now(KST).strftime("%Y-%m-%d"),
+            "overview": overview,
+            "accounts": accounts,
+        }
+
+    result = retry(_do, "포트폴리오(Google Sheets) 전체 수집", default=None)
+    return result if result else (old_portfolio if old_portfolio else empty)
+
+
+# ----------------------------------------------------------------------------
+# 7. 메인
 # ----------------------------------------------------------------------------
 
 def main():
@@ -884,6 +1083,7 @@ def main():
     stock_series = build_stock_series(stocks, old.get("STOCK_SERIES", {}))
     news = build_news(old.get("NEWS", []))
     ai_analysis = build_ai_analysis(stocks, old.get("AI_ANALYSIS", {}))
+    portfolio = build_portfolio(old.get("PORTFOLIO"))
 
     as_of = None
     if idx_series.get("KOSPI"):
@@ -902,6 +1102,7 @@ def main():
         "AI_ANALYSIS": ai_analysis,
         "IDX_SERIES": idx_series,
         "VOL_SERIES": vol_series,
+        "PORTFOLIO": portfolio,
     }
     try:
         # allow_nan=False: NaN/Infinity가 하나라도 섞여 있으면 여기서 즉시 실패시킨다.
@@ -938,8 +1139,11 @@ def main():
     stocks_with_series = sum(1 for s in stocks if stock_series.get(s["ticker"]))
     stocks_with_news = sum(1 for s in stocks if s.get("news"))
     stocks_with_ai = sum(1 for s in stocks if ai_analysis.get(s["ticker"]))
+    pf_accounts = len(portfolio.get("accounts", []))
+    pf_holdings = sum(len(a.get("holdings") or []) for a in portfolio.get("accounts", []))
     log(f"완료. asOf={as_of}, INDICES={len(indices)}, MAJOR_STOCKS=({ms_summary}), "
-        f"STOCKS={len(stocks)}(차트 {stocks_with_series}·뉴스 {stocks_with_news}·AI분석 {stocks_with_ai}), NEWS={len(news)}")
+        f"STOCKS={len(stocks)}(차트 {stocks_with_series}·뉴스 {stocks_with_news}·AI분석 {stocks_with_ai}), "
+        f"NEWS={len(news)}, PORTFOLIO=(계좌 {pf_accounts}·보유종목 {pf_holdings})")
 
 
 if __name__ == "__main__":
