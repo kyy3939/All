@@ -61,12 +61,15 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .chart-legend .row .pct{color:#7f8a9b;font-size:10.5px;width:38px;text-align:right}
 
 .acct-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px}
-.acct-bar-item{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.acct-bar-item{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .acct-bar-item:last-child{margin-bottom:0}
 .acct-bar-item .nm{width:56px;font-size:12px;font-weight:800;color:#dbe3ee;flex-shrink:0}
-.acct-bar-item .track{flex:1;height:18px;border-radius:7px;background:#0c1420;overflow:hidden}
-.acct-bar-item .fill{height:100%;border-radius:7px}
+.acct-bar-item .bar-col{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+.acct-bar-item .track{width:100%;height:18px;border-radius:7px;background:#0c1420;overflow:hidden;display:flex}
+.acct-bar-item .seg{height:100%}
+.acct-bar-item .acct-sub{font-size:10.5px;color:#7f8a9b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acct-bar-item .amt{width:120px;text-align:right;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0}
+.group-sub{font-size:10.5px;color:#7f8a9b;margin:-7px 0 13px}
 
 .group-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:16px 18px;margin-bottom:10px}
 .group-card:last-child{margin-bottom:0}
@@ -84,7 +87,7 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 
 .wrap{max-width:1280px;margin:0 auto;padding:26px 20px 64px}
 
-.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:30px 0 13px}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:30px 0 13px;flex-wrap:wrap}
 .section-head:first-child{margin-top:0}
 .section-head h2{margin:0 0 4px;font-size:16px;letter-spacing:-.3px}
 .section-head p{margin:0;color:var(--sub);font-size:11.5px}
@@ -104,14 +107,44 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .flow-card .val{font-size:20px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
 .flow-card .sub{font-size:10.5px;margin-top:7px;color:#7f8a9b;line-height:1.6}
 
-.compose-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px}
+.compose-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:22px 24px}
+.compose-row{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+.compose-donut{position:relative;width:172px;height:172px;flex-shrink:0}
+.compose-donut svg{width:100%;height:100%}
+.compose-stats{display:flex;flex-wrap:wrap;gap:12px;flex:1;min-width:260px}
+.compose-stat{background:#0f141d;border:1px solid var(--line);border-radius:12px;padding:14px 18px;flex:1;min-width:150px}
+.compose-stat .lbl{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#c3cede;font-weight:700}
+.compose-stat .lbl i{width:9px;height:9px;border-radius:3px;display:inline-block;flex-shrink:0}
+.compose-stat .amt{font-size:18px;font-weight:900;margin-top:9px;font-variant-numeric:tabular-nums}
+.compose-stat .pct{font-size:11px;color:#7f8a9b;margin-top:3px}
 
 .trend-card{background:linear-gradient(150deg,#151a25,#11151d);border:1px solid var(--line);border-radius:15px;padding:18px 18px 12px}
-.trend-bars{display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:6px}
-.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.trend-bars{display:flex;align-items:flex-end;gap:8px;height:134px;margin-top:10px}
+.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.trend-col .val{font-size:9.5px;font-weight:800;color:#9fb0c8;font-variant-numeric:tabular-nums;white-space:nowrap}
+.trend-col .val.up{color:var(--up)}
+.trend-col .val.down{color:var(--down)}
 .trend-col .bar{width:100%;border-radius:5px 5px 3px 3px;min-height:3px}
 .trend-col .m{font-size:9.5px;color:#7f8a9b}
 .trend-col.now .m{color:#6ee7b7;font-weight:800}
+
+.compare-bars{display:flex;align-items:flex-end;gap:12px;height:150px;margin-top:4px}
+.compare-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;min-width:0}
+.compare-col .delta{font-size:9.5px;font-weight:800;white-space:nowrap}
+.compare-col .delta.over{color:var(--up)}
+.compare-col .delta.under{color:#34d399}
+.compare-col .bars-pair{display:flex;align-items:flex-end;gap:3px;height:104px}
+.compare-col .bp-bar{width:15px;border-radius:4px 4px 2px 2px;min-height:2px}
+.compare-col .m{font-size:9.5px;color:#7f8a9b}
+.compare-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:10.5px;color:#8fa0b7}
+.compare-legend span{display:inline-flex;align-items:center;gap:6px}
+.compare-legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+.month-tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.month-tab{background:#151a25;border:1px solid var(--line);color:#8fa0b7;font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.month-tab:hover{border-color:#3a4353;color:#dbe3ee}
+.month-tab.active{background:linear-gradient(135deg,var(--asset),#059669);color:#04140d;border-color:transparent}
+.table-wrap.scroll-tall{max-height:440px;overflow-y:auto}
 
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:#111621}
 table.dt{width:100%;border-collapse:collapse;min-width:640px;font-size:12px}
@@ -138,7 +171,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
 .app-ver-tag{position:fixed;right:10px;bottom:8px;font-size:10px;color:#657286;opacity:.55;z-index:9999;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;pointer-events:none}
 
 @media(max-width:900px){.hero-total{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.flow-grid{grid-template-columns:repeat(2,1fr)}.cat-amt{width:90px}}
-@media(max-width:620px){.topbar-inner{padding:11px 15px}.hero-inner{padding:28px 15px 22px}h1{font-size:24px}.wrap{padding:18px 14px 48px}.total-value{font-size:28px}.footer{text-align:center}.cat-name{white-space:normal}}
+@media(max-width:620px){.topbar-inner{padding:11px 15px}.hero-inner{padding:28px 15px 22px}h1{font-size:24px}.wrap{padding:18px 14px 48px}.total-value{font-size:28px}.footer{text-align:center}.cat-name{white-space:normal}.compose-donut{width:130px;height:130px}.compose-stats{min-width:0}}
 </style>
 </head>
 <body>
@@ -224,19 +257,19 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     <div><h2>이번달 지출 구성</h2><p>계좌이체 전체를 소비·저축투자·대출상환으로 나눠봤습니다.</p></div>
   </div>
   <div class="compose-card">
-    <div class="chart-row">
-      <div class="donut-wrap" id="composeDonut"></div>
-      <div class="chart-legend" id="composeLegend"></div>
+    <div class="compose-row">
+      <div class="compose-donut" id="composeDonut"></div>
+      <div class="compose-stats" id="composeLegend"></div>
     </div>
   </div>
 
   <div class="section-head">
-    <div><h2>계좌별 이체 비교</h2><p>개인·생활·하준 계좌에서 이번달 실제로 나간 총액입니다.</p></div>
+    <div><h2>계좌별 이체 비교</h2><p>개인·생활·하준 계좌에서 이번달 실제로 나간 총액과, 그 안의 소비·저축·대출 구성입니다.</p></div>
   </div>
   <div class="acct-card" id="acctBars"></div>
 
   <div class="section-head">
-    <div><h2>이번달 실제 지출 항목</h2><p>개인·생활·하준 계좌별 전체 이체 항목을 금액순으로 정리했습니다. 초록은 저축·투자, 보라는 대출상환, 회색은 소비입니다.</p></div>
+    <div><h2>이번달 실제 지출 항목</h2><p>개인·생활·하준 계좌별 전체 이체 항목을 금액순으로 정리했습니다. 회색은 소비, 초록은 저축·투자, 보라는 대출상환입니다.</p></div>
   </div>
   <div id="catGroups">
     <div class="group-card"><div class="group-head"><div class="name">불러오는 중…</div></div></div>
@@ -247,6 +280,31 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
   <div class="trend-card">
     <div class="trend-bars" id="trendBars"></div>
+  </div>
+
+  <div class="section-head">
+    <div><h2>실제사용 vs 이체계획</h2><p>실제사용 시트(카드·계좌 거래 내역) 기준, 월이체항목의 예산 대비 실제로 얼마나 더/덜 썼는지 비교합니다.</p></div>
+    <div class="section-note" id="actualAsOfNote">불러오는 중…</div>
+  </div>
+  <div class="trend-card">
+    <div class="compare-bars" id="actualCompareBars"><div class="section-note">불러오는 중…</div></div>
+    <div class="compare-legend">
+      <span><i style="background:#60a5fa"></i>이체계획(예산)</span>
+      <span><i style="background:#34d399"></i>실제사용(예산 이내)</span>
+      <span><i style="background:#ff6b6b"></i>실제사용(예산 초과)</span>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div><h2>월별 실제사용 상세</h2><p>월을 선택하면 그 달의 대분류별 지출과 개별 거래 내역을 볼 수 있습니다.</p></div>
+    <div class="month-tabs" id="monthTabs"></div>
+  </div>
+  <div class="compose-card" id="actualMonthSummary" style="margin-bottom:14px"><div class="section-note">불러오는 중…</div></div>
+  <div class="table-wrap scroll-tall">
+    <table class="dt">
+      <thead><tr><th>날짜</th><th>대분류</th><th>소분류</th><th>내용</th><th style="text-align:right">금액</th></tr></thead>
+      <tbody id="actualDetailTbody"><tr class="loading-row"><td colspan="5">불러오는 중…</td></tr></tbody>
+    </table>
   </div>
 
   <div class="section-head">
@@ -304,9 +362,10 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="footer-note">
-    ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b> + <b>증권계좌 현황</b> 시트)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
+    ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b> + <b>증권계좌 현황</b> + <b>실제사용</b> 시트)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
     ※ 상단 순자산은 <b>총자산(현금성+저축성+실물+주식평가) − 부채</b>로 계산합니다. 대출은 아파트 담보대출 원리금 상환액이 월이체항목에서도 확인 가능합니다.<br>
     ※ 주식평가자산은 별도 증권계좌 시트의 평가금액 합계입니다. 저축성자산의 DB랩1·우리은행 IRP는 증권계좌 시트의 DB 랩·IRP(연말정산용)와 같은 계좌라서, 순자산 계산에서는 저축성자산 쪽 금액을 빼고 증권계좌 평가금액(실제 시세 반영)으로만 반영했습니다.<br>
+    ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 월별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 실제사용 시트에는 2026년 데이터 외에 2025년 하반기 데이터도 섞여 있는데, 예산 비교는 월이체항목이 2026년 기준이라 2026년 월만 비교하고, 월별 상세 탭에서는 있는 만큼 전부 볼 수 있습니다.<br>
     ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.<br>
     ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.
   </div>
@@ -318,6 +377,16 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
 const SHEET_ID = '1zWWunW7_XJfocsJZEoUMF75eFzI7o8R6fAynypcctbE';
 function sheetUrl(name){
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
+}
+
+// 실제사용(카드/계좌 거래 내역) 탭 — 같은 스프레드시트, gid로 지정(탭 이름 대신)
+const ACTUAL_GID = '326561513';
+function actualSheetUrl(){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${ACTUAL_GID}`;
+}
+async function fetchActualSheet(){
+  const t = await fetchCsvWithRetry(actualSheetUrl(), '실제사용');
+  return parseCSV(t);
 }
 
 // 증권계좌(주식평가자산) 시트 — 별도 스프레드시트, 특정 탭을 gid로 지정
@@ -759,7 +828,7 @@ function renderFlow(transferRows){
   balEl.textContent = signWon(balance);
   balEl.className = 'val ' + (balance==null ? '' : (balance>=0 ? 'up' : 'down'));
 
-  // 12개월 추이
+  // 12개월 추이 (막대 위에 금액도 같이 표시)
   const bars = document.getElementById('trendBars');
   if(!balanceRow){ bars.innerHTML = '<div class="section-note">데이터 없음</div>'; }
   else{
@@ -767,11 +836,14 @@ function renderFlow(transferRows){
     for(let i=0;i<12;i++) values.push(num(balanceRow[4+i]));
     const maxAbs = Math.max(1, ...values.map(v => Math.abs(v||0)));
     bars.innerHTML = values.map((v,i) => {
-      const h = v==null ? 2 : Math.max(3, Math.round(Math.abs(v)/maxAbs*90));
+      const h = v==null ? 2 : Math.max(3, Math.round(Math.abs(v)/maxAbs*78));
       const color = v==null ? '#2b3038' : (v>=0 ? '#34d399' : '#ff6b6b');
       const isNow = i===mIdx ? ' now' : '';
+      const valCls = v==null ? '' : (v>=0 ? 'up' : 'down');
+      const valLabel = v==null ? '-' : (v>=0 ? '+' : '-') + Math.round(Math.abs(v)/10000) + '만';
       return `<div class="trend-col${isNow}">
-        <div class="bar" style="height:${h}px;background:${color}"></div>
+        <div class="val ${valCls}">${valLabel}</div>
+        <div class="bar" style="height:${h}px;background:${color}" title="${won(v)}"></div>
         <div class="m">${i+1}월</div>
       </div>`;
     }).join('');
@@ -818,6 +890,7 @@ function renderCategoryBreakdown(transferRows, colIdx, income, expense){
   groups.forEach(g => {
     g.items = [];
     g.total = 0;
+    g.typeTotal = { spend:0, saving:0, debt:0 };
     g.rows.forEach(r => {
       const label = (r[1]||'').trim();
       if(!label || label==='합계') return;
@@ -831,6 +904,7 @@ function renderCategoryBreakdown(transferRows, colIdx, income, expense){
       items.push(item);
       g.items.push(item);
       g.total += amt;
+      g.typeTotal[type] += amt;
     });
   });
 
@@ -844,24 +918,41 @@ function renderCategoryBreakdown(transferRows, colIdx, income, expense){
     { value:spendTotal, color:TYPE_COLOR.spend },
     { value:savingTotal, color:TYPE_COLOR.saving },
     { value:debtTotal, color:TYPE_COLOR.debt },
-  ]) + donutCenterHtml(won(total), '이체 합계');
+  ], 172, 22) + donutCenterHtml(won(total), '이체 합계');
   document.getElementById('composeLegend').innerHTML = `
-    <div class="row"><i style="background:${TYPE_COLOR.spend}"></i>소비 <b>${won(spendTotal)}</b><span class="pct">${spendPct.toFixed(1)}%</span></div>
-    <div class="row"><i style="background:${TYPE_COLOR.saving}"></i>저축·투자 <b>${won(savingTotal)}</b><span class="pct">${savingPct.toFixed(1)}%</span></div>
-    <div class="row"><i style="background:${TYPE_COLOR.debt}"></i>대출상환 <b>${won(debtTotal)}</b><span class="pct">${debtPct.toFixed(1)}%</span></div>`;
+    <div class="compose-stat"><div class="lbl"><i style="background:${TYPE_COLOR.spend}"></i>소비</div><div class="amt">${won(spendTotal)}</div><div class="pct">${spendPct.toFixed(1)}%</div></div>
+    <div class="compose-stat"><div class="lbl"><i style="background:${TYPE_COLOR.saving}"></i>저축·투자</div><div class="amt">${won(savingTotal)}</div><div class="pct">${savingPct.toFixed(1)}%</div></div>
+    <div class="compose-stat"><div class="lbl"><i style="background:${TYPE_COLOR.debt}"></i>대출상환</div><div class="amt">${won(debtTotal)}</div><div class="pct">${debtPct.toFixed(1)}%</div></div>`;
 
-  // 계좌별 이체 비교 (막대)
-  const maxAcct = Math.max(1, ...groups.map(g => g.total));
-  document.getElementById('acctBars').innerHTML = groups.map(g => `
+  // 계좌별 이체 비교 (소비/저축/대출 구성이 보이는 스택 막대)
+  document.getElementById('acctBars').innerHTML = groups.map(g => {
+    const t = g.typeTotal;
+    const segs = ['spend','saving','debt'].filter(k => t[k] > 0).map(k =>
+      `<div class="seg" style="width:${g.total ? (t[k]/g.total*100) : 0}%;background:${TYPE_COLOR[k]}"></div>`
+    ).join('');
+    const subParts = [];
+    if(t.spend) subParts.push(`소비 ${won(t.spend)}`);
+    if(t.saving) subParts.push(`저축 ${won(t.saving)}`);
+    if(t.debt) subParts.push(`대출 ${won(t.debt)}`);
+    return `
     <div class="acct-bar-item">
       <div class="nm">${g.name}</div>
-      <div class="track"><div class="fill" style="width:${Math.max(2, g.total/maxAcct*100)}%;background:${ACCT_COLOR[g.name]}"></div></div>
+      <div class="bar-col">
+        <div class="track">${segs}</div>
+        <div class="acct-sub">${subParts.join(' · ') || '내역 없음'}</div>
+      </div>
       <div class="amt">${won(g.total)}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // 계좌별 전체 항목 (막대 리스트, 금액순 정렬)
   const catGroups = document.getElementById('catGroups');
   catGroups.innerHTML = groups.map(g => {
+    const t = g.typeTotal;
+    const subParts = [];
+    if(t.spend) subParts.push(`소비 ${won(t.spend)}`);
+    if(t.saving) subParts.push(`저축·투자 ${won(t.saving)}`);
+    if(t.debt) subParts.push(`대출상환 ${won(t.debt)}`);
     const sorted = g.items.slice().sort((a,b) => b.amt - a.amt);
     const maxAmt = Math.max(1, ...sorted.map(it => it.amt));
     const rowsHtml = sorted.map(it => `
@@ -877,6 +968,7 @@ function renderCategoryBreakdown(transferRows, colIdx, income, expense){
         <div class="name"><i style="background:${ACCT_COLOR[g.name]}"></i>${g.name} 계좌</div>
         <div class="total">${won(g.total)}</div>
       </div>
+      <div class="group-sub">${subParts.join(' · ') || '내역 없음'}</div>
       ${rowsHtml || '<div class="section-note">데이터 없음</div>'}
     </div>`;
   }).join('');
@@ -888,9 +980,126 @@ function renderCategoryBreakdown(transferRows, colIdx, income, expense){
   document.getElementById('flowExpenseSub').textContent = `소비 ${won(spendTotal)} · 저축/투자 ${won(savingTotal)} · 대출상환 ${won(debtTotal)}`;
 }
 
+// ---- 실제사용(카드/계좌 거래 내역) ----
+const MAJOR_COLORS = ['#60a5fa','#34d399','#f59e0b','#a78bfa','#f472b6','#38bdf8','#facc15','#fb7185'];
+const majorColorCache = {};
+function colorForMajor(major){
+  if(!majorColorCache[major]) majorColorCache[major] = MAJOR_COLORS[Object.keys(majorColorCache).length % MAJOR_COLORS.length];
+  return majorColorCache[major];
+}
+
+// 헤더 행("날짜" 컬럼)을 찾아 그 아래 날짜가 있는 행만 데이터로 반환 (합계 행 없이 끝까지 이어지는 거래 나열식 시트)
+function extractActualRows(rows){
+  const hIdx = rows.findIndex(r => (r[1]||'').trim() === '날짜');
+  if(hIdx < 0) return [];
+  const data = [];
+  for(let i=hIdx+1;i<rows.length;i++){
+    const dateStr = (rows[i][1]||'').trim();
+    if(!dateStr) continue;
+    data.push(rows[i]);
+  }
+  return data;
+}
+
+// 연-월(YYYY-MM) 단위로 묶는다. 실제사용 시트에는 작년 하반기 데이터도 섞여 있어서
+// 그냥 "몇 월"로만 묶으면 2025년 7월과 2026년 7월이 합쳐지는 사고가 나므로 반드시 연도까지 함께 묶는다.
+function buildActualUsageModel(rows){
+  const byKey = {}; // "2026-07" -> { total, byMajor:{}, items:[] }
+  rows.forEach(r => {
+    const date = (r[1]||'').trim();
+    const type = (r[3]||'').trim();
+    if(!date || type !== '지출') return;
+    const key = date.slice(0,7); // YYYY-MM
+    if(!/^\d{4}-\d{2}$/.test(key)) return;
+    const amt = Math.abs(num(r[7]) || 0);
+    if(!amt) return;
+    const major = (r[4]||'').trim() || '미분류';
+    if(!byKey[key]) byKey[key] = { total:0, byMajor:{}, items:[] };
+    byKey[key].total += amt;
+    byKey[key].byMajor[major] = (byKey[key].byMajor[major]||0) + amt;
+    byKey[key].items.push({ date, time:(r[2]||'').trim(), major, minor:(r[5]||'').trim(), desc:(r[6]||'').trim(), amt });
+  });
+  return byKey;
+}
+
+let actualByKey = {};
+
+// "실제사용 vs 이체계획" 비교막대: 월이체항목의 "지출 합계"는 2026년 기준이라, 2026년 월만 비교 대상으로 삼는다.
+function renderActualCompare(byKey, expenseRow){
+  const el = document.getElementById('actualCompareBars');
+  const keys = Object.keys(byKey).filter(k => k.startsWith('2026-')).sort();
+  if(!keys.length){ el.innerHTML = '<div class="section-note">2026년 데이터 없음</div>'; return; }
+  const budgetFor = key => {
+    if(!expenseRow) return null;
+    const m = parseInt(key.slice(5,7), 10);
+    return m ? num(expenseRow[3+m]) : null;
+  };
+  const maxVal = Math.max(1, ...keys.map(k => Math.max(byKey[k].total, budgetFor(k) || 0)));
+  el.innerHTML = keys.map(k => {
+    const actual = byKey[k].total;
+    const budget = budgetFor(k) || 0;
+    const bH = Math.max(2, Math.round(budget/maxVal*100));
+    const aH = Math.max(2, Math.round(actual/maxVal*100));
+    const over = actual > budget;
+    const delta = actual - budget;
+    const deltaLabel = (delta>=0?'+':'-') + Math.round(Math.abs(delta)/10000) + '만';
+    const mLabel = parseInt(k.slice(5,7),10) + '월';
+    return `<div class="compare-col">
+      <div class="delta ${over?'over':'under'}">${deltaLabel}</div>
+      <div class="bars-pair">
+        <div class="bp-bar" style="height:${bH}px;background:#60a5fa" title="이체계획 ${won(budget)}"></div>
+        <div class="bp-bar" style="height:${aH}px;background:${over?'#ff6b6b':'#34d399'}" title="실제사용 ${won(actual)}"></div>
+      </div>
+      <div class="m">${mLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderActualMonthTabs(keys, selected){
+  const el = document.getElementById('monthTabs');
+  el.innerHTML = keys.map(k => {
+    const label = k.slice(0,4)==='2026' ? parseInt(k.slice(5,7),10)+'월' : k.slice(2,4)+"'"+parseInt(k.slice(5,7),10)+'월';
+    return `<button type="button" class="month-tab${k===selected?' active':''}" data-k="${k}">${label}</button>`;
+  }).join('');
+  el.querySelectorAll('.month-tab').forEach(btn => {
+    btn.addEventListener('click', () => renderActualMonthDetail(btn.dataset.k));
+  });
+}
+
+function renderActualMonthDetail(key){
+  document.querySelectorAll('#monthTabs .month-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.k===key));
+  const data = actualByKey[key];
+  const summaryEl = document.getElementById('actualMonthSummary');
+  const tbody = document.getElementById('actualDetailTbody');
+  if(!data){
+    summaryEl.innerHTML = '<div class="section-note">데이터 없음</div>';
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="5">데이터 없음</td></tr>';
+    return;
+  }
+  const majors = Object.keys(data.byMajor).sort((a,b) => data.byMajor[b]-data.byMajor[a]);
+  summaryEl.innerHTML = `<div class="compose-stats" style="gap:10px">` + majors.map(maj => `
+    <div class="compose-stat" style="min-width:130px;padding:11px 15px">
+      <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
+      <div class="amt" style="font-size:15px;margin-top:6px">${won(data.byMajor[maj])}</div>
+      <div class="pct">${(data.byMajor[maj]/data.total*100).toFixed(1)}%</div>
+    </div>`).join('') + `</div>`;
+
+  const sorted = data.items.slice().sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+  tbody.innerHTML = sorted.map(it => {
+    const c = colorForMajor(it.major);
+    return `<tr>
+      <td>${it.date.slice(5)}</td>
+      <td><span class="badge-pill" style="background:${c}22;color:${c};border:1px solid ${c}55">${it.major}</span></td>
+      <td>${it.minor||'-'}</td>
+      <td>${it.desc||'-'}</td>
+      <td class="num-cell">${won(it.amt)}</td>
+    </tr>`;
+  }).join('');
+}
+
 async function loadAll(){
   try{
-    const [summaryRows, cashRows, savingsRows, realRows, transferRows, debtRows, stockRows] = await Promise.all([
+    const [summaryRows, cashRows, savingsRows, realRows, transferRows, debtRows, stockRows, actualRawRows] = await Promise.all([
       fetchSheet('요약'),
       fetchSheet('현금성자산'),
       fetchSheet('저축성자산'),
@@ -898,6 +1107,7 @@ async function loadAll(){
       fetchSheet('월이체항목'),
       fetchSheet('부채'),
       fetchStockSheet(),
+      fetchActualSheet(),
     ]);
 
     const summary = buildKeyValueMap(summaryRows);
@@ -909,6 +1119,24 @@ async function loadAll(){
     const debtInfo = renderDebtTable(debtRows);
     renderSummary(summary, debtInfo.debtTotal, stockInfo, savingsInfo.adjustedTotal, cashInfo.cashTotal, realInfo.realTotal);
     renderCategoryBreakdown(transferRows, colIdx, income, expense);
+
+    // 실제사용 vs 이체계획
+    const actualDataRows = extractActualRows(actualRawRows);
+    actualByKey = buildActualUsageModel(actualDataRows);
+    const expenseRow = findRow(transferRows, '지출 합계');
+    renderActualCompare(actualByKey, expenseRow);
+    const actualKeys = Object.keys(actualByKey).sort();
+    if(actualKeys.length){
+      const defaultKey = actualKeys[actualKeys.length - 1];
+      renderActualMonthTabs(actualKeys, defaultKey);
+      renderActualMonthDetail(defaultKey);
+      document.getElementById('actualAsOfNote').textContent =
+        `${actualKeys[0]} ~ ${actualKeys[actualKeys.length-1]} 데이터 (실제사용 시트 기준)`;
+    } else {
+      document.getElementById('actualAsOfNote').textContent = '실제사용 데이터 없음';
+      document.getElementById('actualMonthSummary').innerHTML = '<div class="section-note">데이터 없음</div>';
+      document.getElementById('actualDetailTbody').innerHTML = '<tr class="loading-row"><td colspan="5">데이터 없음</td></tr>';
+    }
 
     // KPI 카드 보조 지표
     document.getElementById('kpiCashSub').textContent = cashInfo.avgRate!=null
