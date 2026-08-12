@@ -13,8 +13,12 @@
   --shadow:0 12px 28px rgba(0,0,0,.18);
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scrollbar-color:#2b3038 #0b0d12;scrollbar-width:thin}
 body{margin:0;min-height:100vh;font-family:"Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#0a0d13 0%,#0d1118 100%);color:var(--ink);line-height:1.5}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#0b0d12}
+::-webkit-scrollbar-thumb{background:#2b3038;border-radius:999px;border:2px solid #0b0d12}
+::-webkit-scrollbar-thumb:hover{background:#3a4353}
 a{text-decoration:none;color:inherit}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}
 
@@ -146,7 +150,11 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .month-tab.active{background:linear-gradient(135deg,var(--asset),#059669);color:#04140d;border-color:transparent}
 .table-wrap.scroll-tall{max-height:440px;overflow-y:auto}
 
-.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:#111621}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:#111621;scrollbar-color:#2b3038 #111621;scrollbar-width:thin}
+.table-wrap::-webkit-scrollbar{width:9px;height:9px}
+.table-wrap::-webkit-scrollbar-track{background:#111621}
+.table-wrap::-webkit-scrollbar-thumb{background:#2b3038;border-radius:999px;border:2px solid #111621}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:#3a4353}
 table.dt{width:100%;border-collapse:collapse;min-width:640px;font-size:12px}
 table.dt th{position:sticky;top:0;background:#171d29;color:#8fa0b7;text-align:left;padding:10px 13px;border-bottom:1px solid #263244;font-size:10.5px;white-space:nowrap}
 table.dt td{padding:10px 13px;border-bottom:1px solid #1d2531;color:#dbe3ee;white-space:nowrap}
@@ -264,12 +272,12 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>계좌별 이체 비교</h2><p>개인·생활·하준 계좌에서 이번달 실제로 나간 총액과, 그 안의 소비·저축·대출 구성입니다.</p></div>
+    <div><h2>계좌별 이체 비교</h2><p>월이체항목 시트의 계좌 그룹별로, 이번달 실제로 나간 총액과 그 안의 소비·저축·대출 구성입니다.</p></div>
   </div>
   <div class="acct-card" id="acctBars"></div>
 
   <div class="section-head">
-    <div><h2>이번달 실제 지출 항목</h2><p>개인·생활·하준 계좌별 전체 이체 항목을 금액순으로 정리했습니다. 회색은 소비, 초록은 저축·투자, 보라는 대출상환입니다.</p></div>
+    <div><h2>이번달 실제 지출 항목</h2><p>계좌 그룹별 전체 이체 항목을 금액순으로 정리했습니다. 회색은 소비, 초록은 저축·투자, 보라는 대출상환입니다.</p></div>
   </div>
   <div id="catGroups">
     <div class="group-card"><div class="group-head"><div class="name">불러오는 중…</div></div></div>
@@ -296,7 +304,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>월별 실제사용 상세</h2><p>월을 선택하면 그 달의 대분류별 지출과 개별 거래 내역을 볼 수 있습니다.</p></div>
+    <div><h2>월별 실제사용 상세</h2><p>최근 12개월 중 월을 선택하면 그 달의 대분류별 지출과 개별 거래 내역을 볼 수 있습니다.</p></div>
     <div class="month-tabs" id="monthTabs"></div>
   </div>
   <div class="compose-card" id="actualMonthSummary" style="margin-bottom:14px"><div class="section-note">불러오는 중…</div></div>
@@ -365,7 +373,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b> + <b>증권계좌 현황</b> + <b>실제사용</b> 시트)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
     ※ 상단 순자산은 <b>총자산(현금성+저축성+실물+주식평가) − 부채</b>로 계산합니다. 대출은 아파트 담보대출 원리금 상환액이 월이체항목에서도 확인 가능합니다.<br>
     ※ 주식평가자산은 별도 증권계좌 시트의 평가금액 합계입니다. 저축성자산의 DB랩1·우리은행 IRP는 증권계좌 시트의 DB 랩·IRP(연말정산용)와 같은 계좌라서, 순자산 계산에서는 저축성자산 쪽 금액을 빼고 증권계좌 평가금액(실제 시세 반영)으로만 반영했습니다.<br>
-    ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 월별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 실제사용 시트에는 2026년 데이터 외에 2025년 하반기 데이터도 섞여 있는데, 예산 비교는 월이체항목이 2026년 기준이라 2026년 월만 비교하고, 월별 상세 탭에서는 있는 만큼 전부 볼 수 있습니다.<br>
+    ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 월별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 월이체항목 시트는 연도 표시 없이 1~12월 컬럼만 있어서 항상 "올해"(오늘 날짜 기준) 예산으로 취급하며, 실제사용 시트에 다른 연도 데이터가 섞여 있어도 올해 월만 비교 대상으로 삼습니다. 월별 상세 탭에서는 최근 12개월치를 연도 구분 없이 전부 볼 수 있습니다.<br>
     ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.<br>
     ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.
   </div>
@@ -861,7 +869,9 @@ function classifyItem(label){
 }
 const TYPE_LABEL = { saving:'저축·투자', debt:'대출상환', spend:'소비' };
 
-// 월이체항목 시트를 "항목 (...)" 헤더 기준으로 구간 분리 → [전체요약, 개인, 생활, 하준]
+// 월이체항목 시트를 "항목 (...)" 헤더 기준으로 구간 분리한다. 각 헤더 셀의 괄호 안 텍스트를
+// 그룹 이름으로 그대로 쓰기 때문에, 시트에 계좌가 추가/삭제/개명되어도 코드를 고칠 필요가 없다.
+// (맨 앞 "항목 (전체)"는 계좌별 합계 요약 구간이라 별도 그룹으로 취급하지 않고 건너뛴다.)
 function splitByHeader(rows){
   const headerIdxs = [];
   rows.forEach((r,i) => { if((r[1]||'').trim().startsWith('항목')) headerIdxs.push(i); });
@@ -869,21 +879,27 @@ function splitByHeader(rows){
   for(let h=0; h<headerIdxs.length; h++){
     const start = headerIdxs[h]+1;
     const end = h+1<headerIdxs.length ? headerIdxs[h+1] : rows.length;
-    sections.push(rows.slice(start, end));
+    const headerText = (rows[headerIdxs[h]][1]||'').trim();
+    const m = headerText.match(/\(([^)]+)\)/);
+    const label = m ? m[1].trim() : headerText;
+    sections.push({ label, rows: rows.slice(start, end) });
   }
   return sections;
 }
 
 const TYPE_COLOR = { saving:'#34d399', debt:'#a78bfa', spend:'#8d9aad' };
-const ACCT_COLOR = { '개인':'#60a5fa', '생활':'#34d399', '하준':'#f59e0b' };
+// 계좌 그룹 색상도 이름을 하드코딩하지 않고, 시트에서 발견된 순서대로 팔레트에서 자동 배정한다.
+const ACCT_PALETTE = ['#60a5fa','#34d399','#f59e0b','#a78bfa','#f472b6','#38bdf8'];
+const acctColorCache = {};
+function colorForAcct(name){
+  if(!acctColorCache[name]) acctColorCache[name] = ACCT_PALETTE[Object.keys(acctColorCache).length % ACCT_PALETTE.length];
+  return acctColorCache[name];
+}
 
 function renderCategoryBreakdown(transferRows, colIdx, income, expense){
   const sections = splitByHeader(transferRows);
-  const groups = [
-    { name:'개인', rows: sections[1]||[] },
-    { name:'생활', rows: sections[2]||[] },
-    { name:'하준', rows: sections[3]||[] },
-  ];
+  // "전체" 요약 구간을 제외한 나머지는 전부 실제 계좌 그룹으로 취급 — 개수/이름 상관없이 자동 반영.
+  const groups = sections.filter(s => s.label !== '전체').map(s => ({ name: s.label, rows: s.rows }));
 
   const items = [];
   let savingTotal = 0, debtTotal = 0, spendTotal = 0;
@@ -965,7 +981,7 @@ function renderCategoryBreakdown(transferRows, colIdx, income, expense){
     return `
     <div class="group-card">
       <div class="group-head">
-        <div class="name"><i style="background:${ACCT_COLOR[g.name]}"></i>${g.name} 계좌</div>
+        <div class="name"><i style="background:${colorForAcct(g.name)}"></i>${g.name} 계좌</div>
         <div class="total">${won(g.total)}</div>
       </div>
       <div class="group-sub">${subParts.join(' · ') || '내역 없음'}</div>
@@ -1024,11 +1040,13 @@ function buildActualUsageModel(rows){
 
 let actualByKey = {};
 
-// "실제사용 vs 이체계획" 비교막대: 월이체항목의 "지출 합계"는 2026년 기준이라, 2026년 월만 비교 대상으로 삼는다.
+// "실제사용 vs 이체계획" 비교막대: 월이체항목 시트는 연도 표시 없이 "1월~12월" 컬럼만 있어서
+// 항상 "올해"(오늘 날짜 기준)의 예산으로 취급한다 — 해가 바뀌어도 코드를 손댈 필요 없게끔.
 function renderActualCompare(byKey, expenseRow){
   const el = document.getElementById('actualCompareBars');
-  const keys = Object.keys(byKey).filter(k => k.startsWith('2026-')).sort();
-  if(!keys.length){ el.innerHTML = '<div class="section-note">2026년 데이터 없음</div>'; return; }
+  const yearPrefix = String(new Date().getFullYear()) + '-';
+  const keys = Object.keys(byKey).filter(k => k.startsWith(yearPrefix)).sort();
+  if(!keys.length){ el.innerHTML = `<div class="section-note">${yearPrefix.slice(0,4)}년 데이터 없음</div>`; return; }
   const budgetFor = key => {
     if(!expenseRow) return null;
     const m = parseInt(key.slice(5,7), 10);
@@ -1057,8 +1075,9 @@ function renderActualCompare(byKey, expenseRow){
 
 function renderActualMonthTabs(keys, selected){
   const el = document.getElementById('monthTabs');
+  const thisYear = String(new Date().getFullYear());
   el.innerHTML = keys.map(k => {
-    const label = k.slice(0,4)==='2026' ? parseInt(k.slice(5,7),10)+'월' : k.slice(2,4)+"'"+parseInt(k.slice(5,7),10)+'월';
+    const label = k.slice(0,4)===thisYear ? parseInt(k.slice(5,7),10)+'월' : k.slice(2,4)+"'"+parseInt(k.slice(5,7),10)+'월';
     return `<button type="button" class="month-tab${k===selected?' active':''}" data-k="${k}">${label}</button>`;
   }).join('');
   el.querySelectorAll('.month-tab').forEach(btn => {
@@ -1125,7 +1144,8 @@ async function loadAll(){
     actualByKey = buildActualUsageModel(actualDataRows);
     const expenseRow = findRow(transferRows, '지출 합계');
     renderActualCompare(actualByKey, expenseRow);
-    const actualKeys = Object.keys(actualByKey).sort();
+    // 데이터가 계속 쌓여도 탭이 무한정 늘어나지 않도록 최근 12개 연-월만 보여준다.
+    const actualKeys = Object.keys(actualByKey).sort().slice(-12);
     if(actualKeys.length){
       const defaultKey = actualKeys[actualKeys.length - 1];
       renderActualMonthTabs(actualKeys, defaultKey);
