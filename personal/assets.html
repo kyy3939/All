@@ -132,6 +132,11 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .trend-col .m{font-size:9.5px;color:#7f8a9b}
 .trend-col.now .m{color:#6ee7b7;font-weight:800}
 
+.compare-summary{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.compare-summary .cs-stat{flex:1;min-width:150px;background:#0f141d;border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+.compare-summary .cs-stat .lbl{font-size:10.5px;color:var(--sub);font-weight:700}
+.compare-summary .cs-stat .val{font-size:18px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
+.compare-summary .cs-stat .sub{font-size:10px;color:#7f8a9b;margin-top:4px}
 .compare-bars{display:flex;align-items:flex-end;gap:12px;height:150px;margin-top:4px}
 .compare-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;min-width:0}
 .compare-col .delta{font-size:9.5px;font-weight:800;white-space:nowrap}
@@ -295,6 +300,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     <div class="section-note" id="actualAsOfNote">불러오는 중…</div>
   </div>
   <div class="trend-card">
+    <div class="compare-summary" id="actualCompareSummary"></div>
     <div class="compare-bars" id="actualCompareBars"><div class="section-note">불러오는 중…</div></div>
     <div class="compare-legend">
       <span><i style="background:#60a5fa"></i>이체계획(예산)</span>
@@ -1044,14 +1050,51 @@ let actualByKey = {};
 // 항상 "올해"(오늘 날짜 기준)의 예산으로 취급한다 — 해가 바뀌어도 코드를 손댈 필요 없게끔.
 function renderActualCompare(byKey, expenseRow){
   const el = document.getElementById('actualCompareBars');
+  const summaryEl = document.getElementById('actualCompareSummary');
   const yearPrefix = String(new Date().getFullYear()) + '-';
   const keys = Object.keys(byKey).filter(k => k.startsWith(yearPrefix)).sort();
-  if(!keys.length){ el.innerHTML = `<div class="section-note">${yearPrefix.slice(0,4)}년 데이터 없음</div>`; return; }
+  if(!keys.length){
+    el.innerHTML = `<div class="section-note">${yearPrefix.slice(0,4)}년 데이터 없음</div>`;
+    if(summaryEl) summaryEl.innerHTML = '';
+    return;
+  }
   const budgetFor = key => {
     if(!expenseRow) return null;
     const m = parseInt(key.slice(5,7), 10);
     return m ? num(expenseRow[3+m]) : null;
   };
+
+  // 초과/절약 합계 요약 카드
+  let totalBudget = 0, totalActual = 0, totalOver = 0, totalUnder = 0, overMonths = 0, underMonths = 0;
+  keys.forEach(k => {
+    const actual = byKey[k].total;
+    const budget = budgetFor(k) || 0;
+    totalBudget += budget;
+    totalActual += actual;
+    const delta = actual - budget;
+    if(delta > 0){ totalOver += delta; overMonths++; }
+    else if(delta < 0){ totalUnder += -delta; underMonths++; }
+  });
+  const netDelta = totalActual - totalBudget;
+  if(summaryEl){
+    summaryEl.innerHTML = `
+      <div class="cs-stat">
+        <div class="lbl">예산 초과 합계</div>
+        <div class="val up">+${comma(totalOver)}원</div>
+        <div class="sub">${overMonths}개월 초과</div>
+      </div>
+      <div class="cs-stat">
+        <div class="lbl">예산 절약 합계</div>
+        <div class="val down">-${comma(totalUnder)}원</div>
+        <div class="sub">${underMonths}개월 절약</div>
+      </div>
+      <div class="cs-stat">
+        <div class="lbl">${keys.length}개월 순차액</div>
+        <div class="val ${netDelta>=0?'up':'down'}">${signWon(netDelta)}</div>
+        <div class="sub">실제사용 ${won(totalActual)} − 예산 ${won(totalBudget)}</div>
+      </div>`;
+  }
+
   const maxVal = Math.max(1, ...keys.map(k => Math.max(byKey[k].total, budgetFor(k) || 0)));
   el.innerHTML = keys.map(k => {
     const actual = byKey[k].total;
