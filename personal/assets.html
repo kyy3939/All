@@ -326,10 +326,21 @@ const STOCK_GID = '1574976252';
 function stockSheetUrl(){
   return `https://docs.google.com/spreadsheets/d/${STOCK_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${STOCK_GID}`;
 }
+// Google gviz는 같은 문서에 여러 요청을 동시에 보내면 가끔 빈 값/짧은 응답을 줄 때가 있어
+// 재시도를 한 번 넣어둔다. (요약 탭이 조용히 빈 값으로 와서 순자산이 잘못 나온 적이 있었음)
+function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+async function fetchCsvWithRetry(url, label){
+  for(let attempt=0; attempt<2; attempt++){
+    if(attempt>0) await sleep(500 + Math.random()*400);
+    const r = await fetch(url + (attempt>0 ? (url.includes('?')?'&':'?') + '_retry=' + Date.now() : ''));
+    if(!r.ok) continue;
+    const t = await r.text();
+    if(t && t.trim().length > 10) return t;
+  }
+  throw new Error('시트를 불러오지 못했습니다: ' + label);
+}
 async function fetchStockSheet(){
-  const r = await fetch(stockSheetUrl());
-  if(!r.ok) throw new Error('증권계좌 시트를 불러오지 못했습니다.');
-  const t = await r.text();
+  const t = await fetchCsvWithRetry(stockSheetUrl(), '증권계좌');
   return parseCSV(t);
 }
 
@@ -354,9 +365,7 @@ function parseCSV(text){
 }
 
 async function fetchSheet(name){
-  const r = await fetch(sheetUrl(name));
-  if(!r.ok) throw new Error('시트를 불러오지 못했습니다: ' + name);
-  const t = await r.text();
+  const t = await fetchCsvWithRetry(sheetUrl(name), name);
   return parseCSV(t);
 }
 
@@ -472,7 +481,7 @@ function setBadge(text, isErr){
 function renderCashTable(rows){
   const { data, totalRow } = extractTable(rows, '구분');
   const tbody = document.getElementById('cashTbody');
-  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="8">데이터 없음</td></tr>'; return { avgRate:null, soonAmt:0, soonCnt:0 }; }
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="8">데이터 없음</td></tr>'; return { avgRate:null, soonAmt:0, soonCnt:0, cashTotal:0 }; }
 
   const parsed = data.map(r => ({
     r, balance:num(r[4]), rate:num(r[5]), start:r[6]||'-', end:r[7]||'-', maturity:parseDate(r[7])
@@ -485,9 +494,10 @@ function renderCashTable(rows){
     return a.maturity - b.maturity;
   });
 
-  let weightedSum = 0, balSum = 0, soonAmt = 0, soonCnt = 0;
+  let weightedSum = 0, balSum = 0, soonAmt = 0, soonCnt = 0, sumBalance = 0;
   const rowsHtml = parsed.map(({r, balance, rate, start, end, maturity}) => {
     if(balance!=null && rate!=null){ weightedSum += balance*rate; balSum += balance; }
+    if(balance!=null) sumBalance += balance;
     let dBadge = '-';
     if(maturity){
       const d = daysUntil(maturity);
@@ -508,13 +518,16 @@ function renderCashTable(rows){
   }).join('');
 
   let html = rowsHtml;
+  let cashTotal = sumBalance;
   if(totalRow){
-    html += `<tr class="total-row"><td colspan="7">합계</td><td class="num-cell">${won(num(totalRow[2]))}</td></tr>`;
+    const totalRowVal = num(totalRow[2]);
+    if(totalRowVal!=null) cashTotal = totalRowVal;
+    html += `<tr class="total-row"><td colspan="7">합계</td><td class="num-cell">${won(totalRowVal)}</td></tr>`;
   }
   tbody.innerHTML = html;
 
   const avgRate = balSum ? weightedSum/balSum : null;
-  return { avgRate, soonAmt, soonCnt };
+  return { avgRate, soonAmt, soonCnt, cashTotal };
 }
 
 // ---- 저축성자산 ----
@@ -574,36 +587,41 @@ function renderSavingsTable(rows){
 function renderRealTable(rows){
   const { data, totalRow } = extractTable(rows, '자산명');
   const tbody = document.getElementById('realTbody');
-  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return { totalCost:0, totalGain:0 }; }
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return { totalCost:0, totalGain:0, realTotal:0 }; }
 
-  let totalCost = 0;
+  let totalCost = 0, totalCurrent = 0;
   let html = data.map(r => {
     const cost = num(r[4]);
+    const current = num(r[5]);
     const gain = num(r[6]);
     const cls = gain==null ? '' : (gain >= 0 ? 'up' : 'down');
     const pct = (cost && gain!=null) ? gain/cost*100 : null;
     if(cost) totalCost += cost;
+    if(current!=null) totalCurrent += current;
     return `
     <tr>
       <td>${r[1]||'-'}</td>
       <td>${r[2]||'-'}</td>
       <td>${r[3]||'-'}</td>
       <td class="num-cell">${won(cost)}</td>
-      <td class="num-cell">${won(num(r[5]))}</td>
+      <td class="num-cell">${won(current)}</td>
       <td class="num-cell ${cls}">${signWon(gain)}</td>
       <td class="num-cell ${cls}">${signPct(pct)}</td>
     </tr>`;
   }).join('');
   let totalGain = null;
+  let realTotal = totalCurrent;
   if(totalRow){
     totalGain = num(totalRow[6]);
     const totalCostRow = num(totalRow[4]);
+    const totalCurrentRow = num(totalRow[5]);
+    if(totalCurrentRow!=null) realTotal = totalCurrentRow;
     const cls = totalGain==null ? '' : (totalGain >= 0 ? 'up' : 'down');
     const totalPct = (totalCostRow && totalGain!=null) ? totalGain/totalCostRow*100 : null;
-    html += `<tr class="total-row"><td colspan="3">합계</td><td class="num-cell">${won(totalCostRow)}</td><td class="num-cell">${won(num(totalRow[5]))}</td><td class="num-cell ${cls}">${signWon(totalGain)}</td><td class="num-cell ${cls}">${signPct(totalPct)}</td></tr>`;
+    html += `<tr class="total-row"><td colspan="3">합계</td><td class="num-cell">${won(totalCostRow)}</td><td class="num-cell">${won(totalCurrentRow)}</td><td class="num-cell ${cls}">${signWon(totalGain)}</td><td class="num-cell ${cls}">${signPct(totalPct)}</td></tr>`;
   }
   tbody.innerHTML = html;
-  return { totalCost, totalGain };
+  return { totalCost, totalGain, realTotal };
 }
 
 // ---- 주식평가자산(증권계좌) ----
@@ -677,10 +695,13 @@ function renderDebtTable(rows){
   return { debtTotal, subLabel };
 }
 
-function renderSummary(summary, debtTotal, stockInfo, savingsAdjustedTotal){
-  const cash = num(summary['총현금성자산']) || 0;
+function renderSummary(summary, debtTotal, stockInfo, savingsAdjustedTotal, cashTotal, realTotal){
+  // 현금성/저축성/실물 총액은 요약 탭의 수기 합계 셀 대신 각 상세 탭에서 직접 계산한다.
+  // (요약 탭 값은 만약 값이 비거나 어긋나도 조용히 0으로 빠져 순자산이 잘못 계산될 수 있어서,
+  //  상세 탭을 유일한 소스로 삼아 그런 사고를 막는다.)
+  const cash = cashTotal || 0;
   const savings = savingsAdjustedTotal || 0;
-  const real = num(summary['총실물자산(현재추정가)']) || 0;
+  const real = realTotal || 0;
   const stock = stockInfo.stockEval || 0;
   const grossTotal = cash + savings + real + stock;
   const debt = debtTotal || 0;
@@ -886,7 +907,7 @@ async function loadAll(){
     const realInfo = renderRealTable(realRows);
     const stockInfo = renderStockTable(stockRows);
     const debtInfo = renderDebtTable(debtRows);
-    renderSummary(summary, debtInfo.debtTotal, stockInfo, savingsInfo.adjustedTotal);
+    renderSummary(summary, debtInfo.debtTotal, stockInfo, savingsInfo.adjustedTotal, cashInfo.cashTotal, realInfo.realTotal);
     renderCategoryBreakdown(transferRows, colIdx, income, expense);
 
     // KPI 카드 보조 지표
