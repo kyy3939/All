@@ -282,7 +282,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   <div class="acct-card" id="acctBars"></div>
 
   <div class="section-head">
-    <div><h2>이번달 실제 지출 항목</h2><p>계좌 그룹별 전체 이체 항목을 금액순으로 정리했습니다. 회색은 소비, 초록은 저축·투자, 보라는 대출상환입니다.</p></div>
+    <div><h2>이번달 실제 지출 항목</h2><p>계좌 그룹별 전체 이체 항목을 금액순으로 정리했습니다. 파란색은 소비, 초록은 저축·투자, 보라는 대출상환입니다.</p></div>
   </div>
   <div id="catGroups">
     <div class="group-card"><div class="group-head"><div class="name">불러오는 중…</div></div></div>
@@ -290,6 +290,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
 
   <div class="section-head">
     <div><h2>최근 12개월 잔액 추이</h2><p>월별 수입에서 고정 지출을 제외한 잔액입니다.</p></div>
+    <div class="section-note" id="trendTotalNote"></div>
   </div>
   <div class="trend-card">
     <div class="trend-bars" id="trendBars"></div>
@@ -861,6 +862,11 @@ function renderFlow(transferRows){
         <div class="m">${i+1}월</div>
       </div>`;
     }).join('');
+
+    const trendTotal = values.reduce((s,v) => s + (v||0), 0);
+    const dataMonths = values.filter(v => v!=null).length;
+    const totalEl = document.getElementById('trendTotalNote');
+    if(totalEl) totalEl.textContent = `${dataMonths}개월 합계 ${signWon(trendTotal)}`;
   }
 
   return { income, expense, balance, colIdx, mIdx };
@@ -893,7 +899,7 @@ function splitByHeader(rows){
   return sections;
 }
 
-const TYPE_COLOR = { saving:'#34d399', debt:'#a78bfa', spend:'#8d9aad' };
+const TYPE_COLOR = { saving:'#34d399', debt:'#a78bfa', spend:'#60a5fa' };
 // 계좌 그룹 색상도 이름을 하드코딩하지 않고, 시트에서 발견된 순서대로 팔레트에서 자동 배정한다.
 const ACCT_PALETTE = ['#60a5fa','#34d399','#f59e0b','#a78bfa','#f472b6','#38bdf8'];
 const acctColorCache = {};
@@ -1008,6 +1014,19 @@ const majorColorCache = {};
 function colorForMajor(major){
   if(!majorColorCache[major]) majorColorCache[major] = MAJOR_COLORS[Object.keys(majorColorCache).length % MAJOR_COLORS.length];
   return majorColorCache[major];
+}
+// 대분류 표시 순서를 고정한다(달마다 금액순으로 뒤바뀌지 않게). 목록에 없는 대분류는 뒤에 금액순으로 붙는다.
+// 색도 이 순서로 미리 배정해서 매달 같은 대분류는 항상 같은 색을 쓰게 한다.
+const MAJOR_ORDER = ['용연','생활비','하준','기타추가예산'];
+MAJOR_ORDER.forEach(name => colorForMajor(name));
+function sortMajors(byMajor){
+  return Object.keys(byMajor).sort((a,b) => {
+    const ia = MAJOR_ORDER.indexOf(a), ib = MAJOR_ORDER.indexOf(b);
+    if(ia!==-1 && ib!==-1) return ia-ib;
+    if(ia!==-1) return -1;
+    if(ib!==-1) return 1;
+    return byMajor[b] - byMajor[a];
+  });
 }
 
 // 헤더 행("날짜" 컬럼)을 찾아 그 아래 날짜가 있는 행만 데이터로 반환 (합계 행 없이 끝까지 이어지는 거래 나열식 시트)
@@ -1138,7 +1157,7 @@ function renderActualMonthDetail(key){
     tbody.innerHTML = '<tr class="loading-row"><td colspan="5">데이터 없음</td></tr>';
     return;
   }
-  const majors = Object.keys(data.byMajor).sort((a,b) => data.byMajor[b]-data.byMajor[a]);
+  const majors = sortMajors(data.byMajor);
   summaryEl.innerHTML = `<div class="compose-stats" style="gap:10px">` + majors.map(maj => `
     <div class="compose-stat" style="min-width:130px;padding:11px 15px">
       <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
