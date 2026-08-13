@@ -264,6 +264,15 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
+    <div><h2>순자산 추이</h2><p>시계열 시트가 따로 없어서, 이 페이지를 열 때마다 이 브라우저에 오늘 날짜의 순자산 스냅샷을 하나씩 기록해 그래프로 보여줍니다.</p></div>
+    <div class="section-note" id="netWorthTrendNote"></div>
+  </div>
+  <div class="trend-card" style="margin-bottom:10px">
+    <div id="netWorthTrendChart"><div class="section-note">불러오는 중…</div></div>
+  </div>
+  <div class="section-note" style="margin:-4px 0 6px">※ 이 그래프는 서버가 아니라 이 브라우저(기기)에만 저장됩니다 — 다른 기기·브라우저에서 열면 새로 쌓입니다.</div>
+
+  <div class="section-head">
     <div><h2 id="flowTitle">이번달 현금흐름</h2><p>급여 이체 계좌 기준 이번달 수입·지출·저축 비율입니다.</p></div>
     <div class="section-note">월이체항목 시트 기준</div>
   </div>
@@ -326,6 +335,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     <div class="month-tabs" id="monthTabs"></div>
   </div>
   <div class="compose-card" id="actualMonthSummary" style="margin-bottom:14px"><div class="section-note">불러오는 중…</div></div>
+  <div id="majorBudgetCompare" style="margin-bottom:14px"></div>
   <div id="actualMinorBreakdown" style="margin-bottom:14px"></div>
   <div class="search-row">
     <input type="text" class="search-input" id="actualSearchInput" placeholder="항목(소분류)·내용으로 검색 — 예: 용연_기타, 주유비 (위 항목별 막대를 클릭해도 검색됩니다)">
@@ -337,6 +347,12 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
       <tbody id="actualDetailTbody"><tr class="loading-row"><td colspan="5">불러오는 중…</td></tr></tbody>
     </table>
   </div>
+
+  <div class="section-head">
+    <div><h2>전체 기간 지출 항목 TOP 10</h2><p>실제사용 시트에 있는 모든 사이클을 합산한 소분류(항목)별 지출 순위입니다. 접미사만 다른 항목(보험료(용연)/(엄마) 등)은 합쳐서 집계했습니다.</p></div>
+    <div class="section-note" id="topMinorNote"></div>
+  </div>
+  <div class="group-card" id="topMinorRanking" style="margin-bottom:26px"><div class="section-note">불러오는 중…</div></div>
 
   <div class="section-head">
     <div><h2>현금성자산 상세</h2><p>계좌별 예금 잔액입니다. 만기가 가까운 순으로 정렬했습니다.</p></div>
@@ -387,8 +403,8 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
   <div class="table-wrap">
     <table class="dt">
-      <thead><tr><th>구분</th><th>대출명</th><th>금리</th><th>상환방법</th><th>대출일자</th><th>만기일</th><th style="text-align:right">대출금액</th></tr></thead>
-      <tbody id="debtTbody"><tr class="loading-row"><td colspan="7">불러오는 중…</td></tr></tbody>
+      <thead><tr><th>구분</th><th>대출명</th><th>금리</th><th>상환방법</th><th>대출일자</th><th>만기일</th><th>진행률</th><th style="text-align:right">대출금액</th></tr></thead>
+      <tbody id="debtTbody"><tr class="loading-row"><td colspan="8">불러오는 중…</td></tr></tbody>
     </table>
   </div>
 
@@ -399,7 +415,10 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     ※ 급여를 매월 25일에 받는 기준에 맞춰, "실제사용 vs 이체계획"과 "월별 실제사용 상세"는 달력 월(1~말일)이 아니라 <b>25일~다음달 24일을 한 사이클</b>로 묶어 계산합니다. 예: 8/1~8/24 지출은 "7월" 사이클(7/25~8/24)로, "이번달 현금흐름"의 이번달도 오늘 날짜 기준 급여 사이클로 판단합니다.<br>
     ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 급여 사이클별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 월이체항목 시트는 연도 표시 없이 1~12월 컬럼만 있어서 항상 "올해"(오늘 날짜 기준) 예산으로 취급하며, 실제사용 시트에 다른 연도 데이터가 섞여 있어도 올해 사이클만 비교 대상으로 삼습니다. 월별 상세 탭에서는 최근 12개 사이클을 연도 구분 없이 전부 볼 수 있고, 대분류 카드 아래에 소분류(항목)별 사용액 막대도 함께 보여줍니다.<br>
     ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.<br>
-    ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.
+    ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.<br>
+    ※ "순자산 추이"는 별도 시계열 시트 없이, 페이지를 열 때마다 이 브라우저의 로컬 저장소에 오늘 날짜 스냅샷을 기록해 그리는 그래프입니다 — 서버에 저장되지 않고 기기·브라우저별로 따로 쌓입니다.<br>
+    ※ 부채 "진행률"은 대출일자~만기일 사이 경과 개월수 비율로 계산한 대략적인 추정치이며, 원리금체증식상황 등 실제 상환 스케줄상의 정확한 잔여원금과는 다를 수 있습니다.<br>
+    ※ "대분류별 예산 대비 실제사용"은 실제사용 시트의 대분류(용연/생활비/하준)를 월이체항목의 계좌 그룹(개인/생활/하준 지출 통장)과 매칭해 비교한 것이며, 기타추가예산처럼 고정 이체가 없는 대분류는 비교 없이 실제사용만 표시합니다.
   </div>
 </main>
 
@@ -782,16 +801,35 @@ function renderStockTable(rows){
 }
 
 // ---- 부채 ----
+// 대출일자~만기일 기준 경과/전체 개월수로 상환 진행률을 계산한다(원리금체증식 등 상환방식별
+// 정확한 잔여원금이 아니라, 기간 기준 대략적인 진행률이라는 점을 표에서 함께 안내한다).
+function loanProgress(startStr, endStr){
+  const start = parseDate(startStr);
+  const end = parseDate(endStr);
+  if(!start || !end) return null;
+  const total = monthsBetween(start, end);
+  if(!total || total<=0) return null;
+  const elapsedRaw = monthsBetween(start, todayMidnight());
+  const elapsed = Math.max(0, Math.min(total, elapsedRaw));
+  const pct = Math.round(elapsed/total*100);
+  return { elapsed, total, pct };
+}
 function renderDebtTable(rows){
   const { data, totalRow } = extractTable(rows, '구분');
   const tbody = document.getElementById('debtTbody');
-  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="7">데이터 없음</td></tr>'; return { debtTotal:0, subLabel:'' }; }
+  if(!data.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="8">데이터 없음</td></tr>'; return { debtTotal:0, subLabel:'' }; }
 
-  let weightedSum = 0, balSum = 0;
+  let weightedSum = 0, balSum = 0, progWeighted = 0, progWeightSum = 0;
   const html = data.map(r => {
     const amt = num(r[4]);
     const rate = num(r[5]);
     if(amt!=null && rate!=null){ weightedSum += amt*rate; balSum += amt; }
+    const prog = loanProgress(r[9], r[10]);
+    let progHtml = '<span style="color:#657286;font-size:11px">-</span>';
+    if(prog){
+      if(amt){ progWeighted += prog.pct*amt; progWeightSum += amt; }
+      progHtml = `<div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${prog.pct}%"></div></div><div class="progress-label">${prog.pct}% (${prog.elapsed}/${prog.total}개월)</div></div>`;
+    }
     return `<tr>
       <td>${r[1]||'-'}</td>
       <td>${r[3]||'-'}</td>
@@ -799,6 +837,7 @@ function renderDebtTable(rows){
       <td>${r[7]||'-'}</td>
       <td>${r[9]||'-'}</td>
       <td>${r[10]||'-'}</td>
+      <td>${progHtml}</td>
       <td class="num-cell">${won(amt)}</td>
     </tr>`;
   }).join('');
@@ -807,12 +846,16 @@ function renderDebtTable(rows){
   let out = html;
   if(totalRow){
     debtTotal = num(totalRow[2]) || 0;
-    out += `<tr class="total-row"><td colspan="6">합계</td><td class="num-cell">${won(debtTotal)}</td></tr>`;
+    out += `<tr class="total-row"><td colspan="7">합계</td><td class="num-cell">${won(debtTotal)}</td></tr>`;
   }
   tbody.innerHTML = out;
 
   const avgRate = balSum ? weightedSum/balSum : null;
-  const subLabel = avgRate!=null ? `대출 ${data.length}건 · 평균금리 ${avgRate.toFixed(2)}%` : `대출 ${data.length}건`;
+  const avgProg = progWeightSum ? Math.round(progWeighted/progWeightSum) : null;
+  const parts = [`대출 ${data.length}건`];
+  if(avgRate!=null) parts.push(`평균금리 ${avgRate.toFixed(2)}%`);
+  if(avgProg!=null) parts.push(`금액가중 상환진행률 ${avgProg}%(기간 기준 추정)`);
+  const subLabel = parts.join(' · ');
   return { debtTotal, subLabel };
 }
 
@@ -856,6 +899,8 @@ function renderSummary(summary, debtTotal, stockInfo, savingsAdjustedTotal, cash
 
   const monthStart = summary['월시작일'];
   document.getElementById('asOfNote').textContent = monthStart ? `이번달 시작일 ${monthStart}` : '';
+
+  recordAndRenderNetWorthTrend(netWorth, grossTotal, debt);
 }
 
 // ---- 월이체항목: 상단 요약(수입/지출/잔액/추이) ----
@@ -1122,6 +1167,195 @@ function buildActualUsageModel(rows){
 }
 
 let actualByKey = {};
+let transferRowsCache = [];
+
+// 실제사용 시트 대분류 → 월이체항목 계좌 그룹(괄호 라벨) 매핑. 매핑이 없는 대분류(예: 기타추가예산)는
+// 고정 예산이 없는 항목이라 예산 비교 없이 실제사용만 보여준다.
+const MAJOR_BUDGET_GROUP = { '용연':'개인', '생활비':'생활', '하준':'하준' };
+
+// 월이체항목 시트를 계좌 그룹별로 나눠, 특정 월 컬럼(colIdx)의 그룹별 합계를 반환한다.
+// (renderCategoryBreakdown의 그룹 집계 로직과 같은 splitByHeader를 재사용 — 그룹 이름은 하드코딩 안 함)
+function computeGroupTotals(transferRows, colIdx){
+  const sections = splitByHeader(transferRows);
+  const totals = {};
+  sections.forEach(s => {
+    if(s.label === '전체') return;
+    let sum = 0;
+    s.rows.forEach(r => {
+      const label = (r[1]||'').trim();
+      if(!label || label==='합계') return;
+      const amt = num(r[colIdx]);
+      if(amt!=null) sum += amt;
+    });
+    totals[s.label] = sum;
+  });
+  return totals;
+}
+
+// 선택한 사이클(key)의 대분류별 실제사용 합계를, 같은 월의 월이체항목 계좌 그룹 총이체(예산)와 비교한다.
+function renderMajorBudgetCompare(key){
+  const el = document.getElementById('majorBudgetCompare');
+  if(!el) return;
+  const data = actualByKey[key];
+  if(!data || !transferRowsCache.length){ el.innerHTML = ''; return; }
+  const m = parseInt(key.slice(5,7), 10);
+  const colIdx = 3 + m;
+  const budgetTotals = computeGroupTotals(transferRowsCache, colIdx);
+  const majors = sortMajors(data.byMajor);
+  const rowsHtml = majors.map(maj => {
+    const actual = data.byMajor[maj] || 0;
+    const groupLabel = MAJOR_BUDGET_GROUP[maj];
+    const budget = groupLabel!=null ? (budgetTotals[groupLabel]||0) : null;
+    const c = colorForMajor(maj);
+    if(budget==null){
+      return `<div class="bar-item">
+        <span class="type-dot" style="background:${c}"></span>
+        <div class="nm" title="${maj}">${maj}</div>
+        <div class="track"><div class="fill" style="width:100%;background:${c}"></div></div>
+        <div class="amt">${won(actual)}<span style="color:#7f8a9b;font-weight:400"> (고정예산 없음)</span></div>
+      </div>`;
+    }
+    const over = actual > budget;
+    const pct = budget ? Math.round(actual/budget*100) : 0;
+    const delta = actual - budget;
+    const barColor = over ? '#ff6b6b' : '#34d399';
+    return `<div class="bar-item">
+      <span class="type-dot" style="background:${barColor}"></span>
+      <div class="nm" title="${maj}">${maj}</div>
+      <div class="track"><div class="fill" style="width:${Math.max(2,Math.min(100,pct))}%;background:${barColor}"></div></div>
+      <div class="amt">${won(actual)}<span style="color:#7f8a9b;font-weight:400"> / 예산 ${won(budget)} (${signWon(delta)})</span></div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="group-card">
+    <div class="group-head"><div class="name">대분류별 예산 대비 실제사용</div><div class="total">${cycleRangeLabel(key)}</div></div>
+    ${rowsHtml || '<div class="section-note">내역 없음</div>'}
+    <div class="section-note" style="margin-top:10px">예산은 월이체항목 시트의 계좌 그룹 이체총액(용연→개인 지출 통장, 생활비→생활비 통장, 하준→하준 통장) 기준입니다. 기타추가예산은 고정 이체가 없어 비교 대상에서 제외했습니다.</div>
+  </div>`;
+}
+
+// 전체 사이클(모든 연-월)을 합산한 소분류(항목) 지출 랭킹. baseLabel로 접미사만 다른 항목은 합쳐서 집계한다.
+function buildAllTimeMinorRanking(byKey){
+  const totals = {};
+  let grandTotal = 0;
+  Object.values(byKey).forEach(data => {
+    Object.keys(data.byMinor).forEach(major => {
+      const minorMap = data.byMinor[major];
+      Object.keys(minorMap).forEach(label => {
+        const amt = minorMap[label];
+        grandTotal += amt;
+        const base = baseLabel(label);
+        const k = major + '__' + base;
+        if(!totals[k]) totals[k] = { base, major, amt:0 };
+        totals[k].amt += amt;
+      });
+    });
+  });
+  const items = Object.values(totals).sort((a,b) => b.amt - a.amt);
+  return { items, grandTotal };
+}
+
+function renderTopMinorRanking(byKey){
+  const el = document.getElementById('topMinorRanking');
+  const noteEl = document.getElementById('topMinorNote');
+  if(!el) return;
+  const keys = Object.keys(byKey).sort();
+  if(!keys.length){ el.innerHTML = '<div class="section-note">데이터 없음</div>'; return; }
+  const { items, grandTotal } = buildAllTimeMinorRanking(byKey);
+  const top = items.slice(0, 10);
+  const maxAmt = Math.max(1, ...top.map(it => it.amt));
+  el.innerHTML = top.map((it, i) => {
+    const c = colorForMajor(it.major);
+    const pct = grandTotal ? (it.amt/grandTotal*100) : 0;
+    return `
+    <div class="bar-item">
+      <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:800;color:#7f8a9b">${i+1}</span>
+      <span class="type-dot" style="background:${c}"></span>
+      <div class="nm" style="width:160px" title="${it.base} (${it.major})">${it.base}<span style="color:#7f8a9b;font-weight:400"> · ${it.major}</span></div>
+      <div class="track"><div class="fill" style="width:${Math.max(2, it.amt/maxAmt*100)}%;background:${c}"></div></div>
+      <div class="amt">${won(it.amt)}<span style="color:#7f8a9b;font-weight:400"> (${pct.toFixed(1)}%)</span></div>
+    </div>`;
+  }).join('');
+  if(noteEl) noteEl.textContent = `${keys[0]} ~ ${keys[keys.length-1]} 전체 사이클 합산 · 총지출 ${won(grandTotal)} 중 상위 10개 항목`;
+}
+
+// ---- 순자산 추이(이 브라우저에 로컬 저장) ----
+// 별도 시계열 시트가 없어서, 페이지를 열 때마다 이 브라우저의 localStorage에 오늘 날짜의
+// 순자산 스냅샷을 하나씩 기록해 추이를 그린다. 기기/브라우저별로 따로 쌓이는 점을 감안할 것.
+const NW_HISTORY_KEY = 'assetsNetWorthHistory_v1';
+function loadNetWorthHistory(){
+  try{
+    const raw = localStorage.getItem(NW_HISTORY_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function saveNetWorthSnapshot(netWorth, grossTotal, debt){
+  try{
+    const todayStr = new Date().toISOString().slice(0,10);
+    let history = loadNetWorthHistory();
+    const idx = history.findIndex(h => h.date === todayStr);
+    const entry = { date: todayStr, netWorth, grossTotal, debt };
+    if(idx >= 0) history[idx] = entry; else history.push(entry);
+    history.sort((a,b) => a.date.localeCompare(b.date));
+    if(history.length > 365) history = history.slice(history.length - 365);
+    localStorage.setItem(NW_HISTORY_KEY, JSON.stringify(history));
+    return history;
+  }catch(e){ return loadNetWorthHistory(); }
+}
+function renderNetWorthTrendChart(history){
+  const el = document.getElementById('netWorthTrendChart');
+  const noteEl = document.getElementById('netWorthTrendNote');
+  if(!el) return;
+  if(!history.length){
+    el.innerHTML = '<div class="section-note">아직 기록된 스냅샷이 없습니다. 페이지를 열 때마다 이 브라우저에 자동으로 하루 1개씩 쌓입니다.</div>';
+    if(noteEl) noteEl.textContent = '';
+    return;
+  }
+  if(history.length < 2){
+    const only = history[0];
+    el.innerHTML = `<div class="section-note">첫 스냅샷을 기록했습니다(${only.date} · ${won(only.netWorth)}). 다음에 또 열면 추이가 그려집니다.</div>`;
+    if(noteEl) noteEl.textContent = '스냅샷 1개 · 이 브라우저 기준';
+    return;
+  }
+  const w = 760, h = 130, pad = 22;
+  const vals = history.map(h => h.netWorth);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max - min) || 1;
+  const stepX = history.length > 1 ? (w - pad*2) / (history.length - 1) : 0;
+  const coords = history.map((hh,i) => {
+    const x = pad + i*stepX;
+    const y = pad + (1 - (hh.netWorth - min)/range) * (h - pad*2);
+    return { x, y, hh };
+  });
+  const first = history[0], last = history[history.length-1];
+  const diff = last.netWorth - first.netWorth;
+  const diffPct = first.netWorth ? diff/Math.abs(first.netWorth)*100 : null;
+  const lineColor = diff >= 0 ? '#34d399' : '#ff6b6b';
+  const polyPoints = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+  const areaPoints = `${pad.toFixed(1)},${(h-pad).toFixed(1)} ` + polyPoints + ` ${(pad+(history.length-1)*stepX).toFixed(1)},${(h-pad).toFixed(1)}`;
+  const dots = coords.map((c,i) => {
+    const isEdge = i===0 || i===coords.length-1;
+    return isEdge ? `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.2" fill="${lineColor}"/>` : '';
+  }).join('');
+  el.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
+      <polygon points="${areaPoints}" fill="${lineColor}" opacity="0.08"/>
+      <polyline points="${polyPoints}" fill="none" stroke="${lineColor}" stroke-width="2"/>
+      ${dots}
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#7f8a9b;margin-top:2px">
+      <span>${first.date} · ${won(first.netWorth)}</span>
+      <span>${last.date} · ${won(last.netWorth)}</span>
+    </div>`;
+  if(noteEl){
+    const diffLabel = diffPct!=null ? `${signWon(diff)} (${signPct(diffPct)})` : signWon(diff);
+    noteEl.textContent = `스냅샷 ${history.length}개(이 브라우저 기준) · 첫 기록 대비 ${diffLabel}`;
+  }
+}
+function recordAndRenderNetWorthTrend(netWorth, grossTotal, debt){
+  const history = saveNetWorthSnapshot(netWorth, grossTotal, debt);
+  renderNetWorthTrendChart(history);
+}
 
 // "실제사용 vs 이체계획" 비교막대: 월이체항목 시트는 연도 표시 없이 "1월~12월" 컬럼만 있어서
 // 항상 "올해"(오늘 날짜 기준)의 예산으로 취급한다 — 해가 바뀌어도 코드를 손댈 필요 없게끔.
@@ -1270,6 +1504,7 @@ function renderActualMonthDetail(key){
   }
   currentDetailItems = data.items;
   const majors = sortMajors(data.byMajor);
+  renderMajorBudgetCompare(key);
   summaryEl.innerHTML = `<div class="section-note" style="margin-bottom:10px">${cycleRangeLabel(key)} 사이클 (급여일 25일 기준)</div><div class="compose-stats" style="gap:10px">` + majors.map(maj => `
     <div class="compose-stat" style="min-width:130px;padding:11px 15px">
       <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
@@ -1334,6 +1569,7 @@ async function loadAll(){
       fetchActualSheet(),
     ]);
 
+    transferRowsCache = transferRows;
     const summary = buildKeyValueMap(summaryRows);
     const { income, expense, colIdx } = renderFlow(transferRows);
     const cashInfo = renderCashTable(cashRows);
@@ -1349,6 +1585,7 @@ async function loadAll(){
     actualByKey = buildActualUsageModel(actualDataRows);
     const expenseRow = findRow(transferRows, '지출 합계');
     renderActualCompare(actualByKey, expenseRow);
+    renderTopMinorRanking(actualByKey);
     // 데이터가 계속 쌓여도 탭이 무한정 늘어나지 않도록 최근 12개 연-월만 보여준다.
     const actualKeys = Object.keys(actualByKey).sort().slice(-12);
     if(actualKeys.length){
