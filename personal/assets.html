@@ -297,7 +297,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>실제사용 vs 이체계획</h2><p>실제사용 시트(카드·계좌 거래 내역) 기준, 월이체항목의 예산 대비 실제로 얼마나 더/덜 썼는지 비교합니다.</p></div>
+    <div><h2>실제사용 vs 이체계획</h2><p>급여일(25일) 기준 사이클로 묶은 실제사용 합계를, 월이체항목의 해당 월 예산과 비교합니다.</p></div>
     <div class="section-note" id="actualAsOfNote">불러오는 중…</div>
   </div>
   <div class="trend-card">
@@ -311,10 +311,11 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>월별 실제사용 상세</h2><p>최근 12개월 중 월을 선택하면 그 달의 대분류별 지출과 개별 거래 내역을 볼 수 있습니다.</p></div>
+    <div><h2>월별 실제사용 상세</h2><p>급여일(25일) 기준 사이클을 선택하면 대분류·소분류(항목)별 지출과 개별 거래 내역을 볼 수 있습니다.</p></div>
     <div class="month-tabs" id="monthTabs"></div>
   </div>
   <div class="compose-card" id="actualMonthSummary" style="margin-bottom:14px"><div class="section-note">불러오는 중…</div></div>
+  <div id="actualMinorBreakdown" style="margin-bottom:14px"></div>
   <div class="table-wrap scroll-tall">
     <table class="dt">
       <thead><tr><th>날짜</th><th>대분류</th><th>소분류</th><th>내용</th><th style="text-align:right">금액</th></tr></thead>
@@ -380,13 +381,14 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b> + <b>증권계좌 현황</b> + <b>실제사용</b> 시트)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
     ※ 상단 순자산은 <b>총자산(현금성+저축성+실물+주식평가) − 부채</b>로 계산합니다. 대출은 아파트 담보대출 원리금 상환액이 월이체항목에서도 확인 가능합니다.<br>
     ※ 주식평가자산은 별도 증권계좌 시트의 평가금액 합계입니다. 저축성자산의 DB랩1·우리은행 IRP는 증권계좌 시트의 DB 랩·IRP(연말정산용)와 같은 계좌라서, 순자산 계산에서는 저축성자산 쪽 금액을 빼고 증권계좌 평가금액(실제 시세 반영)으로만 반영했습니다.<br>
-    ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 월별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 월이체항목 시트는 연도 표시 없이 1~12월 컬럼만 있어서 항상 "올해"(오늘 날짜 기준) 예산으로 취급하며, 실제사용 시트에 다른 연도 데이터가 섞여 있어도 올해 월만 비교 대상으로 삼습니다. 월별 상세 탭에서는 최근 12개월치를 연도 구분 없이 전부 볼 수 있습니다.<br>
+    ※ 급여를 매월 25일에 받는 기준에 맞춰, "실제사용 vs 이체계획"과 "월별 실제사용 상세"는 달력 월(1~말일)이 아니라 <b>25일~다음달 24일을 한 사이클</b>로 묶어 계산합니다. 예: 8/1~8/24 지출은 "7월" 사이클(7/25~8/24)로, "이번달 현금흐름"의 이번달도 오늘 날짜 기준 급여 사이클로 판단합니다.<br>
+    ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 급여 사이클별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 월이체항목 시트는 연도 표시 없이 1~12월 컬럼만 있어서 항상 "올해"(오늘 날짜 기준) 예산으로 취급하며, 실제사용 시트에 다른 연도 데이터가 섞여 있어도 올해 사이클만 비교 대상으로 삼습니다. 월별 상세 탭에서는 최근 12개 사이클을 연도 구분 없이 전부 볼 수 있고, 대분류 카드 아래에 소분류(항목)별 사용액 막대도 함께 보여줍니다.<br>
     ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.<br>
     ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.
   </div>
 </main>
 
-<div class="app-ver-tag">자산현황 · 2026-08-12</div>
+<div class="app-ver-tag">자산현황 · 2026-08-13</div>
 
 <script>
 const SHEET_ID = '1zWWunW7_XJfocsJZEoUMF75eFzI7o8R6fAynypcctbE';
@@ -410,13 +412,18 @@ const STOCK_GID = '1574976252';
 function stockSheetUrl(){
   return `https://docs.google.com/spreadsheets/d/${STOCK_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${STOCK_GID}`;
 }
-// Google gviz는 같은 문서에 여러 요청을 동시에 보내면 가끔 빈 값/짧은 응답을 줄 때가 있어
-// 재시도를 한 번 넣어둔다. (요약 탭이 조용히 빈 값으로 와서 순자산이 잘못 나온 적이 있었음)
+// Google gviz는 같은 문서에 여러 요청을 동시에 보내면 가끔 빈 값/짧은 응답을 줄 때가 있고,
+// 이 export URL 자체가 구글 쪽에서 한동안 캐시된(오래된) 내용을 돌려주는 경우도 있었다
+// (2026-08-13에 실제로 겪음 — 시트는 이미 고쳐져 있는데 이 URL만 옛날 값을 줌). 그래서
+// 재시도뿐 아니라 매 요청마다 캐시 우회용 파라미터를 붙여서 항상 최신 값을 받도록 한다.
 function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+function bustCache(url){
+  return url + (url.includes('?')?'&':'?') + '_cb=' + Date.now();
+}
 async function fetchCsvWithRetry(url, label){
   for(let attempt=0; attempt<2; attempt++){
     if(attempt>0) await sleep(500 + Math.random()*400);
-    const r = await fetch(url + (attempt>0 ? (url.includes('?')?'&':'?') + '_retry=' + Date.now() : ''));
+    const r = await fetch(bustCache(url));
     if(!r.ok) continue;
     const t = await r.text();
     if(t && t.trim().length > 10) return t;
@@ -497,6 +504,21 @@ function daysUntil(date){
 function monthsBetween(a,b){
   if(!a || !b) return null;
   return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth());
+}
+
+// 급여일(25일) 기준 "월" 사이클. 25일~다음달 24일을 한 달로 친다 — 시작월 기준으로 키를 매긴다.
+// 예: 8/1~8/24는 "직전달(7월)" 사이클, 8/25~9/24는 "8월" 사이클.
+function cycleKey(d){
+  if(!d) return null;
+  let y = d.getFullYear(), m = d.getMonth(); // m: 0-indexed
+  if(d.getDate() < 25){ m -= 1; if(m < 0){ m += 12; y -= 1; } }
+  return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+// "2026-07" -> "7/25 ~ 8/24" 같은 사이클 기간 표시
+function cycleRangeLabel(key){
+  const y = parseInt(key.slice(0,4),10), m = parseInt(key.slice(5,7),10);
+  const endM = m===12 ? 1 : m+1;
+  return `${m}/25 ~ ${endM}/24`;
 }
 
 function buildKeyValueMap(rows){
@@ -824,10 +846,13 @@ function renderSummary(summary, debtTotal, stockInfo, savingsAdjustedTotal, cash
 // ---- 월이체항목: 상단 요약(수입/지출/잔액/추이) ----
 function renderFlow(transferRows){
   const now = new Date();
-  const mIdx = now.getMonth(); // 0=1월
+  // 급여일(25일) 기준 사이클로 "이번달"을 정한다 — 예를 들어 8/13은 달력상 8월이지만
+  // 급여 사이클로는 아직 "7월"(7/25~8/24) 구간이다.
+  const curKey = cycleKey(now);
+  const mIdx = parseInt(curKey.slice(5,7),10) - 1; // 0=1월
   const colIdx = 4 + mIdx;
   const monthLabel = (mIdx+1) + '월';
-  document.getElementById('flowTitle').textContent = `이번달(${monthLabel}) 현금흐름`;
+  document.getElementById('flowTitle').textContent = `이번달(${monthLabel}, ${cycleRangeLabel(curKey)}) 현금흐름`;
 
   const incomeRow = findRow(transferRows, '급여 실수령금 (용연+현미)');
   const expenseRow = findRow(transferRows, '지출 합계');
@@ -1042,23 +1067,28 @@ function extractActualRows(rows){
   return data;
 }
 
-// 연-월(YYYY-MM) 단위로 묶는다. 실제사용 시트에는 작년 하반기 데이터도 섞여 있어서
-// 그냥 "몇 월"로만 묶으면 2025년 7월과 2026년 7월이 합쳐지는 사고가 나므로 반드시 연도까지 함께 묶는다.
+// 급여일(25일) 기준 사이클로 묶는다. 실제사용 시트에는 작년 하반기 데이터도 섞여 있고,
+// 달력 월(1일~말일) 기준으로 묶으면 실제 예산 주기(25일~다음달 24일)와 어긋나서
+// "이번달 실제사용"이 예산과 안 맞아 보이는 문제가 있었다 — 반드시 cycleKey로 묶는다.
 function buildActualUsageModel(rows){
-  const byKey = {}; // "2026-07" -> { total, byMajor:{}, items:[] }
+  const byKey = {}; // "2026-07" -> { total, byMajor:{}, byMinor:{major:{minor:amt}}, items:[] }
   rows.forEach(r => {
-    const date = (r[1]||'').trim();
+    const dateStr = (r[1]||'').trim();
     const type = (r[3]||'').trim();
-    if(!date || type !== '지출') return;
-    const key = date.slice(0,7); // YYYY-MM
-    if(!/^\d{4}-\d{2}$/.test(key)) return;
+    if(!dateStr || type !== '지출') return;
+    const d = parseDate(dateStr);
+    if(!d) return;
+    const key = cycleKey(d);
     const amt = Math.abs(num(r[7]) || 0);
     if(!amt) return;
     const major = (r[4]||'').trim() || '미분류';
-    if(!byKey[key]) byKey[key] = { total:0, byMajor:{}, items:[] };
+    const minor = (r[5]||'').trim() || '미분류';
+    if(!byKey[key]) byKey[key] = { total:0, byMajor:{}, byMinor:{}, items:[] };
     byKey[key].total += amt;
     byKey[key].byMajor[major] = (byKey[key].byMajor[major]||0) + amt;
-    byKey[key].items.push({ date, time:(r[2]||'').trim(), major, minor:(r[5]||'').trim(), desc:(r[6]||'').trim(), amt });
+    if(!byKey[key].byMinor[major]) byKey[key].byMinor[major] = {};
+    byKey[key].byMinor[major][minor] = (byKey[key].byMinor[major][minor]||0) + amt;
+    byKey[key].items.push({ date:dateStr, time:(r[2]||'').trim(), major, minor, desc:(r[6]||'').trim(), amt });
   });
   return byKey;
 }
@@ -1124,11 +1154,12 @@ function renderActualCompare(byKey, expenseRow){
     const delta = actual - budget;
     const deltaLabel = (delta>=0?'+':'-') + Math.round(Math.abs(delta)/10000) + '만';
     const mLabel = parseInt(k.slice(5,7),10) + '월';
-    return `<div class="compare-col">
+    const rangeLabel = cycleRangeLabel(k);
+    return `<div class="compare-col" title="${rangeLabel}">
       <div class="delta ${over?'over':'under'}">${deltaLabel}</div>
       <div class="bars-pair">
-        <div class="bp-bar" style="height:${bH}px;background:#60a5fa" title="이체계획 ${won(budget)}"></div>
-        <div class="bp-bar" style="height:${aH}px;background:${over?'#ff6b6b':'#34d399'}" title="실제사용 ${won(actual)}"></div>
+        <div class="bp-bar" style="height:${bH}px;background:#60a5fa" title="이체계획(예산) ${won(budget)}"></div>
+        <div class="bp-bar" style="height:${aH}px;background:${over?'#ff6b6b':'#34d399'}" title="실제사용(${rangeLabel}) ${won(actual)}"></div>
       </div>
       <div class="m">${mLabel}</div>
     </div>`;
@@ -1151,19 +1182,46 @@ function renderActualMonthDetail(key){
   document.querySelectorAll('#monthTabs .month-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.k===key));
   const data = actualByKey[key];
   const summaryEl = document.getElementById('actualMonthSummary');
+  const minorEl = document.getElementById('actualMinorBreakdown');
   const tbody = document.getElementById('actualDetailTbody');
   if(!data){
     summaryEl.innerHTML = '<div class="section-note">데이터 없음</div>';
+    if(minorEl) minorEl.innerHTML = '';
     tbody.innerHTML = '<tr class="loading-row"><td colspan="5">데이터 없음</td></tr>';
     return;
   }
   const majors = sortMajors(data.byMajor);
-  summaryEl.innerHTML = `<div class="compose-stats" style="gap:10px">` + majors.map(maj => `
+  summaryEl.innerHTML = `<div class="section-note" style="margin-bottom:10px">${cycleRangeLabel(key)} 사이클 (급여일 25일 기준)</div><div class="compose-stats" style="gap:10px">` + majors.map(maj => `
     <div class="compose-stat" style="min-width:130px;padding:11px 15px">
       <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
       <div class="amt" style="font-size:15px;margin-top:6px">${won(data.byMajor[maj])}</div>
       <div class="pct">${(data.byMajor[maj]/data.total*100).toFixed(1)}%</div>
     </div>`).join('') + `</div>`;
+
+  // 대분류별 소분류(항목) 단위 사용량 breakdown — 금액순 막대 리스트
+  if(minorEl){
+    minorEl.innerHTML = majors.map(maj => {
+      const minorMap = data.byMinor[maj] || {};
+      const items = Object.keys(minorMap).map(k => ({ label:k, amt:minorMap[k] })).sort((a,b) => b.amt - a.amt);
+      const maxAmt = Math.max(1, ...items.map(it => it.amt));
+      const c = colorForMajor(maj);
+      const rowsHtml = items.map(it => `
+        <div class="bar-item">
+          <span class="type-dot" style="background:${c}"></span>
+          <div class="nm" title="${it.label}">${it.label}</div>
+          <div class="track"><div class="fill" style="width:${Math.max(2, it.amt/maxAmt*100)}%;background:${c}"></div></div>
+          <div class="amt">${won(it.amt)}<span style="color:#7f8a9b;font-weight:400"> (${(it.amt/data.byMajor[maj]*100).toFixed(0)}%)</span></div>
+        </div>`).join('');
+      return `
+      <div class="group-card">
+        <div class="group-head">
+          <div class="name"><i style="background:${c}"></i>${maj} · 항목별</div>
+          <div class="total">${won(data.byMajor[maj])} · ${items.length}개 항목</div>
+        </div>
+        ${rowsHtml || '<div class="section-note">내역 없음</div>'}
+      </div>`;
+    }).join('');
+  }
 
   const sorted = data.items.slice().sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
   tbody.innerHTML = sorted.map(it => {
