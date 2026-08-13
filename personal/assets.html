@@ -153,7 +153,18 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .month-tab{background:#151a25;border:1px solid var(--line);color:#8fa0b7;font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .month-tab:hover{border-color:#3a4353;color:#dbe3ee}
 .month-tab.active{background:linear-gradient(135deg,var(--asset),#059669);color:#04140d;border-color:transparent}
+.month-tab .dot-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:#6ee7b7;margin-left:2px;vertical-align:middle}
+.month-tab.active .dot-live{background:#04140d}
 .table-wrap.scroll-tall{max-height:440px;overflow-y:auto}
+.search-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-input{flex:1;min-width:220px;background:#0f141d;border:1px solid var(--line);border-radius:10px;padding:9px 13px;color:var(--ink);font-size:12.5px;font-family:inherit}
+.search-input::placeholder{color:#657286}
+.search-input:focus{outline:none;border-color:#3a4353}
+.search-clear{background:#151a25;border:1px solid var(--line);color:#8fa0b7;font-size:11.5px;font-weight:700;padding:0 15px;border-radius:10px;cursor:pointer}
+.search-clear:hover{border-color:#3a4353;color:#dbe3ee}
+.bar-item.clickable{cursor:pointer}
+.bar-item.clickable:hover .nm{color:#fff}
+.bar-item .sub-detail{color:#7f8a9b;font-weight:400;font-size:10.5px}
 
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:#111621;scrollbar-color:#2b3038 #111621;scrollbar-width:thin}
 .table-wrap::-webkit-scrollbar{width:9px;height:9px}
@@ -311,11 +322,15 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>월별 실제사용 상세</h2><p>급여일(25일) 기준 사이클을 선택하면 대분류·소분류(항목)별 지출과 개별 거래 내역을 볼 수 있습니다.</p></div>
+    <div><h2>월별 실제사용 상세</h2><p>급여일(25일) 기준 사이클을 선택하면 대분류·항목별 지출과 개별 거래 내역을 볼 수 있고, 항목 막대를 클릭하거나 검색창에 입력해 그 항목의 실제 내역만 걸러볼 수 있습니다.</p></div>
     <div class="month-tabs" id="monthTabs"></div>
   </div>
   <div class="compose-card" id="actualMonthSummary" style="margin-bottom:14px"><div class="section-note">불러오는 중…</div></div>
   <div id="actualMinorBreakdown" style="margin-bottom:14px"></div>
+  <div class="search-row">
+    <input type="text" class="search-input" id="actualSearchInput" placeholder="항목(소분류)·내용으로 검색 — 예: 용연_기타, 주유비 (위 항목별 막대를 클릭해도 검색됩니다)">
+    <button type="button" class="search-clear" id="actualSearchClear">전체보기</button>
+  </div>
   <div class="table-wrap scroll-tall">
     <table class="dt">
       <thead><tr><th>날짜</th><th>대분류</th><th>소분류</th><th>내용</th><th style="text-align:right">금액</th></tr></thead>
@@ -1054,6 +1069,19 @@ function sortMajors(byMajor){
   });
 }
 
+// "보험료(용연)"/"보험료(엄마)"처럼 괄호 접미사만 다르고 성격이 같은 소분류를, 항목별 막대
+// 그래프에서는 괄호를 뗀 이름("보험료")으로 합쳐서 보여준다. 원본 소분류 값 자체는 안 건드림 —
+// 표(개별 거래 내역)에는 원래 소분류가 그대로 나오고, 검색 필터도 원본 값을 대상으로 동작한다.
+function baseLabel(minor){
+  const stripped = (minor||'').replace(/\([^)]*\)\s*$/, '').trim();
+  return stripped || minor;
+}
+function suffixOf(label, base){
+  const rest = (label||'').slice(base.length).trim();
+  const m = rest.match(/^\(([^)]*)\)/);
+  return m ? m[1] : rest;
+}
+
 // 헤더 행("날짜" 컬럼)을 찾아 그 아래 날짜가 있는 행만 데이터로 반환 (합계 행 없이 끝까지 이어지는 거래 나열식 시트)
 function extractActualRows(rows){
   const hIdx = rows.findIndex(r => (r[1]||'').trim() === '날짜');
@@ -1144,6 +1172,7 @@ function renderActualCompare(byKey, expenseRow){
       </div>`;
   }
 
+  const nowKey = cycleKey(new Date());
   const maxVal = Math.max(1, ...keys.map(k => Math.max(byKey[k].total, budgetFor(k) || 0)));
   el.innerHTML = keys.map(k => {
     const actual = byKey[k].total;
@@ -1151,17 +1180,18 @@ function renderActualCompare(byKey, expenseRow){
     const bH = Math.max(2, Math.round(budget/maxVal*100));
     const aH = Math.max(2, Math.round(actual/maxVal*100));
     const over = actual > budget;
+    const isCurrent = k === nowKey;
     const delta = actual - budget;
     const deltaLabel = (delta>=0?'+':'-') + Math.round(Math.abs(delta)/10000) + '만';
     const mLabel = parseInt(k.slice(5,7),10) + '월';
     const rangeLabel = cycleRangeLabel(k);
-    return `<div class="compare-col" title="${rangeLabel}">
+    return `<div class="compare-col" title="${rangeLabel}${isCurrent ? ' · 진행중(실시간)' : ''}">
       <div class="delta ${over?'over':'under'}">${deltaLabel}</div>
       <div class="bars-pair">
         <div class="bp-bar" style="height:${bH}px;background:#60a5fa" title="이체계획(예산) ${won(budget)}"></div>
         <div class="bp-bar" style="height:${aH}px;background:${over?'#ff6b6b':'#34d399'}" title="실제사용(${rangeLabel}) ${won(actual)}"></div>
       </div>
-      <div class="m">${mLabel}</div>
+      <div class="m">${mLabel}${isCurrent ? '<div style="color:#6ee7b7;font-size:8.5px;font-weight:800">진행중</div>' : ''}</div>
     </div>`;
   }).join('');
 }
@@ -1169,61 +1199,23 @@ function renderActualCompare(byKey, expenseRow){
 function renderActualMonthTabs(keys, selected){
   const el = document.getElementById('monthTabs');
   const thisYear = String(new Date().getFullYear());
+  const nowKey = cycleKey(new Date());
   el.innerHTML = keys.map(k => {
     const label = k.slice(0,4)===thisYear ? parseInt(k.slice(5,7),10)+'월' : k.slice(2,4)+"'"+parseInt(k.slice(5,7),10)+'월';
-    return `<button type="button" class="month-tab${k===selected?' active':''}" data-k="${k}">${label}</button>`;
+    return `<button type="button" class="month-tab${k===selected?' active':''}${k===nowKey?' is-current':''}" data-k="${k}" title="${cycleRangeLabel(k)}${k===nowKey?' · 진행중':''}">${label}${k===nowKey?' <span class="dot-live"></span>':''}</button>`;
   }).join('');
   el.querySelectorAll('.month-tab').forEach(btn => {
     btn.addEventListener('click', () => renderActualMonthDetail(btn.dataset.k));
   });
 }
 
-function renderActualMonthDetail(key){
-  document.querySelectorAll('#monthTabs .month-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.k===key));
-  const data = actualByKey[key];
-  const summaryEl = document.getElementById('actualMonthSummary');
-  const minorEl = document.getElementById('actualMinorBreakdown');
+let currentDetailItems = [];
+
+// 검색어(항목 소분류/내용/대분류)로 개별 거래 내역 표를 필터링해서 다시 그린다.
+function renderDetailRows(items){
   const tbody = document.getElementById('actualDetailTbody');
-  if(!data){
-    summaryEl.innerHTML = '<div class="section-note">데이터 없음</div>';
-    if(minorEl) minorEl.innerHTML = '';
-    tbody.innerHTML = '<tr class="loading-row"><td colspan="5">데이터 없음</td></tr>';
-    return;
-  }
-  const majors = sortMajors(data.byMajor);
-  summaryEl.innerHTML = `<div class="section-note" style="margin-bottom:10px">${cycleRangeLabel(key)} 사이클 (급여일 25일 기준)</div><div class="compose-stats" style="gap:10px">` + majors.map(maj => `
-    <div class="compose-stat" style="min-width:130px;padding:11px 15px">
-      <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
-      <div class="amt" style="font-size:15px;margin-top:6px">${won(data.byMajor[maj])}</div>
-      <div class="pct">${(data.byMajor[maj]/data.total*100).toFixed(1)}%</div>
-    </div>`).join('') + `</div>`;
-
-  // 대분류별 소분류(항목) 단위 사용량 breakdown — 금액순 막대 리스트
-  if(minorEl){
-    minorEl.innerHTML = majors.map(maj => {
-      const minorMap = data.byMinor[maj] || {};
-      const items = Object.keys(minorMap).map(k => ({ label:k, amt:minorMap[k] })).sort((a,b) => b.amt - a.amt);
-      const maxAmt = Math.max(1, ...items.map(it => it.amt));
-      const c = colorForMajor(maj);
-      const rowsHtml = items.map(it => `
-        <div class="bar-item">
-          <span class="type-dot" style="background:${c}"></span>
-          <div class="nm" title="${it.label}">${it.label}</div>
-          <div class="track"><div class="fill" style="width:${Math.max(2, it.amt/maxAmt*100)}%;background:${c}"></div></div>
-          <div class="amt">${won(it.amt)}<span style="color:#7f8a9b;font-weight:400"> (${(it.amt/data.byMajor[maj]*100).toFixed(0)}%)</span></div>
-        </div>`).join('');
-      return `
-      <div class="group-card">
-        <div class="group-head">
-          <div class="name"><i style="background:${c}"></i>${maj} · 항목별</div>
-          <div class="total">${won(data.byMajor[maj])} · ${items.length}개 항목</div>
-        </div>
-        ${rowsHtml || '<div class="section-note">내역 없음</div>'}
-      </div>`;
-    }).join('');
-  }
-
-  const sorted = data.items.slice().sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+  if(!items.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="5">검색 결과 없음</td></tr>'; return; }
+  const sorted = items.slice().sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
   tbody.innerHTML = sorted.map(it => {
     const c = colorForMajor(it.major);
     return `<tr>
@@ -1234,6 +1226,99 @@ function renderActualMonthDetail(key){
       <td class="num-cell">${won(it.amt)}</td>
     </tr>`;
   }).join('');
+}
+function applyActualSearch(){
+  const input = document.getElementById('actualSearchInput');
+  const q = (input.value || '').trim().toLowerCase();
+  if(!q){ renderDetailRows(currentDetailItems); return; }
+  const filtered = currentDetailItems.filter(it =>
+    (it.minor||'').toLowerCase().includes(q) ||
+    (it.desc||'').toLowerCase().includes(q) ||
+    (it.major||'').toLowerCase().includes(q));
+  renderDetailRows(filtered);
+}
+function searchFor(term){
+  const input = document.getElementById('actualSearchInput');
+  input.value = term;
+  applyActualSearch();
+  const tableEl = document.getElementById('actualDetailTbody');
+  if(tableEl.scrollIntoView) tableEl.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+// 검색창 이벤트는 한 번만 연결(월 전환마다 currentDetailItems만 갱신)
+const _actualSearchInputEl = document.getElementById('actualSearchInput');
+if(_actualSearchInputEl && _actualSearchInputEl.addEventListener){
+  _actualSearchInputEl.addEventListener('input', applyActualSearch);
+}
+const _actualSearchClearEl = document.getElementById('actualSearchClear');
+if(_actualSearchClearEl && _actualSearchClearEl.addEventListener){
+  _actualSearchClearEl.addEventListener('click', () => { document.getElementById('actualSearchInput').value=''; applyActualSearch(); });
+}
+
+function renderActualMonthDetail(key){
+  document.querySelectorAll('#monthTabs .month-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.k===key));
+  const data = actualByKey[key];
+  const summaryEl = document.getElementById('actualMonthSummary');
+  const minorEl = document.getElementById('actualMinorBreakdown');
+  const searchInput = document.getElementById('actualSearchInput');
+  if(searchInput) searchInput.value = '';
+  if(!data){
+    summaryEl.innerHTML = '<div class="section-note">데이터 없음</div>';
+    if(minorEl) minorEl.innerHTML = '';
+    currentDetailItems = [];
+    renderDetailRows([]);
+    return;
+  }
+  currentDetailItems = data.items;
+  const majors = sortMajors(data.byMajor);
+  summaryEl.innerHTML = `<div class="section-note" style="margin-bottom:10px">${cycleRangeLabel(key)} 사이클 (급여일 25일 기준)</div><div class="compose-stats" style="gap:10px">` + majors.map(maj => `
+    <div class="compose-stat" style="min-width:130px;padding:11px 15px">
+      <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
+      <div class="amt" style="font-size:15px;margin-top:6px">${won(data.byMajor[maj])}</div>
+      <div class="pct">${(data.byMajor[maj]/data.total*100).toFixed(1)}%</div>
+    </div>`).join('') + `</div>`;
+
+  // 대분류별 소분류(항목) 단위 사용량 breakdown — 괄호 접미사만 다른 항목(보험료(용연)/보험료(엄마) 등)은
+  // baseLabel로 합쳐서 한 막대로 보여주되, 세부 구성은 옆에 작게 표시. 막대를 클릭하면 아래 표를 그 항목으로 검색.
+  if(minorEl){
+    minorEl.innerHTML = majors.map(maj => {
+      const minorMap = data.byMinor[maj] || {};
+      const grouped = {};
+      Object.keys(minorMap).forEach(label => {
+        const base = baseLabel(label);
+        if(!grouped[base]) grouped[base] = { base, amt:0, subs:[] };
+        grouped[base].amt += minorMap[label];
+        grouped[base].subs.push({ label, amt:minorMap[label] });
+      });
+      const items = Object.values(grouped).sort((a,b) => b.amt - a.amt);
+      const maxAmt = Math.max(1, ...items.map(it => it.amt));
+      const c = colorForMajor(maj);
+      const rowsHtml = items.map(it => {
+        const subDetail = it.subs.length > 1
+          ? `<span class="sub-detail"> (${it.subs.map(s => suffixOf(s.label, it.base) + ' ' + comma(s.amt) + '원').join(' · ')})</span>`
+          : '';
+        return `
+        <div class="bar-item clickable" data-filter="${it.base}" title="클릭하면 아래 내역을 '${it.base}'로 검색합니다">
+          <span class="type-dot" style="background:${c}"></span>
+          <div class="nm" title="${it.base}">${it.base}${subDetail}</div>
+          <div class="track"><div class="fill" style="width:${Math.max(2, it.amt/maxAmt*100)}%;background:${c}"></div></div>
+          <div class="amt">${won(it.amt)}<span style="color:#7f8a9b;font-weight:400"> (${(it.amt/data.byMajor[maj]*100).toFixed(0)}%)</span></div>
+        </div>`;
+      }).join('');
+      return `
+      <div class="group-card">
+        <div class="group-head">
+          <div class="name"><i style="background:${c}"></i>${maj} · 항목별 (클릭하면 내역 검색)</div>
+          <div class="total">${won(data.byMajor[maj])} · ${items.length}개 항목</div>
+        </div>
+        ${rowsHtml || '<div class="section-note">내역 없음</div>'}
+      </div>`;
+    }).join('');
+    minorEl.querySelectorAll('.bar-item[data-filter]').forEach(el => {
+      el.addEventListener('click', () => searchFor(el.dataset.filter));
+    });
+  }
+
+  renderDetailRows(data.items);
 }
 
 async function loadAll(){
