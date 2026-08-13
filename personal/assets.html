@@ -165,6 +165,9 @@ h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-1px}
 .bar-item.clickable{cursor:pointer}
 .bar-item.clickable:hover .nm{color:#fff}
 .bar-item .sub-detail{color:#7f8a9b;font-weight:400;font-size:10.5px}
+.search-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;background:#0f141d;border:1px solid var(--line);border-radius:10px;font-size:11.5px;color:#c3cede}
+.search-summary .cnt{color:#8fa0b7}
+.search-summary .sum{font-size:14px;font-weight:900;color:#9fe6c8;font-variant-numeric:tabular-nums}
 
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:#111621;scrollbar-color:#2b3038 #111621;scrollbar-width:thin}
 .table-wrap::-webkit-scrollbar{width:9px;height:9px}
@@ -330,6 +333,10 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   <div class="search-row">
     <input type="text" class="search-input" id="actualSearchInput" placeholder="항목(소분류)·내용으로 검색 — 예: 용연_기타, 주유비 (위 항목별 막대를 클릭해도 검색됩니다)">
     <button type="button" class="search-clear" id="actualSearchClear">전체보기</button>
+  </div>
+  <div class="search-summary" id="actualSearchSummary" style="display:none">
+    <span class="cnt" id="actualSearchCount"></span>
+    <span class="sum" id="actualSearchSum"></span>
   </div>
   <div class="table-wrap scroll-tall">
     <table class="dt">
@@ -1265,6 +1272,21 @@ let currentDetailItems = [];
 // 검색어(항목 소분류/내용/대분류)로 개별 거래 내역 표를 필터링해서 다시 그린다.
 function renderDetailRows(items){
   const tbody = document.getElementById('actualDetailTbody');
+  const summaryEl = document.getElementById('actualSearchSummary');
+  const countEl = document.getElementById('actualSearchCount');
+  const sumEl = document.getElementById('actualSearchSum');
+  const input = document.getElementById('actualSearchInput');
+  const hasQuery = input && input.value && input.value.trim().length > 0;
+  if(summaryEl){
+    if(hasQuery && items.length){
+      const sum = items.reduce((s,it) => s + (it.amt||0), 0);
+      if(countEl) countEl.textContent = `검색결과 ${items.length}건`;
+      if(sumEl) sumEl.textContent = `합계 ${won(sum)}`;
+      summaryEl.style.display = 'flex';
+    } else {
+      summaryEl.style.display = 'none';
+    }
+  }
   if(!items.length){ tbody.innerHTML = '<tr class="loading-row"><td colspan="5">검색 결과 없음</td></tr>'; return; }
   const sorted = items.slice().sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
   tbody.innerHTML = sorted.map(it => {
