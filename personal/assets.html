@@ -1196,13 +1196,16 @@ function renderTopMinorRanking(byKey){
 
 // "실제사용 vs 이체계획" 비교막대: 월이체항목 시트는 연도 표시 없이 "1월~12월" 컬럼만 있어서
 // 항상 "올해"(오늘 날짜 기준)의 예산으로 취급한다 — 해가 바뀌어도 코드를 손댈 필요 없게끔.
+// 주의: "올해"인지 판단할 때는 내부키(cycleKey, 시작월 기준)의 연도가 아니라 화면 표시(displayCycleKey,
+// 종료월 기준)의 연도로 걸러야 한다. 예를 들어 12/25~1/24 사이클은 내부키가 "작년-12"라 시작월 연도로
+// 거르면 누락되지만, 화면에는 "올해 1월"로 표시되므로 이 비교에도 포함되어야 한다.
 function renderActualCompare(byKey, expenseRow){
   const el = document.getElementById('actualCompareBars');
   const summaryEl = document.getElementById('actualCompareSummary');
-  const yearPrefix = String(new Date().getFullYear()) + '-';
-  const keys = Object.keys(byKey).filter(k => k.startsWith(yearPrefix)).sort();
+  const thisYear = String(new Date().getFullYear());
+  const keys = Object.keys(byKey).filter(k => displayCycleKey(k).slice(0,4) === thisYear).sort();
   if(!keys.length){
-    el.innerHTML = `<div class="section-note">${yearPrefix.slice(0,4)}년 데이터 없음</div>`;
+    el.innerHTML = `<div class="section-note">${thisYear}년 데이터 없음</div>`;
     if(summaryEl) summaryEl.innerHTML = '';
     return;
   }
