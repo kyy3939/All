@@ -409,7 +409,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
     ※ 이 페이지는 Google 시트(<b>[개인] 자산현황</b> + <b>증권계좌 현황</b> + <b>실제사용</b> 시트)를 열 때마다 실시간으로 불러옵니다. 시트 값을 수정하면 새로고침 시 바로 반영됩니다.<br>
     ※ 상단 순자산은 <b>총자산(현금성+저축성+실물+주식평가) − 부채</b>로 계산합니다. 대출은 아파트 담보대출 원리금 상환액이 월이체항목에서도 확인 가능합니다.<br>
     ※ 주식평가자산은 별도 증권계좌 시트의 평가금액 합계입니다. 저축성자산의 DB랩1·우리은행 IRP는 증권계좌 시트의 DB 랩·IRP(연말정산용)와 같은 계좌라서, 순자산 계산에서는 저축성자산 쪽 금액을 빼고 증권계좌 평가금액(실제 시세 반영)으로만 반영했습니다.<br>
-    ※ 급여를 매월 25일에 받는 기준에 맞춰, "실제사용 vs 이체계획"과 "월별 실제사용 상세"는 달력 월(1~말일)이 아니라 <b>25일~다음달 24일을 한 사이클</b>로 묶어 계산합니다. 예: 8/1~8/24 지출은 "7월" 사이클(7/25~8/24)로, "이번달 현금흐름"의 이번달도 오늘 날짜 기준 급여 사이클로 판단합니다.<br>
+    ※ 급여를 매월 25일에 받는 기준에 맞춰, "실제사용 vs 이체계획"과 "월별 실제사용 상세"는 달력 월(1~말일)이 아니라 <b>25일~다음달 24일을 한 사이클</b>로 묶어 계산합니다. 예: 7/25~8/24 사이클은 실제 지출이 몰리는 달(그리고 실제 예산으로 대응되는 월이체항목 시트의 "7월" 컬럼)에 맞춰 화면에는 <b>"8월"</b>로 표시합니다. "이번달 현금흐름"의 이번달도 오늘 날짜 기준 급여 사이클로 판단합니다.<br>
     ※ "실제사용 vs 이체계획"은 실제사용 시트의 모든 지출 거래를 급여 사이클별로 합산해, 월이체항목의 해당 월 "지출 합계"(예산)와 비교한 것입니다. 월이체항목 시트는 연도 표시 없이 1~12월 컬럼만 있어서 항상 "올해"(오늘 날짜 기준) 예산으로 취급하며, 실제사용 시트에 다른 연도 데이터가 섞여 있어도 올해 사이클만 비교 대상으로 삼습니다. 월별 상세 탭에서는 최근 12개 사이클을 연도 구분 없이 전부 볼 수 있고, 대분류 카드 아래에 소분류(항목)별 사용액 막대도 함께 보여줍니다.<br>
     ※ 저축성자산 잔액은 납입 스케줄 기준 추정치이며, 실물자산 현재추정가는 수기 입력값입니다.<br>
     ※ 평균금리·저축비율·수익률 등은 시트 원자료를 바탕으로 이 페이지에서 계산한 참고용 지표입니다.
@@ -547,6 +547,19 @@ function cycleRangeLabel(key){
   const y = parseInt(key.slice(0,4),10), m = parseInt(key.slice(5,7),10);
   const endM = m===12 ? 1 : m+1;
   return `${m}/25 ~ ${endM}/24`;
+}
+// cycleKey는 내부적으로 "시작월" 기준 키("2026-07" = 7/25~8/24)를 쓴다 — 예산 컬럼 매핑 등
+// 데이터 조회 로직은 이 키를 그대로 써야 하므로 건드리지 않는다.
+// 다만 화면에 사람이 읽는 "N월" 라벨을 보여줄 때는, 실제 지출이 몰리는(그리고 사용자가 인식하는)
+// "종료월" 기준으로 바꿔서 보여준다. 예: "2026-07"(7/25~8/24) → 화면 표시는 "2026-08"(8월).
+function displayCycleKey(key){
+  const y = parseInt(key.slice(0,4),10), m = parseInt(key.slice(5,7),10);
+  const dy = m===12 ? y+1 : y;
+  const dm = m===12 ? 1 : m+1;
+  return `${dy}-${String(dm).padStart(2,'0')}`;
+}
+function displayMonthLabel(key){
+  return parseInt(displayCycleKey(key).slice(5,7),10) + '월';
 }
 
 function buildKeyValueMap(rows){
@@ -877,9 +890,9 @@ function renderFlow(transferRows){
   // 급여일(25일) 기준 사이클로 "이번달"을 정한다 — 예를 들어 8/13은 달력상 8월이지만
   // 급여 사이클로는 아직 "7월"(7/25~8/24) 구간이다.
   const curKey = cycleKey(now);
-  const mIdx = parseInt(curKey.slice(5,7),10) - 1; // 0=1월
+  const mIdx = parseInt(curKey.slice(5,7),10) - 1; // 0=1월 (예산 컬럼 조회용 — 사이클 시작월 기준, 건드리지 않음)
   const colIdx = 4 + mIdx;
-  const monthLabel = (mIdx+1) + '월';
+  const monthLabel = displayMonthLabel(curKey); // 화면 표시는 종료월 기준
   document.getElementById('flowTitle').textContent = `이번달(${monthLabel}, ${cycleRangeLabel(curKey)}) 현금흐름`;
 
   const incomeRow = findRow(transferRows, '급여 실수령금 (용연+현미)');
@@ -1241,7 +1254,7 @@ function renderActualCompare(byKey, expenseRow){
     const isCurrent = k === nowKey;
     const delta = actual - budget;
     const deltaLabel = (delta>=0?'+':'-') + Math.round(Math.abs(delta)/10000) + '만';
-    const mLabel = parseInt(k.slice(5,7),10) + '월';
+    const mLabel = displayMonthLabel(k);
     const rangeLabel = cycleRangeLabel(k);
     return `<div class="compare-col" title="${rangeLabel}${isCurrent ? ' · 진행중(실시간)' : ''}">
       <div class="delta ${over?'over':'under'}">${deltaLabel}</div>
@@ -1259,7 +1272,10 @@ function renderActualMonthTabs(keys, selected){
   const thisYear = String(new Date().getFullYear());
   const nowKey = cycleKey(new Date());
   el.innerHTML = keys.map(k => {
-    const label = k.slice(0,4)===thisYear ? parseInt(k.slice(5,7),10)+'월' : k.slice(2,4)+"'"+parseInt(k.slice(5,7),10)+'월';
+    const dispKey = displayCycleKey(k);
+    const dispYear = dispKey.slice(0,4);
+    const dispMonth = parseInt(dispKey.slice(5,7),10);
+    const label = dispYear===thisYear ? dispMonth+'월' : dispYear.slice(2,4)+"'"+dispMonth+'월';
     return `<button type="button" class="month-tab${k===selected?' active':''}${k===nowKey?' is-current':''}" data-k="${k}" title="${cycleRangeLabel(k)}${k===nowKey?' · 진행중':''}">${label}${k===nowKey?' <span class="dot-live"></span>':''}</button>`;
   }).join('');
   el.querySelectorAll('.month-tab').forEach(btn => {
@@ -1430,7 +1446,7 @@ async function loadAll(){
       renderActualMonthTabs(actualKeys, defaultKey);
       renderActualMonthDetail(defaultKey);
       document.getElementById('actualAsOfNote').textContent =
-        `${actualKeys[0]} ~ ${actualKeys[actualKeys.length-1]} 데이터 (실제사용 시트 기준)`;
+        `${displayCycleKey(actualKeys[0])} ~ ${displayCycleKey(actualKeys[actualKeys.length-1])} 데이터 (실제사용 시트 기준)`;
     } else {
       document.getElementById('actualAsOfNote').textContent = '실제사용 데이터 없음';
       document.getElementById('actualMonthSummary').innerHTML = '<div class="section-note">데이터 없음</div>';
