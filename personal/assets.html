@@ -416,7 +416,7 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 </main>
 
-<div class="app-ver-tag">자산현황 · 2026-08-13</div>
+<div class="app-ver-tag">자산현황 · 2026-08-25</div>
 
 <script>
 const SHEET_ID = '1zWWunW7_XJfocsJZEoUMF75eFzI7o8R6fAynypcctbE';
@@ -1287,6 +1287,10 @@ function renderActualMonthTabs(keys, selected){
 }
 
 let currentDetailItems = [];
+// 항목별 막대를 "클릭"했을 때는 자유 텍스트 검색이 아니라, 그 막대가 속한 대분류 + 항목(베이스 라벨)로만
+// 정확히 필터링한다. 검색창에 직접 타이핑하면(activeClickFilter=null) 기존처럼 소분류/내용/대분류
+// 전체에서 텍스트를 찾는 자유 검색으로 동작한다.
+let activeClickFilter = null; // { major, base }
 
 // 검색어(항목 소분류/내용/대분류)로 개별 거래 내역 표를 필터링해서 다시 그린다.
 function renderDetailRows(items){
@@ -1319,31 +1323,43 @@ function renderDetailRows(items){
     </tr>`;
   }).join('');
 }
-function applyActualSearch(){
+// 현재 조건(자유 텍스트 검색 또는 항목 클릭 필터)에 맞는 항목들을 계산한다.
+function computeFilteredItems(){
+  if(activeClickFilter){
+    // 막대 클릭 필터: 대분류(major)와 항목 베이스 라벨(base)이 정확히 일치하는 것만 —
+    // 내용(desc)에 같은 단어가 우연히 들어간 다른 대분류 거래는 섞이지 않는다.
+    return currentDetailItems.filter(it =>
+      it.major === activeClickFilter.major && baseLabel(it.minor) === activeClickFilter.base);
+  }
   const input = document.getElementById('actualSearchInput');
   const q = (input.value || '').trim().toLowerCase();
-  if(!q){ renderDetailRows(currentDetailItems); return; }
-  const filtered = currentDetailItems.filter(it =>
+  if(!q) return currentDetailItems;
+  // 직접 타이핑한 검색은 기존처럼 소분류/내용/대분류 전체에서 텍스트를 찾는 자유 검색으로 유지한다.
+  return currentDetailItems.filter(it =>
     (it.minor||'').toLowerCase().includes(q) ||
     (it.desc||'').toLowerCase().includes(q) ||
     (it.major||'').toLowerCase().includes(q));
-  renderDetailRows(filtered);
 }
-function searchFor(term){
+function applyActualSearch(){
+  renderDetailRows(computeFilteredItems());
+}
+// 항목별 막대 클릭 전용 진입점: 대분류+항목을 정확히 지정해서 필터링(자유 텍스트 검색과는 분리된 경로)
+function searchForMajorItem(major, base){
+  activeClickFilter = { major, base };
   const input = document.getElementById('actualSearchInput');
-  input.value = term;
-  applyActualSearch();
+  if(input) input.value = `${major} · ${base}`;
+  renderDetailRows(computeFilteredItems());
   const tableEl = document.getElementById('actualDetailTbody');
   if(tableEl.scrollIntoView) tableEl.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 // 검색창 이벤트는 한 번만 연결(월 전환마다 currentDetailItems만 갱신)
 const _actualSearchInputEl = document.getElementById('actualSearchInput');
 if(_actualSearchInputEl && _actualSearchInputEl.addEventListener){
-  _actualSearchInputEl.addEventListener('input', applyActualSearch);
+  _actualSearchInputEl.addEventListener('input', () => { activeClickFilter = null; applyActualSearch(); });
 }
 const _actualSearchClearEl = document.getElementById('actualSearchClear');
 if(_actualSearchClearEl && _actualSearchClearEl.addEventListener){
-  _actualSearchClearEl.addEventListener('click', () => { document.getElementById('actualSearchInput').value=''; applyActualSearch(); });
+  _actualSearchClearEl.addEventListener('click', () => { activeClickFilter = null; document.getElementById('actualSearchInput').value=''; applyActualSearch(); });
 }
 
 function renderActualMonthDetail(key){
@@ -1352,6 +1368,7 @@ function renderActualMonthDetail(key){
   const summaryEl = document.getElementById('actualMonthSummary');
   const minorEl = document.getElementById('actualMinorBreakdown');
   const searchInput = document.getElementById('actualSearchInput');
+  activeClickFilter = null;
   if(searchInput) searchInput.value = '';
   if(!data){
     summaryEl.innerHTML = '<div class="section-note">데이터 없음</div>';
@@ -1370,7 +1387,7 @@ function renderActualMonthDetail(key){
     </div>`).join('') + `</div>`;
 
   // 대분류별 소분류(항목) 단위 사용량 breakdown — 괄호 접미사만 다른 항목(보험료(용연)/보험료(엄마) 등)은
-  // baseLabel로 합쳐서 한 막대로 보여주되, 세부 구성은 옆에 작게 표시. 막대를 클릭하면 아래 표를 그 항목으로 검색.
+  // baseLabel로 합쳐서 한 막대로 보여주되, 세부 구성은 옆에 작게 표시. 막대를 클릭하면 아래 표를 그 항목으로 필터링.
   if(minorEl){
     minorEl.innerHTML = majors.map(maj => {
       const minorMap = data.byMinor[maj] || {};
@@ -1389,7 +1406,7 @@ function renderActualMonthDetail(key){
           ? `<span class="sub-detail"> (${it.subs.map(s => suffixOf(s.label, it.base) + ' ' + comma(s.amt) + '원').join(' · ')})</span>`
           : '';
         return `
-        <div class="bar-item clickable" data-filter="${it.base}" title="클릭하면 아래 내역을 '${it.base}'로 검색합니다">
+        <div class="bar-item clickable" data-filter="${it.base}" data-major="${maj}" title="클릭하면 아래 내역을 '${maj} · ${it.base}'로 필터링합니다">
           <span class="type-dot" style="background:${c}"></span>
           <div class="nm" title="${it.base}">${it.base}${subDetail}</div>
           <div class="track"><div class="fill" style="width:${Math.max(2, it.amt/maxAmt*100)}%;background:${c}"></div></div>
@@ -1406,7 +1423,7 @@ function renderActualMonthDetail(key){
       </div>`;
     }).join('');
     minorEl.querySelectorAll('.bar-item[data-filter]').forEach(el => {
-      el.addEventListener('click', () => searchFor(el.dataset.filter));
+      el.addEventListener('click', () => searchForMajorItem(el.dataset.major, el.dataset.filter));
     });
   }
 
