@@ -325,13 +325,13 @@ table.dt tr.total-row td{font-weight:900;color:#fff;background:#151e29;border-to
   </div>
 
   <div class="section-head">
-    <div><h2>월별 실제사용 상세</h2><p>급여일(25일) 기준 사이클을 선택하면 대분류·항목별 지출과 개별 거래 내역을 볼 수 있고, 항목 막대를 클릭하거나 검색창에 입력해 그 항목의 실제 내역만 걸러볼 수 있습니다.</p></div>
+    <div><h2>월별 실제사용 상세</h2><p>'전체' 또는 급여일(25일) 기준 사이클을 선택하면 대분류·항목별 지출과 개별 거래 내역을 볼 수 있고, 항목 막대를 클릭하거나 검색창에 입력해 그 항목의 실제 내역만 걸러볼 수 있습니다.</p></div>
     <div class="month-tabs" id="monthTabs"></div>
   </div>
   <div class="compose-card" id="actualMonthSummary" style="margin-bottom:14px"><div class="section-note">불러오는 중…</div></div>
   <div id="actualMinorBreakdown" style="margin-bottom:14px"></div>
   <div class="search-row">
-    <input type="text" class="search-input" id="actualSearchInput" placeholder="항목(소분류)·내용으로 검색 — 예: 용연_기타, 주유비 (위 항목별 막대를 클릭해도 검색됩니다)">
+    <input type="text" class="search-input" id="actualSearchInput" placeholder="항목(소분류)·내용으로 검색 — 예: 여행경비, 주유비 (위 탭에서 선택한 기간 안에서 검색됩니다)">
     <button type="button" class="search-clear" id="actualSearchClear">전체보기</button>
   </div>
   <div class="search-summary" id="actualSearchSummary" style="display:none">
@@ -1148,6 +1148,24 @@ function buildActualUsageModel(rows){
 }
 
 let actualByKey = {};
+const ALL_KEY = '__ALL__';
+// "전체" 탭용: 모든 사이클을 합산한 모델 (byKey 자체는 건드리지 않는다)
+function buildAllModel(byKey){
+  const all = { total:0, byMajor:{}, byMinor:{}, items:[] };
+  Object.keys(byKey).sort().forEach(k => {
+    const d = byKey[k];
+    all.total += d.total;
+    Object.keys(d.byMajor).forEach(m => { all.byMajor[m] = (all.byMajor[m]||0) + d.byMajor[m]; });
+    Object.keys(d.byMinor).forEach(m => {
+      if(!all.byMinor[m]) all.byMinor[m] = {};
+      Object.keys(d.byMinor[m]).forEach(l => { all.byMinor[m][l] = (all.byMinor[m][l]||0) + d.byMinor[m][l]; });
+    });
+    all.items = all.items.concat(d.items);
+  });
+  return all;
+}
+function getPeriodModel(key){ return key === ALL_KEY ? buildAllModel(actualByKey) : actualByKey[key]; }
+let currentIsAll = false;
 
 // 전체 사이클(모든 연-월)을 합산한 소분류(항목) 지출 랭킹. baseLabel로 접미사만 다른 항목은 합쳐서 집계한다.
 function buildAllTimeMinorRanking(byKey){
@@ -1183,7 +1201,7 @@ function renderTopMinorRanking(byKey){
     const c = colorForMajor(it.major);
     const pct = grandTotal ? (it.amt/grandTotal*100) : 0;
     return `
-    <div class="bar-item">
+    <div class="bar-item clickable" data-top-major="${it.major}" data-top-base="${it.base}" title="클릭하면 전체 기간의 '${it.major} · ${it.base}' 내역을 아래 표에 보여줍니다">
       <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:800;color:#7f8a9b">${i+1}</span>
       <span class="type-dot" style="background:${c}"></span>
       <div class="nm" style="width:160px" title="${it.base} (${it.major})">${it.base}<span style="color:#7f8a9b;font-weight:400"> · ${it.major}</span></div>
@@ -1191,6 +1209,12 @@ function renderTopMinorRanking(byKey){
       <div class="amt">${won(it.amt)}<span style="color:#7f8a9b;font-weight:400"> (${pct.toFixed(1)}%)</span></div>
     </div>`;
   }).join('');
+  el.querySelectorAll('.bar-item[data-top-base]').forEach(row => {
+    row.addEventListener('click', () => {
+      renderActualMonthDetail(ALL_KEY);
+      searchForMajorItem(row.dataset.topMajor, row.dataset.topBase);
+    });
+  });
   if(noteEl) noteEl.textContent = `${keys[0]} ~ ${keys[keys.length-1]} 전체 사이클 합산 · 총지출 ${won(grandTotal)} 중 상위 10개 항목`;
 }
 
@@ -1274,7 +1298,8 @@ function renderActualMonthTabs(keys, selected){
   const el = document.getElementById('monthTabs');
   const thisYear = String(new Date().getFullYear());
   const nowKey = cycleKey(new Date());
-  el.innerHTML = keys.map(k => {
+  const allBtn = `<button type="button" class="month-tab${selected===ALL_KEY?' active':''}" data-k="${ALL_KEY}" title="모든 기간 합산">전체</button>`;
+  el.innerHTML = allBtn + keys.map(k => {
     const dispKey = displayCycleKey(k);
     const dispYear = dispKey.slice(0,4);
     const dispMonth = parseInt(dispKey.slice(5,7),10);
@@ -1315,7 +1340,7 @@ function renderDetailRows(items){
   tbody.innerHTML = sorted.map(it => {
     const c = colorForMajor(it.major);
     return `<tr>
-      <td>${it.date.slice(5)}</td>
+      <td>${currentIsAll ? it.date.slice(2) : it.date.slice(5)}</td>
       <td><span class="badge-pill" style="background:${c}22;color:${c};border:1px solid ${c}55">${it.major}</span></td>
       <td>${it.minor||'-'}</td>
       <td>${it.desc||'-'}</td>
@@ -1364,12 +1389,11 @@ if(_actualSearchClearEl && _actualSearchClearEl.addEventListener){
 
 function renderActualMonthDetail(key){
   document.querySelectorAll('#monthTabs .month-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.k===key));
-  const data = actualByKey[key];
+  currentIsAll = (key === ALL_KEY);
+  const data = getPeriodModel(key);
   const summaryEl = document.getElementById('actualMonthSummary');
   const minorEl = document.getElementById('actualMinorBreakdown');
-  const searchInput = document.getElementById('actualSearchInput');
-  activeClickFilter = null;
-  if(searchInput) searchInput.value = '';
+  // 검색어/항목 필터는 탭을 옮겨도 유지 → 선택한 기간(전체·1월·2월…)에서 같은 검색이 그대로 적용된다
   if(!data){
     summaryEl.innerHTML = '<div class="section-note">데이터 없음</div>';
     if(minorEl) minorEl.innerHTML = '';
@@ -1378,8 +1402,12 @@ function renderActualMonthDetail(key){
     return;
   }
   currentDetailItems = data.items;
+  const _ks = Object.keys(actualByKey).sort();
+  const periodLabel = currentIsAll
+    ? `전체 기간 (${_ks.length ? displayCycleKey(_ks[0]) + ' ~ ' + displayCycleKey(_ks[_ks.length-1]) : ''}) 합산`
+    : `${cycleRangeLabel(key)} 사이클 (급여일 25일 기준)`;
   const majors = sortMajors(data.byMajor);
-  summaryEl.innerHTML = `<div class="section-note" style="margin-bottom:10px">${cycleRangeLabel(key)} 사이클 (급여일 25일 기준)</div><div class="compose-stats" style="gap:10px">` + majors.map(maj => `
+  summaryEl.innerHTML = `<div class="section-note" style="margin-bottom:10px">${periodLabel}</div><div class="compose-stats" style="gap:10px">` + majors.map(maj => `
     <div class="compose-stat" style="min-width:130px;padding:11px 15px">
       <div class="lbl"><i style="background:${colorForMajor(maj)}"></i>${maj}</div>
       <div class="amt" style="font-size:15px;margin-top:6px">${won(data.byMajor[maj])}</div>
@@ -1427,7 +1455,7 @@ function renderActualMonthDetail(key){
     });
   }
 
-  renderDetailRows(data.items);
+  renderDetailRows(computeFilteredItems());
 }
 
 async function loadAll(){
