@@ -108,6 +108,7 @@ a{color:inherit}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 #monthChips{margin-bottom:16px}
 .chip{appearance:none;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--sub);padding:5px 12px;border-radius:999px;cursor:pointer}
+.emh{font-size:14px;font-weight:700;margin:4px 0 8px}.emh small{font-weight:400;color:var(--faint);font-size:12px;margin-left:6px}
 .chip:hover{color:var(--ink);border-color:#3A414B}
 .chip[aria-pressed="true"]{background:var(--ink);color:#0B0D10;border-color:var(--ink)}
 
@@ -332,9 +333,12 @@ tr.sec td{padding-top:16px;color:var(--sub);font-size:12.5px;font-weight:700;bor
       <div class="tbl-wrap"><table class="num"><thead id="yHead"></thead><tbody id="yBody"></tbody></table></div>
     </div>
     <div class="block">
-      <div class="bhead"><div><h2>비상금</h2><p class="desc">급여 예산과 별도로, 전년 예비비 적금 만기금으로 마련한 1년치 비상금입니다. 예산 = 재원 + 추가 보충.</p></div><div class="chips" id="emYears"></div></div>
+      <div class="bhead"><div><h2>비상금</h2><p class="desc">급여 예산이 모자랄 때 쓰는 돈입니다. 예산 = 재원(월예산 비상금 줄) + 추가 보충(비상금기록).</p></div><div class="chips" id="emYears"></div></div>
+      <h3 class="emh">집 비상금 <small>비상금 통장 결제 · 기타추가예산</small></h3>
       <div class="tbl-wrap gap16"><table class="num"><thead><tr><th>연도</th><th class="r">재원</th><th class="r">추가 보충</th><th class="r">예산</th><th class="r">실제 사용</th><th class="r">남은 돈</th><th class="r">사용률</th></tr></thead><tbody id="emBody"></tbody></table></div>
-      <h2 id="emItemsTitle" style="font-size:15px;margin-top:8px">항목별 사용</h2>
+      <h3 class="emh">용연 비상금 <small>밥값통장 세이프박스 · 용연_비상금사용</small></h3>
+      <div class="tbl-wrap gap16"><table class="num"><thead><tr><th>연도</th><th class="r">재원</th><th class="r">추가 보충</th><th class="r">예산</th><th class="r">실제 사용</th><th class="r">남은 돈</th><th class="r">사용률</th></tr></thead><tbody id="emBody2"></tbody></table></div>
+      <h2 id="emItemsTitle" style="font-size:15px;margin-top:8px">집 비상금 항목별 사용</h2>
       <p class="desc" id="emItemsDesc"></p>
       <div class="rows num" id="emRows"></div>
     </div>
@@ -448,7 +452,7 @@ function buildLedger(t){
   return out;
 }
 const NOT_TRANSFER = ['수입','기타추가예산'];
-let FUND = {}, EM_ITEMS = {};
+let FUND = {}, EM_ITEMS = {}, FUND2 = {};
 const emBudget = y => (FUND[String(y)]||{}).total || 0;
 const monthBudget = (B, y, m) => bSum(B, y, m, b => b.group!=='수입') + emBudget(y)/12;
 const bSum = (B, y, m, f) => B.filter(b => b.year===String(y) && f(b)).reduce((s,b) => s + (b.months[m-1]||0), 0);
@@ -517,7 +521,8 @@ function renderYTD(L, B){
   $('yLiving').textContent = shortWon(living); $('yLivingSub').textContent = months ? `월평균 ${shortWon(living/months)}` : '';
   $('ySaving').textContent = shortWon(save); $('ySavingSub').textContent = inc ? `들어온 돈의 ${pct(save,inc)}%` : '';
   $('yEmerg').textContent = shortWon(em); $('yEmerg').className = emB && em > emB ? 'bad' : '';
-  $('yEmergSub').textContent = emB ? `예산 ${shortWon(emB)}의 ${pct(em,emB)}%` : '예산 미입력';
+  const em2 = spent(L, from, to, x => x.minor==='용연_비상금사용');
+  $('yEmergSub').textContent = (emB ? `집 · 예산 ${shortWon(emB)}의 ${pct(em,emB)}%` : '집 · 예산 미입력') + (em2 ? ` · 용연 ${shortWon(em2)} 별도` : '');
 }
 function barChart(el, cols, maxVal){
   el.innerHTML = cols.map(c => `<div class="col${c.now?' now':''}" title="${esc(c.title||'')}">
@@ -679,7 +684,8 @@ function renderYears(L, B, years){
     ['실제', '생활소비', y => spent(L, ...r(y), isLiving)],
     ['실제', '저축·투자', y => spent(L, ...r(y), t => natureType(t.nature)==='save')],
     ['실제', '대출상환', y => spent(L, ...r(y), t => natureType(t.nature)==='loan')],
-    ['실제', '비상금 사용', y => spent(L, ...r(y), t => t.major==='기타추가예산')],
+    ['실제', '집 비상금 사용', y => spent(L, ...r(y), t => t.major==='기타추가예산')],
+    ['실제', '용연 비상금 사용', y => spent(L, ...r(y), t => t.minor==='용연_비상금사용')],
     ['실제', '월평균 생활소비', y => { const n = new Set(L.filter(t => t.type==='지출' && t.d>=r(y)[0] && t.d<r(y)[1]).map(t => t.d.getMonth())).size; return n ? spent(L, ...r(y), isLiving)/n : null; }],
   ];
   const two = years.length >= 2 ? years.slice(-2) : null;
@@ -701,6 +707,10 @@ function renderEmergency(L, B, years){
     return `<tr><td>${y}</td><td class="r">${f.base ? won(f.base) : '<span class="muted">요약 시트에 입력</span>'}</td><td class="r">${f.extra ? won(f.extra) : '-'}</td>
       <td class="r">${bud ? won(bud) : '-'}</td><td class="r">${used ? won(used) : '-'}</td>
       <td class="r ${f.base ? (left<0?'bad':'good') : ''}">${f.base ? signWon(left) : '-'}</td><td class="r ${used>bud?'bad':''}">${bud ? pct(used,bud)+'%' : '-'}</td></tr>`; }).join('');
+  const ys2 = Object.keys(FUND2).filter(y => FUND2[y].total || FUND2[y].used).sort();
+  $('emBody2').innerHTML = ys2.map(y => { const f = FUND2[y];
+    return `<tr><td>${y}</td><td class="r">${f.base ? won(f.base) : '-'}</td><td class="r">${f.extra ? won(f.extra) : '-'}</td><td class="r">${f.total ? won(f.total) : '-'}</td>
+      <td class="r">${f.used ? won(f.used) : '-'}</td><td class="r ${f.left<0?'bad':'good'}">${signWon(f.left)}</td><td class="r ${f.total && f.used>f.total?'bad':''}">${f.total ? pct(f.used,f.total)+'%' : '-'}</td></tr>`; }).join('') || '<tr><td colspan="7" class="muted">요약 시트 용연 비상금 표에 기록이 없습니다.</td></tr>';
   if(!ys.includes(emYear)) emYear = ys[ys.length-1];
   $('emYears').innerHTML = ys.map(y => `<button class="chip" aria-pressed="${y===emYear}" data-y="${y}">${y}년</button>`).join('');
   $('emYears').querySelectorAll('.chip').forEach(b => b.onclick = () => { emYear = b.dataset.y; renderEmergency(L, B, years); });
@@ -710,7 +720,7 @@ function renderEmergency(L, B, years){
   const anyUsed = Object.values(it).some(v => v.u);
   const list = Object.entries(it).filter(([,v]) => anyUsed ? v.u : v.b).sort((a,b) => b[1].u - a[1].u || b[1].b - a[1].b);
   const mx = Math.max(1, ...list.map(([,v]) => Math.max(v.u, v.b))), tu = list.reduce((s,[,v]) => s+v.u, 0), tb = list.reduce((s,[,v]) => s+v.b, 0);
-  $('emItemsTitle').textContent = `${emYear}년 항목별 사용`;
+  $('emItemsTitle').textContent = `${emYear}년 집 비상금 항목별 사용`;
   $('emItemsDesc').textContent = `사용 ${won(tu)}${tb ? ` · 예산 ${won(tb)}` : ''}. 빨간 막대는 항목 예산을 넘은 경우입니다.`;
   $('emRows').innerHTML = list.map(([n,v]) => `<div class="row"><span class="nm">${esc(n)}</span>
     <span class="tr"><span class="fl" style="display:block;width:${v.u/mx*100}%;background:${v.b && v.u > v.b ? 'var(--bad)' : 'var(--emerg)'}"></span></span>
@@ -748,11 +758,12 @@ function renderAssetTables(A){
 // ===== 로드 =====
 async function load(){
   try{
-    const [aT, bT, lT, fT, iT] = await Promise.all([
+    const [aT, bT, lT, fT, iT, f2T] = await Promise.all([
       fetchTable('자산목록', 'A4:Q500'), fetchTable('월예산', 'A4:S2000'), fetchTable('실제사용상세', 'A1:J30000'),
-      fetchTable('요약', 'A41:C44').catch(() => null), fetchTable('요약', 'A48:F56').catch(() => null) ]);
+      fetchTable('요약', 'A41:C44').catch(() => null), fetchTable('요약', 'A48:F56').catch(() => null), fetchTable('요약', 'K41:Q44').catch(() => null) ]);
     const A = buildAssets(aT), B = buildBudget(bT), L = buildLedger(lT);
     FUND = {}; (fT ? fT.rows : []).forEach(r => { const y = String(num(r[0])||''); if(/^\d{4}$/.test(y)){ const base = num(r[1])||0, extra = num(r[2])||0; FUND[y] = { base, extra, total: base + extra }; } });
+    FUND2 = {}; (f2T ? f2T.rows : []).forEach(r => { const y = String(num(r[0])||''); if(/^\d{4}$/.test(y)) FUND2[y] = { base:num(r[1])||0, extra:num(r[2])||0, total:num(r[3])||0, used:num(r[4])||0, left:num(r[5])||0 }; });
     EM_ITEMS = {}; if(iT){ iT.head.forEach((h,ci) => { const m = String(h).match(/예산\s*(\d{4})/); if(!m) return; iT.rows.forEach(r => { const v = num(r[ci]); if(v && r[0]) (EM_ITEMS[m[1]] = EM_ITEMS[m[1]] || {})[r[0].trim()] = v; }); }); }
     renderNet(A); renderGauge(L, B); renderYTD(L, B); renderLivingChart(L);
     renderMonth(B);
